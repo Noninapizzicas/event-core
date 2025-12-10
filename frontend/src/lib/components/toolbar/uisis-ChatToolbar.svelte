@@ -1,142 +1,67 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
+
+  // Componentes uisis- con interacción triple integrada
+  import { AIButton } from '$components/ai';
+  import { CredentialButton } from '$components/credentials';
+  import { PromptButton } from '$components/prompts';
+  import { ConversationButton } from '$components/conversations';
+  import { FileBrowserButton } from '$components/files';
+
+  // ToolbarIcon para iconos sin módulo backend (herramientas, adjuntar, etc.)
   import ToolbarIcon from './uisis-ToolbarIcon.svelte';
-  import type { ActionConfig } from './uisis-FloatingToolbar.svelte';
 
   /**
    * ChatToolbar - Barra de chat con estructura sandwich
    *
-   * Siguiendo CONTEXT_UI.md:
-   * - Estructura: Sub-barra superior + Input + Sub-barra inferior
-   * - Posición: Parte inferior de la pantalla
-   * - Dominio: Todo lo relacionado con IA y Chat
-   * - Configuración: FIJA (no cambia por módulo)
+   * ACTUALIZADO: Usa componentes uisis-*Button con interacción triple integrada
    *
-   * Sub-barra superior: Lo que PREPARA el mensaje (modelo, creds, prompt, historial)
-   * Sub-barra inferior: Lo que COMPLEMENTA el mensaje (tools, adjuntar, contexto, plugins)
+   * Estructura sandwich:
+   * - Sub-barra superior: PREPARA el mensaje (modelo, creds, prompt, historial)
+   * - Input: Campo de texto
+   * - Sub-barra inferior: COMPLEMENTA el mensaje (archivos, tools, contexto, plugins)
+   *
+   * Los uisis-*Button manejan sus propios paneles internamente:
+   * - TAP → SelectorPanel (elegir)
+   * - DOUBLE TAP → AddPanel (crear nuevo)
+   * - LONG PRESS → ConfigPanel (configurar)
    */
 
   // Props
   export let message = '';
   export let placeholder = 'Escribe aquí...';
   export let sending = false;
-  export let currentModel: string = '';
-  export let currentCredential: string = '';
+  export let projectId: string | null = null;
   let className = '';
   export { className as class };
 
   const dispatch = createEventDispatcher<{
     send: { message: string };
-    action: {
-      type: 'tap' | 'doubleTap' | 'longPress';
-      iconId: string;
-      action?: ActionConfig;
-      bar: 'top' | 'bottom';
-    };
     expandInput: void;
+    // Eventos de los botones uisis
+    aiSelect: { model: unknown };
+    aiConfig: { config: unknown };
+    credentialSelect: { credential: unknown };
+    credentialAdd: void;
+    credentialConfig: { credential: unknown };
+    promptSelect: { prompt: unknown };
+    promptAdd: void;
+    promptConfig: { prompt: unknown };
+    conversationSelect: { conversation: unknown };
+    conversationAdd: void;
+    conversationConfig: { conversation: unknown };
+    fileSelect: { file: unknown };
+    fileAdd: { path: string };
+    toolsOpen: void;
+    attachOpen: void;
+    contextOpen: void;
+    pluginsOpen: void;
   }>();
-
-  // Iconos fijos - Sub-barra superior (Chat directo)
-  const topBarIcons = [
-    {
-      id: 'modelo',
-      icon: '🤖',
-      label: 'Modelo IA',
-      actions: {
-        tap: { type: 'panel' as const, target: 'modelo-selector', size: 'small' as const },
-        doubleTap: { type: 'modal' as const, target: 'modelo-config', size: 'medium' as const },
-        longPress: { type: 'modal' as const, target: 'modelos-gestionar', size: 'full' as const }
-      }
-    },
-    {
-      id: 'credencial',
-      icon: '🔑',
-      label: 'API Key',
-      actions: {
-        tap: { type: 'panel' as const, target: 'credencial-selector', size: 'small' as const },
-        doubleTap: { type: 'modal' as const, target: 'credencial-crear', size: 'medium' as const },
-        longPress: { type: 'modal' as const, target: 'credenciales-gestionar', size: 'full' as const }
-      }
-    },
-    {
-      id: 'prompt',
-      icon: '📝',
-      label: 'Prompt',
-      actions: {
-        tap: { type: 'panel' as const, target: 'prompts-rapidos', size: 'medium' as const },
-        doubleTap: { type: 'modal' as const, target: 'prompt-crear', size: 'medium' as const },
-        longPress: { type: 'modal' as const, target: 'prompts-gestionar', size: 'full' as const }
-      }
-    },
-    {
-      id: 'historial',
-      icon: '💬',
-      label: 'Historial',
-      actions: {
-        tap: { type: 'panel' as const, target: 'conversaciones', size: 'medium' as const },
-        longPress: { type: 'modal' as const, target: 'historial-gestionar', size: 'full' as const }
-      }
-    }
-  ];
-
-  // Iconos fijos - Sub-barra inferior (Adyacentes)
-  const bottomBarIcons = [
-    {
-      id: 'herramientas',
-      icon: '🔧',
-      label: 'Tools',
-      actions: {
-        tap: { type: 'panel' as const, target: 'tools-disponibles', size: 'medium' as const },
-        longPress: { type: 'modal' as const, target: 'tools-config', size: 'full' as const }
-      }
-    },
-    {
-      id: 'adjuntar',
-      icon: '📎',
-      label: 'Adjuntar',
-      actions: {
-        tap: { type: 'panel' as const, target: 'adjuntar-archivo', size: 'small' as const }
-      }
-    },
-    {
-      id: 'contexto',
-      icon: '📋',
-      label: 'Contexto',
-      actions: {
-        tap: { type: 'panel' as const, target: 'contexto-actual', size: 'medium' as const },
-        doubleTap: { type: 'modal' as const, target: 'contexto-editar', size: 'medium' as const },
-        longPress: { type: 'modal' as const, target: 'contexto-gestionar', size: 'full' as const }
-      }
-    },
-    {
-      id: 'plugins',
-      icon: '🔌',
-      label: 'Plugins',
-      actions: {
-        tap: { type: 'panel' as const, target: 'plugins-activos', size: 'medium' as const },
-        longPress: { type: 'modal' as const, target: 'plugins-gestionar', size: 'full' as const }
-      }
-    }
-  ];
 
   // Estado del input
   let inputElement: HTMLTextAreaElement;
   let tapCount = 0;
   let tapTimer: ReturnType<typeof setTimeout> | null = null;
-
-  // Handlers de iconos
-  function handleIconEvent(bar: 'top' | 'bottom', type: 'tap' | 'doubleTap' | 'longPress') {
-    return (event: CustomEvent<{ id: string }>) => {
-      const icons = bar === 'top' ? topBarIcons : bottomBarIcons;
-      const icon = icons.find(i => i.id === event.detail.id);
-      dispatch('action', {
-        type,
-        iconId: event.detail.id,
-        action: icon?.actions?.[type],
-        bar
-      });
-    };
-  }
 
   // Handler de envío
   function handleSend() {
@@ -147,8 +72,6 @@
 
   // Handler de teclas en input
   function handleKeydown(e: KeyboardEvent) {
-    // Enter = nueva línea (NO enviar)
-    // Solo Ctrl+Enter o Cmd+Enter envía
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       handleSend();
@@ -158,7 +81,6 @@
   // Doble tap en input para expandir
   function handleInputTap() {
     tapCount++;
-
     if (tapCount === 1) {
       tapTimer = setTimeout(() => {
         tapCount = 0;
@@ -170,111 +92,344 @@
     }
   }
 
-  // Badges dinámicos
-  $: {
-    const modelIcon = topBarIcons.find(i => i.id === 'modelo');
-    if (modelIcon && currentModel) {
-      // Mostrar abreviación del modelo
-      modelIcon.badge = currentModel.slice(0, 3);
-    }
+  // === Handlers de botones uisis ===
+
+  // AI
+  function handleAISelect(e: CustomEvent) {
+    dispatch('aiSelect', { model: e.detail });
+  }
+  function handleAIConfig(e: CustomEvent) {
+    dispatch('aiConfig', { config: e.detail });
+  }
+
+  // Credentials
+  function handleCredentialSelect(e: CustomEvent) {
+    dispatch('credentialSelect', { credential: e.detail });
+  }
+  function handleCredentialAdd() {
+    dispatch('credentialAdd');
+  }
+  function handleCredentialConfig(e: CustomEvent) {
+    dispatch('credentialConfig', { credential: e.detail });
+  }
+
+  // Prompts
+  function handlePromptSelect(e: CustomEvent) {
+    dispatch('promptSelect', { prompt: e.detail });
+  }
+  function handlePromptAdd() {
+    dispatch('promptAdd');
+  }
+  function handlePromptConfig(e: CustomEvent) {
+    dispatch('promptConfig', { prompt: e.detail });
+  }
+
+  // Conversations
+  function handleConversationSelect(e: CustomEvent) {
+    dispatch('conversationSelect', { conversation: e.detail });
+  }
+  function handleConversationAdd() {
+    dispatch('conversationAdd');
+  }
+  function handleConversationConfig(e: CustomEvent) {
+    dispatch('conversationConfig', { conversation: e.detail });
+  }
+
+  // Files
+  function handleFileSelect(e: CustomEvent) {
+    dispatch('fileSelect', { file: e.detail.file });
+  }
+  function handleFileAdd(e: CustomEvent) {
+    dispatch('fileAdd', { path: e.detail.path });
+  }
+
+  // Tools auxiliares (sin módulo backend propio)
+  function handleToolsTap() {
+    dispatch('toolsOpen');
+  }
+  function handleAttachTap() {
+    dispatch('attachOpen');
+  }
+  function handleContextTap() {
+    dispatch('contextOpen');
+  }
+  function handlePluginsTap() {
+    dispatch('pluginsOpen');
   }
 </script>
 
-<div class="chat-toolbar fixed bottom-0 left-0 right-0 z-100 bg-bg-card/95 backdrop-blur-sm border-t border-border {className}">
-  <!-- Sub-barra superior (Chat directo) -->
-  <div class="chat-bar-top flex items-center gap-1 px-2 py-1 border-b border-border/50">
-    {#each topBarIcons as icon (icon.id)}
-      <ToolbarIcon
-        id={icon.id}
-        icon={icon.icon}
-        label={icon.label}
-        badge={icon.badge}
-        showLabel={false}
-        orientation="horizontal"
-        on:tap={handleIconEvent('top', 'tap')}
-        on:doubleTap={handleIconEvent('top', 'doubleTap')}
-        on:longPress={handleIconEvent('top', 'longPress')}
-      />
-    {/each}
+<div class="chat-toolbar {className}">
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       SUB-BARRA SUPERIOR: PREPARA el mensaje
+       Componentes uisis- con paneles auto-gestionados
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <div class="chat-bar chat-bar--top">
+    <!-- AI Model (tap: selector, longPress: config) -->
+    <AIButton
+      size="sm"
+      showLabel={false}
+      on:select={handleAISelect}
+      on:config={handleAIConfig}
+    />
 
-    <!-- Indicador de modelo activo -->
-    {#if currentModel}
-      <span class="ml-auto text-xs text-text-muted truncate max-w-[100px]">
-        {currentModel}
-      </span>
-    {/if}
+    <!-- Credentials (tap: selector, doubleTap: add, longPress: config) -->
+    <CredentialButton
+      size="sm"
+      showLabel={false}
+      on:select={handleCredentialSelect}
+      on:add={handleCredentialAdd}
+      on:config={handleCredentialConfig}
+    />
+
+    <!-- Prompts (tap: selector, doubleTap: add, longPress: config) -->
+    <PromptButton
+      size="sm"
+      showLabel={false}
+      on:select={handlePromptSelect}
+      on:add={handlePromptAdd}
+      on:config={handlePromptConfig}
+    />
+
+    <!-- Conversations (tap: selector, doubleTap: add, longPress: config) -->
+    <ConversationButton
+      size="sm"
+      showLabel={false}
+      {projectId}
+      on:select={handleConversationSelect}
+      on:add={handleConversationAdd}
+      on:config={handleConversationConfig}
+    />
   </div>
 
-  <!-- Input de mensaje (el relleno del sandwich) -->
-  <div class="chat-input flex items-center gap-2 px-3 py-2">
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       INPUT DE MENSAJE (el relleno del sandwich)
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <div class="chat-input">
     <textarea
       bind:this={inputElement}
       bind:value={message}
       {placeholder}
       disabled={sending}
       rows="1"
-      class="flex-1 resize-none bg-bg border border-border rounded-lg px-3 py-2 text-sm text-text placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
       on:keydown={handleKeydown}
       on:click={handleInputTap}
     ></textarea>
 
     <button
       type="button"
-      class="send-btn flex items-center justify-center w-10 h-10 rounded-full bg-primary text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:bg-primary-hover active:scale-95"
+      class="send-btn"
       disabled={!message.trim() || sending}
       on:click={handleSend}
       aria-label="Enviar mensaje"
     >
       {#if sending}
-        <svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
+        <span class="spinner"></span>
       {:else}
-        <span class="text-lg">➤</span>
+        <span class="send-icon">➤</span>
       {/if}
     </button>
   </div>
 
-  <!-- Sub-barra inferior (Adyacentes) -->
-  <div class="chat-bar-bottom flex items-center gap-1 px-2 py-1 border-t border-border/50">
-    {#each bottomBarIcons as icon (icon.id)}
-      <ToolbarIcon
-        id={icon.id}
-        icon={icon.icon}
-        label={icon.label}
-        badge={icon.badge}
-        showLabel={false}
-        orientation="horizontal"
-        on:tap={handleIconEvent('bottom', 'tap')}
-        on:doubleTap={handleIconEvent('bottom', 'doubleTap')}
-        on:longPress={handleIconEvent('bottom', 'longPress')}
-      />
-    {/each}
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       SUB-BARRA INFERIOR: COMPLEMENTA el mensaje
+       FileBrowser es uisis-, el resto son ToolbarIcon por ahora
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <div class="chat-bar chat-bar--bottom">
+    <!-- Files (tap: navegar, doubleTap: crear, longPress: config) -->
+    <FileBrowserButton
+      size="sm"
+      showLabel={false}
+      {projectId}
+      on:select={handleFileSelect}
+      on:add={handleFileAdd}
+    />
+
+    <!-- Tools (sin módulo backend propio) -->
+    <ToolbarIcon
+      id="tools"
+      icon="🔧"
+      label="Tools"
+      showLabel={false}
+      orientation="horizontal"
+      on:tap={handleToolsTap}
+    />
+
+    <!-- Attach -->
+    <ToolbarIcon
+      id="attach"
+      icon="📎"
+      label="Adjuntar"
+      showLabel={false}
+      orientation="horizontal"
+      on:tap={handleAttachTap}
+    />
+
+    <!-- Context -->
+    <ToolbarIcon
+      id="context"
+      icon="📋"
+      label="Contexto"
+      showLabel={false}
+      orientation="horizontal"
+      on:tap={handleContextTap}
+    />
+
+    <!-- Plugins -->
+    <ToolbarIcon
+      id="plugins"
+      icon="🔌"
+      label="Plugins"
+      showLabel={false}
+      orientation="horizontal"
+      on:tap={handlePluginsTap}
+    />
   </div>
 
   <!-- Safe area para móviles -->
-  <div class="h-[env(safe-area-inset-bottom,0)]"></div>
+  <div class="safe-area"></div>
 </div>
 
 <style>
   .chat-toolbar {
-    /* Sombra hacia arriba */
-    box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1);
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: var(--color-bg-card, #1a1d24);
+    border-top: 1px solid var(--color-border, #2e3440);
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     SUB-BARRAS (top y bottom)
+     ═══════════════════════════════════════════════════════════════════════ */
+  .chat-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.375rem 0.5rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .chat-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .chat-bar--top {
+    border-bottom: 1px solid var(--color-border, #2e3440);
+    background: var(--color-bg-elevated, #232830);
+  }
+
+  .chat-bar--bottom {
+    border-top: 1px solid var(--color-border, #2e3440);
+    background: var(--color-bg-elevated, #232830);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     INPUT AREA
+     ═══════════════════════════════════════════════════════════════════════ */
+  .chat-input {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
   }
 
   .chat-input textarea {
-    max-height: 80px;
-    min-height: 40px;
+    flex: 1;
+    resize: none;
+    background: var(--color-bg, #0d1117);
+    border: 1px solid var(--color-border, #2e3440);
+    border-radius: 12px;
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+    color: var(--color-text, #ffffff);
     line-height: 1.4;
+    min-height: 44px;
+    max-height: 120px;
   }
 
-  /* Hint visual para doble tap */
-  .chat-input textarea:focus::placeholder {
+  .chat-input textarea::placeholder {
+    color: var(--color-text-muted, #6b7280);
+  }
+
+  .chat-input textarea:focus {
+    outline: none;
+    border-color: var(--color-primary, #6366f1);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  }
+
+  .chat-input textarea:disabled {
     opacity: 0.5;
+    cursor: not-allowed;
   }
 
+  /* ═══════════════════════════════════════════════════════════════════════
+     SEND BUTTON
+     ═══════════════════════════════════════════════════════════════════════ */
   .send-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    background: var(--color-primary, #6366f1);
+    color: white;
+    cursor: pointer;
+    transition: all 150ms ease;
     flex-shrink: 0;
+  }
+
+  .send-btn:hover:not(:disabled) {
+    background: var(--color-primary-hover, #4f46e5);
+    transform: scale(1.05);
+  }
+
+  .send-btn:active:not(:disabled) {
+    transform: scale(0.95);
+  }
+
+  .send-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .send-icon {
+    font-size: 1.25rem;
+  }
+
+  .spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     SAFE AREA (iOS)
+     ═══════════════════════════════════════════════════════════════════════ */
+  .safe-area {
+    height: env(safe-area-inset-bottom, 0);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     RESPONSIVE
+     ═══════════════════════════════════════════════════════════════════════ */
+  @media (max-width: 380px) {
+    .chat-bar {
+      gap: 0.125rem;
+      padding: 0.25rem;
+    }
   }
 </style>
