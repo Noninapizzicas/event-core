@@ -286,10 +286,13 @@
           </div>
         {:else}
           <!-- MODO NORMAL -->
-          <button
+          <div
             class="project-item"
             class:active={$activeProject?.id === project.id}
             on:click={() => handleActivate(project)}
+            on:keydown={(e) => e.key === 'Enter' && handleActivate(project)}
+            role="button"
+            tabindex="0"
           >
             <span class="color-indicator" style="background: {getColorHex(project.color)}"></span>
             <span class="project-icon">{getColorEmoji(project.color)}</span>
@@ -301,7 +304,7 @@
 
             <button
               class="btn-icon edit"
-              on:click={(e) => startEdit(project, e)}
+              on:click|stopPropagation={(e) => startEdit(project, e)}
               title="Editar"
             >
               ✏️
@@ -314,7 +317,7 @@
             >
               {deletingId === project.id ? '...' : '🗑️'}
             </button>
-          </button>
+          </div>
         {/if}
       {/each}
     {/if}

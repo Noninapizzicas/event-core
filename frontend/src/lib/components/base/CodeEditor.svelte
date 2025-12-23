@@ -94,8 +94,7 @@
     class:readonly
     spellcheck="false"
     autocomplete="off"
-    autocorrect="off"
-    autocapitalize="off"
+    {...{ autocorrect: 'off', autocapitalize: 'off' }}
     data-language={language}
   ></textarea>
 </div>

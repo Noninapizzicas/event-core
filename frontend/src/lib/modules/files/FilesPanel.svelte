@@ -233,11 +233,14 @@
             {/each}
           {:else}
             {#each state.files as item (item.path)}
-              <button
+              <div
                 class="file-item"
                 class:directory={item.type === 'directory'}
                 class:project={item.projectId}
                 on:click={() => handleItemClick(item)}
+                on:keydown={(e) => e.key === 'Enter' && handleItemClick(item)}
+                role="button"
+                tabindex="0"
               >
                 <span class="file-icon">{getFileIcon(item)}</span>
                 <span class="file-name">
@@ -257,7 +260,7 @@
                 >
                   {confirmDelete === item.path ? '⚠️' : '🗑️'}
                 </button>
-              </button>
+              </div>
             {:else}
               <div class="empty">Carpeta vacía</div>
             {/each}
