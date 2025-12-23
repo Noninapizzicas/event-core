@@ -125,10 +125,13 @@
       </div>
     {:else}
       {#each $conversationsList as conv (conv.id)}
-        <button
+        <div
           class="conversation-item"
           class:active={$conversationId === conv.id}
           on:click={() => handleSelect(conv.id)}
+          on:keydown={(e) => e.key === 'Enter' && handleSelect(conv.id)}
+          role="button"
+          tabindex="0"
         >
           <div class="conv-header">
             <span class="conv-title">{conv.title || 'Sin título'}</span>
@@ -147,7 +150,7 @@
               🗑️
             </button>
           </div>
-        </button>
+        </div>
       {/each}
     {/if}
   </div>
