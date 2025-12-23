@@ -93,14 +93,35 @@ async function restoreProvider(providerId: string, modelId: string | null): Prom
 
     if (response.data?.credential) {
       const cred = response.data.credential;
+      // Provider structure: id, name, icon, models
       selectProvider(
-        { id: cred.id, name: cred.name, provider: cred.provider },
+        {
+          id: cred.id,
+          name: cred.name,
+          icon: getProviderIcon(cred.provider),
+          models: []
+        },
         modelId || 'default'
       );
     }
   } catch (error) {
     console.warn('[Init] Failed to restore provider:', error);
   }
+}
+
+/**
+ * Obtener icono del provider por nombre
+ */
+function getProviderIcon(provider: string): string {
+  const icons: Record<string, string> = {
+    openai: '🤖',
+    anthropic: '🧠',
+    google: '🔍',
+    mistral: '🌬️',
+    ollama: '🦙',
+    openrouter: '🔀'
+  };
+  return icons[provider.toLowerCase()] || '🔌';
 }
 
 /**

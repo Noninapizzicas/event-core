@@ -25,7 +25,7 @@
   import { closePanel } from '$lib/stores/ui';
   import { mqttRequest } from '$lib/ui-core';
 
-  export let _panelId: string;
+  export let panelId: string;
 
   // Cargar conversaciones al montar (si hay proyecto activo)
   onMount(() => {
