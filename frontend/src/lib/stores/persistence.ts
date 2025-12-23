@@ -27,6 +27,13 @@ export interface PersistedState {
   };
   chat: {
     conversationId: string | null;
+    /** Última conversación por proyecto: { projectId: conversationId } */
+    lastConversationByProject: Record<string, string>;
+  };
+  /** Provider por defecto (global) */
+  defaultProvider: {
+    providerId: string | null;
+    modelId: string | null;
   };
 }
 
@@ -50,7 +57,12 @@ const defaultState: PersistedState = {
     theme: 'dark'
   },
   chat: {
-    conversationId: null
+    conversationId: null,
+    lastConversationByProject: {}
+  },
+  defaultProvider: {
+    providerId: null,
+    modelId: null
   }
 };
 
@@ -79,7 +91,8 @@ export function loadState(): PersistedState {
       currentState = {
         workspace: { ...defaultState.workspace, ...parsed.workspace },
         ui: { ...defaultState.ui, ...parsed.ui },
-        chat: { ...defaultState.chat, ...parsed.chat }
+        chat: { ...defaultState.chat, ...parsed.chat },
+        defaultProvider: { ...defaultState.defaultProvider, ...parsed.defaultProvider }
       };
       console.log('[Persistence] State loaded:', currentState);
     }
@@ -107,6 +120,9 @@ export function saveState(partial?: Partial<PersistedState>): void {
     }
     if (partial.chat) {
       currentState.chat = { ...currentState.chat, ...partial.chat };
+    }
+    if (partial.defaultProvider) {
+      currentState.defaultProvider = { ...currentState.defaultProvider, ...partial.defaultProvider };
     }
   }
 
@@ -184,7 +200,39 @@ export function getPanelSize(panelId: string): { width?: number; height?: number
  * Guardar conversación activa
  */
 export function saveConversation(conversationId: string | null): void {
-  saveState({ chat: { conversationId } });
+  saveState({ chat: { conversationId, lastConversationByProject: currentState.chat.lastConversationByProject } });
+}
+
+/**
+ * Guardar última conversación de un proyecto específico
+ */
+export function saveLastConversationForProject(projectId: string, conversationId: string): void {
+  const lastConversationByProject = {
+    ...currentState.chat.lastConversationByProject,
+    [projectId]: conversationId
+  };
+  saveState({ chat: { conversationId, lastConversationByProject } });
+}
+
+/**
+ * Obtener última conversación de un proyecto
+ */
+export function getLastConversationForProject(projectId: string): string | null {
+  return currentState.chat.lastConversationByProject[projectId] || null;
+}
+
+/**
+ * Guardar provider por defecto
+ */
+export function saveDefaultProvider(providerId: string | null, modelId: string | null): void {
+  saveState({ defaultProvider: { providerId, modelId } });
+}
+
+/**
+ * Obtener provider por defecto
+ */
+export function getDefaultProvider(): { providerId: string | null; modelId: string | null } {
+  return currentState.defaultProvider;
 }
 
 // ============================================================================

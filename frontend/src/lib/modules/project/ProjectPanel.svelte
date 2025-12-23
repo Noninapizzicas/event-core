@@ -19,7 +19,7 @@
    */
 
   import { onMount, onDestroy } from 'svelte';
-  import { activeProject, selectProject, closePanel } from '$lib/stores';
+  import { activeProject, selectProject, closePanel, handleProjectChange } from '$lib/stores';
   import {
     projectsStore,
     initProjectsSubscriptions,
@@ -131,10 +131,7 @@
     }, 300);
   }
 
-  function handleActivate(project: typeof $projectsStore.projects[0]): void {
-    // Activar via MQTT
-    activateProjectMqtt(project.id);
-
+  async function handleActivate(project: typeof $projectsStore.projects[0]): Promise<void> {
     // Actualizar store local inmediatamente para feedback
     selectProject({
       id: project.id,
@@ -145,6 +142,9 @@
     });
 
     closePanel();
+
+    // Activar proyecto y cargar conversaciones (en background)
+    await handleProjectChange(project.id);
   }
 
   // ============================================================================

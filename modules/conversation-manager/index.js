@@ -64,9 +64,10 @@ class ConversationManagerModule {
       this.uiHandler.register('conversation', 'load', this.handleUILoad.bind(this));
       this.uiHandler.register('conversation', 'create', this.handleUICreate.bind(this));
       this.uiHandler.register('conversation', 'list', this.handleUIList.bind(this));
+      this.uiHandler.register('conversation', 'delete', this.handleUIDelete.bind(this));
 
       this.logger.info('conversation-manager.ui_handlers.registered', {
-        handlers: ['send', 'load', 'create', 'list']
+        handlers: ['send', 'load', 'create', 'list', 'delete']
       });
     }
 
@@ -127,6 +128,7 @@ class ConversationManagerModule {
       this.uiHandler.unregister('conversation', 'load');
       this.uiHandler.unregister('conversation', 'create');
       this.uiHandler.unregister('conversation', 'list');
+      this.uiHandler.unregister('conversation', 'delete');
     }
 
     // Unsubscribe all
@@ -316,6 +318,31 @@ class ConversationManagerModule {
       this.logger.error({ correlationId, projectId, error: error.message }, 'Failed to load project conversations');
       throw error;
     }
+  }
+
+  /**
+   * List conversations for a project
+   * Returns array of conversation objects (for UI)
+   */
+  async listConversations(projectId, correlationId) {
+    // First ensure conversations are loaded
+    await this.loadProjectConversations(projectId, correlationId);
+
+    // Return conversations for this project
+    const conversations = Array.from(this.conversations.values())
+      .filter(c => c.project_id === projectId)
+      .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
+      .map(c => ({
+        id: c.id,
+        title: c.title,
+        message_count: c.message_count,
+        model: c.model,
+        provider: c.provider,
+        created_at: c.created_at,
+        updated_at: c.updated_at
+      }));
+
+    return conversations;
   }
 
   // ==================== CONTEXT LOADING ====================
@@ -1842,6 +1869,30 @@ class ConversationManagerModule {
       this.logger.error({ correlationId, projectId: projId, error: error.message },
         'UI: Failed to list conversations');
       throw { status: 500, code: 'LIST_ERROR', message: error.message };
+    }
+  }
+
+  /**
+   * UI Handler: Delete conversation
+   * Request: mqttRequest('conversation', 'delete', { conversationId })
+   */
+  async handleUIDelete(data, request) {
+    const { conversationId } = data;
+    const correlationId = request?.correlationId || crypto.randomUUID();
+
+    this.logger.info({ correlationId, conversationId }, 'UI: Delete conversation');
+
+    if (!conversationId) {
+      throw { status: 400, code: 'VALIDATION_ERROR', message: 'conversationId is required' };
+    }
+
+    try {
+      const result = await this.deleteConversation(conversationId, correlationId);
+      return { deleted: true, id: conversationId };
+    } catch (error) {
+      this.logger.error({ correlationId, conversationId, error: error.message },
+        'UI: Failed to delete conversation');
+      throw { status: 500, code: 'DELETE_ERROR', message: error.message };
     }
   }
 

@@ -24,7 +24,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { connect, disconnect, activePanel, setupVisibilityHandler, removeVisibilityHandler } from '$lib/ui-core';
   import { closePanel } from '$lib/stores/ui';
-  import { initWorkspaceSubscriptions, initChatSubscriptions } from '$lib/stores';
+  import { initWorkspaceSubscriptions, initChatSubscriptions, initializeApp } from '$lib/stores';
   import { registerAllModules, unregisterAllModules } from '$lib/modules';
   import { perfStart, perfEnd, logMsg } from '$lib/utils/perf';
 
@@ -55,11 +55,19 @@
     cleanupChat = initChatSubscriptions();
     perfEnd('Shell.initSubscriptions');
 
-    // 3. Conectar a MQTT en background
+    // 3. Conectar a MQTT en background y luego inicializar app
     perfStart('Shell.connect.start');
-    connect().catch((error) => {
-      logMsg('❌ MQTT connection failed', { error: String(error) });
-    });
+    connect()
+      .then(() => {
+        logMsg('✅ MQTT connected, initializing app...');
+        return initializeApp();
+      })
+      .then(() => {
+        logMsg('✅ App initialized');
+      })
+      .catch((error) => {
+        logMsg('❌ MQTT connection or init failed', { error: String(error) });
+      });
     perfEnd('Shell.connect.start');
 
     // 4. Registrar handler de visibilidad (HyperOS/MIUI fix)

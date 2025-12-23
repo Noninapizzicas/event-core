@@ -3,51 +3,41 @@
    * HistoryPanel - Panel de historial de conversaciones
    *
    * Features:
-   * - Lista de conversaciones pasadas
-   * - Cargar conversación
+   * - Lista de conversaciones del proyecto activo (desde backend)
+   * - Cargar conversación existente
    * - Nueva conversación
    * - Eliminar conversación
+   * - Indicador de conversación activa
    */
 
-  import { conversationId, loadConversation, newConversation } from '$lib/stores';
+  import { onMount } from 'svelte';
+  import {
+    conversationId,
+    conversationsList,
+    conversationsLoading,
+    conversationsError,
+    activeProjectIdMqtt,
+    loadConversations,
+    selectConversation,
+    startNewConversation,
+    createConversation
+  } from '$lib/stores';
   import { closePanel } from '$lib/stores/ui';
-  import { publish } from '$lib/ui-core';
+  import { mqttRequest } from '$lib/ui-core';
 
   export let _panelId: string;
 
-  // Interfaz de conversación
-  interface Conversation {
-    id: string;
-    title: string;
-    preview: string;
-    timestamp: string;
-    messageCount: number;
-  }
-
-  // Demo conversations - en producción vendrían del backend
-  let conversations: Conversation[] = [
-    {
-      id: 'conv-1',
-      title: 'Debug de API',
-      preview: 'Ayúdame a encontrar el error en esta función...',
-      timestamp: '2024-12-13T10:30:00Z',
-      messageCount: 12
-    },
-    {
-      id: 'conv-2',
-      title: 'Refactor de componentes',
-      preview: 'Necesito mejorar la estructura de estos componentes...',
-      timestamp: '2024-12-12T15:45:00Z',
-      messageCount: 8
-    },
-    {
-      id: 'conv-3',
-      title: 'Diseño de UI',
-      preview: 'Quiero implementar un sistema de paneles...',
-      timestamp: '2024-12-11T09:00:00Z',
-      messageCount: 24
+  // Cargar conversaciones al montar (si hay proyecto activo)
+  onMount(() => {
+    if ($activeProjectIdMqtt) {
+      loadConversations($activeProjectIdMqtt);
     }
-  ];
+  });
+
+  // Recargar cuando cambia el proyecto
+  $: if ($activeProjectIdMqtt) {
+    loadConversations($activeProjectIdMqtt);
+  }
 
   function formatDate(timestamp: string): string {
     const date = new Date(timestamp);
@@ -66,20 +56,42 @@
     }
   }
 
-  function handleSelect(conv: Conversation) {
-    loadConversation(conv.id);
+  async function handleSelect(convId: string) {
+    if ($activeProjectIdMqtt) {
+      await selectConversation(convId, $activeProjectIdMqtt);
+    }
     closePanel();
   }
 
-  function handleNew() {
-    newConversation();
+  async function handleNew() {
+    if ($activeProjectIdMqtt) {
+      // Crear conversación en el backend
+      await createConversation($activeProjectIdMqtt);
+    } else {
+      // Sin proyecto, crear temporal
+      startNewConversation();
+    }
     closePanel();
   }
 
-  function handleDelete(convId: string, event: MouseEvent) {
+  async function handleDelete(convId: string, event: MouseEvent) {
     event.stopPropagation();
-    publish('conversation/delete', { conversationId: convId });
-    conversations = conversations.filter(c => c.id !== convId);
+
+    try {
+      await mqttRequest('conversation', 'delete', { conversationId: convId });
+
+      // Recargar lista
+      if ($activeProjectIdMqtt) {
+        await loadConversations($activeProjectIdMqtt);
+      }
+
+      // Si eliminamos la conversación activa, iniciar nueva
+      if ($conversationId === convId) {
+        startNewConversation();
+      }
+    } catch (error) {
+      console.error('[HistoryPanel] Delete failed:', error);
+    }
   }
 </script>
 
@@ -89,26 +101,44 @@
   </button>
 
   <div class="conversations-list">
-    {#if conversations.length === 0}
+    {#if $conversationsLoading}
+      <div class="loading-state">
+        <span class="loading-spinner"></span>
+        <span class="loading-text">Cargando conversaciones...</span>
+      </div>
+    {:else if $conversationsError}
+      <div class="error-state">
+        <span class="error-icon">⚠️</span>
+        <span class="error-text">{$conversationsError}</span>
+      </div>
+    {:else if !$activeProjectIdMqtt}
+      <div class="empty-state">
+        <span class="empty-icon">📁</span>
+        <span class="empty-text">Sin proyecto activo</span>
+        <span class="empty-hint">Selecciona un proyecto primero</span>
+      </div>
+    {:else if $conversationsList.length === 0}
       <div class="empty-state">
         <span class="empty-icon">💬</span>
         <span class="empty-text">No hay conversaciones</span>
         <span class="empty-hint">Inicia una nueva conversación</span>
       </div>
     {:else}
-      {#each conversations as conv (conv.id)}
+      {#each $conversationsList as conv (conv.id)}
         <button
           class="conversation-item"
           class:active={$conversationId === conv.id}
-          on:click={() => handleSelect(conv)}
+          on:click={() => handleSelect(conv.id)}
         >
           <div class="conv-header">
-            <span class="conv-title">{conv.title}</span>
-            <span class="conv-date">{formatDate(conv.timestamp)}</span>
+            <span class="conv-title">{conv.title || 'Sin título'}</span>
+            <span class="conv-date">{formatDate(conv.updated_at)}</span>
           </div>
-          <p class="conv-preview">{conv.preview}</p>
           <div class="conv-footer">
-            <span class="conv-count">{conv.messageCount} mensajes</span>
+            <span class="conv-count">{conv.message_count || 0} mensajes</span>
+            {#if conv.model}
+              <span class="conv-model">{conv.model}</span>
+            {/if}
             <button
               class="delete-btn"
               on:click={(e) => handleDelete(conv.id, e)}
@@ -156,6 +186,54 @@
     overflow-y: auto;
   }
 
+  /* Loading state */
+  .loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 2rem;
+    color: var(--color-text-muted, #a3a3a3);
+  }
+
+  .loading-spinner {
+    width: 24px;
+    height: 24px;
+    border: 2px solid var(--color-border, rgba(255, 255, 255, 0.1));
+    border-top-color: var(--color-primary, #3b82f6);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .loading-text {
+    font-size: 0.875rem;
+  }
+
+  /* Error state */
+  .error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 2rem;
+    color: var(--color-error, #ef4444);
+  }
+
+  .error-icon {
+    font-size: 2rem;
+  }
+
+  .error-text {
+    font-size: 0.875rem;
+    text-align: center;
+  }
+
+  /* Empty state */
   .empty-state {
     display: flex;
     flex-direction: column;
@@ -215,20 +293,16 @@
     font-weight: 500;
     color: var(--color-text, #e5e5e5);
     font-size: 0.9375rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 70%;
   }
 
   .conv-date {
     font-size: 0.75rem;
     color: var(--color-text-muted, #a3a3a3);
-  }
-
-  .conv-preview {
-    margin: 0;
-    font-size: 0.8125rem;
-    color: var(--color-text-muted, #a3a3a3);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    flex-shrink: 0;
   }
 
   .conv-footer {
@@ -242,6 +316,14 @@
     font-size: 0.75rem;
     color: var(--color-text-muted, #a3a3a3);
     opacity: 0.7;
+  }
+
+  .conv-model {
+    font-size: 0.6875rem;
+    color: var(--color-text-muted, #a3a3a3);
+    background: var(--color-surface, rgba(255, 255, 255, 0.05));
+    padding: 0.125rem 0.375rem;
+    border-radius: 0.25rem;
   }
 
   .delete-btn {

@@ -109,7 +109,11 @@ export {
   saveUI,
   savePanelSize,
   getPanelSize,
-  saveConversation
+  saveConversation,
+  saveLastConversationForProject,
+  getLastConversationForProject,
+  saveDefaultProvider,
+  getDefaultProvider
 } from './persistence';
 
 // Theme Store
@@ -170,3 +174,32 @@ export {
   hasProjects
 } from './projects';
 export type { Project, ProjectsState } from './projects';
+
+// Conversations Store (MQTT-based)
+export {
+  conversationsStore,
+  loadConversations,
+  createConversation,
+  selectConversation,
+  startNewConversation,
+  restoreLastConversation,
+  switchProject,
+  clearConversations,
+  conversationsList,
+  conversationsProjectId,
+  conversationsLoading,
+  conversationsError,
+  conversationsCount,
+  hasConversations,
+  activeConversationData
+} from './conversations';
+export type { Conversation, ConversationsState } from './conversations';
+
+// Initialization
+export {
+  initializeApp,
+  handleProjectChange,
+  isInitialized,
+  isInitializing,
+  resetInit
+} from './init';
