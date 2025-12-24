@@ -68,7 +68,7 @@ class LogCollector {
 
     // Suscribir directamente al MQTT para capturar logs de interacciones
     // Topic: log/# captura log/http-gateway, log/eventbus, etc.
-    if (this.eventBus?.mqtt) {
+    if (this.eventBus?.mqtt?.isConnected) {
       this.eventBus.mqtt.subscribe('log/#');
       this.eventBus.mqtt.on('message', (topic, message) => {
         if (topic.startsWith('log/')) {
