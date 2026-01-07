@@ -7,14 +7,16 @@
   "events": {
     "publishes": [
       "prompt.compose.response",
-      "prompt.context.loaded"
+      "prompt.context.loaded",
+      "context.full.request"
     ],
     "subscribes": [
       "prompt.compose.request",
       "project.get.response",
       "storage.info.response",
       "prompt.get.response",
-      "prompt.list.response"
+      "prompt.list.response",
+      "context.full.response"
     ]
   },
 
@@ -108,6 +110,7 @@
     "includeProjectContext": true,
     "includeStorageInfo": false,
     "includeTools": true,
+    "includeInheritedContext": true,
     "defaultSystemPrompt": "You are a helpful AI assistant.",
     "usePromptManager": true,
     "defaultPromptName": "assistant-default",

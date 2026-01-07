@@ -9,12 +9,14 @@
       "chat.send.response",
       "ai.chat.request",
       "session.save.request",
+      "session.context.load.request",
       "prompt.compose.request"
     ],
     "subscribes": [
       "chat.send.request",
       "ai.chat.response",
       "session.save.response",
+      "session.context.load.response",
       "prompt.compose.response"
     ]
   },
