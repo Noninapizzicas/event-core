@@ -665,9 +665,10 @@ class AIGatewayModule {
         }
 
         // Add assistant message with tool calls to conversation
+        // Use content_blocks if present (preserves thinking blocks for Claude API)
         messages.push({
           role: 'assistant',
-          content: result.content || null,
+          content: result.content_blocks || result.content || null,
           tool_calls: result.tool_calls
         });
 

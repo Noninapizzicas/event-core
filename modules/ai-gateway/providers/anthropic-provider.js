@@ -57,6 +57,14 @@ class AnthropicProvider extends BaseProvider {
     const anthropicMessages = chatMessages.map(m => {
       const role = m.role === 'assistant' ? 'assistant' : 'user';
 
+      // For assistant messages with array content, preserve all content blocks
+      // including thinking/redacted_thinking blocks (required by Claude API)
+      if (role === 'assistant' && Array.isArray(m.content)) {
+        // Pass through all content blocks as-is to preserve thinking blocks
+        // The Claude API requires thinking blocks to remain unchanged
+        return { role, content: m.content };
+      }
+
       // Check if message has image content (vision support)
       if (m.image_base64 || (Array.isArray(m.content) && m.content.some(c => c.type === 'image'))) {
         const contentParts = [];
@@ -155,9 +163,11 @@ class AnthropicProvider extends BaseProvider {
     // Extract response - handle both text and tool_use content blocks
     let content = '';
     let toolCalls = null;
+    // Preserve raw content blocks for thinking block support
+    let contentBlocks = null;
 
     if (Array.isArray(response.content)) {
-      // Extract text content
+      // Extract text content for display/storage
       const textBlocks = response.content.filter(block => block.type === 'text');
       content = textBlocks.map(block => block.text).join('');
 
@@ -173,6 +183,15 @@ class AnthropicProvider extends BaseProvider {
           }
         }));
       }
+
+      // Check if response contains thinking blocks - if so, preserve full content array
+      // This is required for Claude API: thinking blocks must be sent back unchanged
+      const hasThinkingBlocks = response.content.some(
+        block => block.type === 'thinking' || block.type === 'redacted_thinking'
+      );
+      if (hasThinkingBlocks) {
+        contentBlocks = response.content;
+      }
     } else {
       content = response.content?.[0]?.text || '';
     }
@@ -187,7 +206,7 @@ class AnthropicProvider extends BaseProvider {
     // Calculate cost
     const cost = this.calculateCost(inputTokens, outputTokens);
 
-    return {
+    const result = {
       provider: this.name,
       model,
       content,
@@ -200,6 +219,14 @@ class AnthropicProvider extends BaseProvider {
       cost,
       finish_reason: response.stop_reason || 'stop'
     };
+
+    // Include raw content blocks if thinking blocks are present
+    // This allows proper preservation when messages are stored and sent back to API
+    if (contentBlocks) {
+      result.content_blocks = contentBlocks;
+    }
+
+    return result;
   }
 
   /**

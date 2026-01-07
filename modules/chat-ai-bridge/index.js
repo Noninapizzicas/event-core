@@ -435,9 +435,15 @@ class ChatAiBridgeModule {
     // Conversation history (from context)
     if (context.messages && context.messages.length > 0) {
       for (const msg of context.messages) {
+        // For assistant messages, use content_blocks from metadata if present
+        // This preserves thinking blocks required by Claude API
+        let content = msg.content;
+        if (msg.role === 'assistant' && msg.metadata?.content_blocks) {
+          content = msg.metadata.content_blocks;
+        }
         messages.push({
           role: msg.role,
-          content: msg.content
+          content
         });
       }
     }
@@ -516,6 +522,19 @@ class ChatAiBridgeModule {
       });
     });
 
+    // Build metadata, including content_blocks if present (for thinking block preservation)
+    const metadata = {
+      model: aiResponse.model,
+      provider: aiResponse.provider,
+      tool_calls_executed: aiResponse.tool_calls_executed,
+      iterations: aiResponse.iterations
+    };
+
+    // Store content_blocks in metadata when present (preserves thinking blocks for Claude API)
+    if (aiResponse.content_blocks) {
+      metadata.content_blocks = aiResponse.content_blocks;
+    }
+
     await this.eventBus.publish('session.save.request', {
       request_id: requestId,
       conversation_id,
@@ -523,12 +542,7 @@ class ChatAiBridgeModule {
       content: aiResponse.content || '[No response]',
       tokens: aiResponse.tokens,
       cost: aiResponse.cost,
-      metadata: {
-        model: aiResponse.model,
-        provider: aiResponse.provider,
-        tool_calls_executed: aiResponse.tool_calls_executed,
-        iterations: aiResponse.iterations
-      },
+      metadata,
       correlation_id
     });
 
