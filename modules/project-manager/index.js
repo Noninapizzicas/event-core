@@ -35,6 +35,9 @@ class ProjectManagerModule {
     // Unsubscribe functions
     this.unsubscribes = [];
 
+    // Active project event subscriptions (from event_subscriptions field)
+    this.activeProjectSubscriptions = [];
+
     // Base path for project directories
     this.projectsBasePath = path.join(process.cwd(), 'data', 'projects');
   }
@@ -231,6 +234,10 @@ class ProjectManagerModule {
       this.uiHandler.register('project', 'removeDependency', this.handleUIRemoveDependency.bind(this));
       this.uiHandler.register('project', 'getDependencies', this.handleUIGetDependencies.bind(this));
       this.uiHandler.register('project', 'getDependents', this.handleUIGetDependents.bind(this));
+      // Event Subscriptions handlers
+      this.uiHandler.register('project', 'addSubscription', this.handleUIAddSubscription.bind(this));
+      this.uiHandler.register('project', 'removeSubscription', this.handleUIRemoveSubscription.bind(this));
+      this.uiHandler.register('project', 'getSubscriptions', this.handleUIGetSubscriptions.bind(this));
       // System handlers (Phase 3)
       this.uiHandler.register('system', 'create', this.handleUISystemCreate.bind(this));
       this.uiHandler.register('system', 'list', this.handleUISystemList.bind(this));
@@ -437,7 +444,9 @@ class ProjectManagerModule {
           // Composition fields (Fase 0)
           system_id: row.system_id || null,
           system_role: row.system_role || null,
-          parent_project_id: row.parent_project_id || null
+          parent_project_id: row.parent_project_id || null,
+          // Event subscriptions (auto-subscribe when project activates)
+          event_subscriptions: row.event_subscriptions ? JSON.parse(row.event_subscriptions) : []
         };
 
         this.projects.set(project.id, project);
@@ -466,7 +475,8 @@ class ProjectManagerModule {
     const columnsToAdd = [
       { name: 'system_id', type: 'TEXT' },
       { name: 'system_role', type: 'TEXT' },
-      { name: 'parent_project_id', type: 'TEXT' }
+      { name: 'parent_project_id', type: 'TEXT' },
+      { name: 'event_subscriptions', type: 'TEXT' }  // JSON array of event subscriptions
     ];
 
     for (const col of columnsToAdd) {
@@ -1055,7 +1065,10 @@ class ProjectManagerModule {
       // Update cache
       const previousActiveId = this.activeProjectId;
 
+      // Unsubscribe from previous project's events
       if (previousActiveId) {
+        await this.unsubscribeFromProjectEvents(correlationId);
+
         const prevProject = this.projects.get(previousActiveId);
         if (prevProject) {
           prevProject.is_active = false;
@@ -1083,6 +1096,9 @@ class ProjectManagerModule {
         base_path: project.base_path,
         activated_at: new Date().toISOString()
       });
+
+      // Subscribe to project's configured events
+      await this.subscribeToProjectEvents(project, correlationId);
 
       this.logger.info({ correlationId, projectId }, 'Project activated successfully');
 
@@ -1114,6 +1130,314 @@ class ProjectManagerModule {
    */
   getActiveProjectId() {
     return this.activeProjectId;
+  }
+
+  // ==================== PROJECT EVENT SUBSCRIPTIONS ====================
+
+  /**
+   * Subscribe to project's configured events
+   * Called when a project is activated
+   */
+  async subscribeToProjectEvents(project, correlationId) {
+    const subscriptions = project.event_subscriptions || [];
+
+    if (subscriptions.length === 0) {
+      return;
+    }
+
+    this.logger.info({
+      correlationId,
+      projectId: project.id,
+      subscriptionCount: subscriptions.length
+    }, 'Subscribing to project events');
+
+    for (const sub of subscriptions) {
+      try {
+        const handler = this.createSubscriptionHandler(project, sub, correlationId);
+        const unsub = await this.eventBus.subscribe(sub.event, handler);
+        this.activeProjectSubscriptions.push(unsub);
+
+        this.logger.debug({
+          correlationId,
+          projectId: project.id,
+          event: sub.event,
+          action: sub.action
+        }, 'Subscribed to project event');
+      } catch (error) {
+        this.logger.error({
+          correlationId,
+          projectId: project.id,
+          event: sub.event,
+          error: error.message
+        }, 'Failed to subscribe to project event');
+      }
+    }
+  }
+
+  /**
+   * Unsubscribe from all active project events
+   * Called when a project is deactivated
+   */
+  async unsubscribeFromProjectEvents(correlationId) {
+    if (this.activeProjectSubscriptions.length === 0) {
+      return;
+    }
+
+    this.logger.info({
+      correlationId,
+      count: this.activeProjectSubscriptions.length
+    }, 'Unsubscribing from project events');
+
+    for (const unsub of this.activeProjectSubscriptions) {
+      try {
+        if (typeof unsub === 'function') {
+          await unsub();
+        }
+      } catch (error) {
+        this.logger.warn({ correlationId, error: error.message }, 'Error unsubscribing from project event');
+      }
+    }
+
+    this.activeProjectSubscriptions = [];
+  }
+
+  /**
+   * Create a handler function for a subscription
+   */
+  createSubscriptionHandler(project, subscription, correlationId) {
+    return async (event) => {
+      const data = event?.data || event?.payload || event;
+
+      // Apply filter if configured
+      if (subscription.filter) {
+        const matches = this.matchesFilter(data, subscription.filter);
+        if (!matches) {
+          return; // Skip - doesn't match filter
+        }
+      }
+
+      this.logger.info({
+        correlationId,
+        projectId: project.id,
+        event: subscription.event,
+        action: subscription.action
+      }, 'Project event triggered');
+
+      // Execute the configured action
+      await this.executeSubscriptionAction(project, subscription, data, correlationId);
+    };
+  }
+
+  /**
+   * Check if event data matches the configured filter
+   */
+  matchesFilter(data, filter) {
+    for (const [key, value] of Object.entries(filter)) {
+      if (data[key] !== value) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Execute the action configured for a subscription
+   */
+  async executeSubscriptionAction(project, subscription, eventData, correlationId) {
+    const { action, config = {} } = subscription;
+    const requestId = `proj-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+    try {
+      switch (action) {
+        case 'save_file':
+          await this.actionSaveFile(project, config, eventData, requestId, correlationId);
+          break;
+
+        case 'send_message':
+          await this.actionSendMessage(project, config, eventData, requestId, correlationId);
+          break;
+
+        case 'publish_event':
+          await this.actionPublishEvent(project, config, eventData, requestId, correlationId);
+          break;
+
+        default:
+          this.logger.warn({
+            correlationId,
+            projectId: project.id,
+            action
+          }, 'Unknown subscription action');
+      }
+    } catch (error) {
+      this.logger.error({
+        correlationId,
+        projectId: project.id,
+        action,
+        error: error.message
+      }, 'Failed to execute subscription action');
+    }
+  }
+
+  /**
+   * Action: Save file from Telegram to project storage
+   */
+  async actionSaveFile(project, config, eventData, requestId, correlationId) {
+    const { botName, fileId, fileName, chatId } = eventData;
+    const destination = config.destination || '/received';
+
+    this.logger.info({
+      correlationId,
+      projectId: project.id,
+      fileId,
+      fileName,
+      destination
+    }, 'Executing save_file action');
+
+    // Step 1: Get file from Telegram
+    await this.eventBus.publish('telegram.get_file.request', {
+      request_id: requestId,
+      botName,
+      fileId,
+      download: false
+    });
+
+    // Set up response handler for the file download chain
+    const handleFileResponse = async (response) => {
+      const respData = response?.data || response;
+      if (respData.request_id !== requestId) return;
+
+      if (!respData.success) {
+        this.logger.error({ correlationId, error: respData.error }, 'Failed to get file info');
+        return;
+      }
+
+      try {
+        // Download file content
+        const fileContent = await this.downloadFile(respData.downloadUrl);
+
+        // Generate filename with timestamp
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+        const safeName = (fileName || 'file').replace(/[^a-zA-Z0-9._-]/g, '_');
+        const destPath = `${destination}/${timestamp}_${safeName}`;
+
+        // Save to project storage
+        await this.eventBus.publish('fs.write.request', {
+          request_id: `${requestId}-write`,
+          path: destPath,
+          content: fileContent.toString('base64'),
+          encoding: 'base64'
+        });
+
+        this.logger.info({
+          correlationId,
+          projectId: project.id,
+          path: destPath
+        }, 'File saved to project storage');
+
+        // Send confirmation if configured
+        if (config.sendConfirmation !== false && chatId) {
+          const message = config.confirmationMessage ||
+            `✅ Archivo recibido y guardado:\n📄 ${fileName || 'archivo'}\n📁 ${destPath}`;
+
+          await this.eventBus.publish('telegram.send_message.request', {
+            request_id: `${requestId}-confirm`,
+            botName,
+            chatId,
+            text: message
+          });
+        }
+      } catch (error) {
+        this.logger.error({
+          correlationId,
+          projectId: project.id,
+          error: error.message
+        }, 'Failed to save file');
+      }
+    };
+
+    // Subscribe temporarily to get the response
+    const unsub = await this.eventBus.subscribe('telegram.get_file.response', handleFileResponse);
+
+    // Auto-unsubscribe after 30 seconds
+    setTimeout(async () => {
+      if (typeof unsub === 'function') await unsub();
+    }, 30000);
+  }
+
+  /**
+   * Action: Send a message via Telegram
+   */
+  async actionSendMessage(project, config, eventData, requestId, correlationId) {
+    const { botName, chatId } = eventData;
+    const message = this.interpolateTemplate(config.message || 'Evento recibido', eventData);
+
+    await this.eventBus.publish('telegram.send_message.request', {
+      request_id: requestId,
+      botName: config.botName || botName,
+      chatId: config.chatId || chatId,
+      text: message
+    });
+
+    this.logger.info({
+      correlationId,
+      projectId: project.id,
+      chatId: config.chatId || chatId
+    }, 'Message sent');
+  }
+
+  /**
+   * Action: Publish a custom event
+   */
+  async actionPublishEvent(project, config, eventData, requestId, correlationId) {
+    const payload = {
+      ...eventData,
+      project_id: project.id,
+      project_name: project.name,
+      triggered_at: new Date().toISOString()
+    };
+
+    await this.eventBus.publish(config.eventName, payload);
+
+    this.logger.info({
+      correlationId,
+      projectId: project.id,
+      eventName: config.eventName
+    }, 'Custom event published');
+  }
+
+  /**
+   * Download file from URL (helper for save_file action)
+   */
+  async downloadFile(url) {
+    return new Promise((resolve, reject) => {
+      const https = require('https');
+      const http = require('http');
+      const client = url.startsWith('https') ? https : http;
+
+      client.get(url, (res) => {
+        if (res.statusCode === 301 || res.statusCode === 302) {
+          this.downloadFile(res.headers.location).then(resolve).catch(reject);
+          return;
+        }
+        if (res.statusCode !== 200) {
+          reject(new Error(`HTTP ${res.statusCode}`));
+          return;
+        }
+        const chunks = [];
+        res.on('data', chunk => chunks.push(chunk));
+        res.on('end', () => resolve(Buffer.concat(chunks)));
+        res.on('error', reject);
+      }).on('error', reject);
+    });
+  }
+
+  /**
+   * Interpolate template variables like {{fileName}}
+   */
+  interpolateTemplate(template, data) {
+    return template.replace(/\{\{(\w+)\}\}/g, (match, key) => {
+      return data[key] !== undefined ? data[key] : match;
+    });
   }
 
   // ==================== PROJECT COMPOSITION (PHASE 1) ====================
@@ -2893,6 +3217,143 @@ class ProjectManagerModule {
 
     const dependents = await this.getDependents(id, correlationId);
     return { projectId: id, dependents, count: dependents.length };
+  }
+
+  // ==================== UI EVENT SUBSCRIPTION HANDLERS ====================
+
+  /**
+   * UI Handler: Add an event subscription to a project
+   * @param {Object} data - { id, event, filter?, action, config? }
+   */
+  async handleUIAddSubscription(data, request) {
+    const { id, event, filter, action, config } = data;
+    const correlationId = crypto.randomUUID();
+
+    if (!id || !event || !action) {
+      throw { status: 400, code: 'VALIDATION_ERROR', message: 'id, event, and action are required' };
+    }
+
+    const project = this.getProject(id);
+    if (!project) {
+      throw { status: 404, code: 'NOT_FOUND', message: 'Project not found' };
+    }
+
+    // Validate action
+    const validActions = ['save_file', 'send_message', 'publish_event'];
+    if (!validActions.includes(action)) {
+      throw { status: 400, code: 'VALIDATION_ERROR', message: `Invalid action. Must be one of: ${validActions.join(', ')}` };
+    }
+
+    // Build subscription
+    const subscription = {
+      id: crypto.randomUUID(),
+      event,
+      action,
+      filter: filter || null,
+      config: config || {},
+      created_at: new Date().toISOString()
+    };
+
+    // Add to project
+    const subscriptions = project.event_subscriptions || [];
+    subscriptions.push(subscription);
+
+    // Persist to database
+    await this.queryDatabase(
+      'UPDATE projects SET event_subscriptions = ?, updated_at = ? WHERE id = ?',
+      [JSON.stringify(subscriptions), new Date().toISOString(), id],
+      false,
+      correlationId
+    );
+
+    // Update cache
+    project.event_subscriptions = subscriptions;
+    this.projects.set(id, project);
+
+    // If this is the active project, subscribe immediately
+    if (this.activeProjectId === id) {
+      const handler = this.createSubscriptionHandler(project, subscription, correlationId);
+      const unsub = await this.eventBus.subscribe(subscription.event, handler);
+      this.activeProjectSubscriptions.push(unsub);
+    }
+
+    this.logger.info({ correlationId, projectId: id, event, action }, 'Event subscription added');
+
+    return { subscription, total: subscriptions.length };
+  }
+
+  /**
+   * UI Handler: Remove an event subscription from a project
+   * @param {Object} data - { id, subscriptionId }
+   */
+  async handleUIRemoveSubscription(data, request) {
+    const { id, subscriptionId } = data;
+    const correlationId = crypto.randomUUID();
+
+    if (!id || !subscriptionId) {
+      throw { status: 400, code: 'VALIDATION_ERROR', message: 'id and subscriptionId are required' };
+    }
+
+    const project = this.getProject(id);
+    if (!project) {
+      throw { status: 404, code: 'NOT_FOUND', message: 'Project not found' };
+    }
+
+    const subscriptions = project.event_subscriptions || [];
+    const index = subscriptions.findIndex(s => s.id === subscriptionId);
+
+    if (index === -1) {
+      throw { status: 404, code: 'NOT_FOUND', message: 'Subscription not found' };
+    }
+
+    const removed = subscriptions.splice(index, 1)[0];
+
+    // Persist to database
+    await this.queryDatabase(
+      'UPDATE projects SET event_subscriptions = ?, updated_at = ? WHERE id = ?',
+      [JSON.stringify(subscriptions), new Date().toISOString(), id],
+      false,
+      correlationId
+    );
+
+    // Update cache
+    project.event_subscriptions = subscriptions;
+    this.projects.set(id, project);
+
+    // Note: Active subscriptions will be refreshed on next activation
+    // For immediate effect, user should deactivate and reactivate the project
+
+    this.logger.info({ correlationId, projectId: id, subscriptionId }, 'Event subscription removed');
+
+    return { removed, remaining: subscriptions.length };
+  }
+
+  /**
+   * UI Handler: Get all event subscriptions for a project
+   * @param {Object} data - { id }
+   */
+  async handleUIGetSubscriptions(data, request) {
+    const { id } = data;
+
+    if (!id) {
+      throw { status: 400, code: 'VALIDATION_ERROR', message: 'Project ID is required' };
+    }
+
+    const project = this.getProject(id);
+    if (!project) {
+      throw { status: 404, code: 'NOT_FOUND', message: 'Project not found' };
+    }
+
+    const subscriptions = project.event_subscriptions || [];
+    const isActive = this.activeProjectId === id;
+
+    return {
+      projectId: id,
+      subscriptions,
+      count: subscriptions.length,
+      active: isActive,
+      activeSubscriptionCount: isActive ? this.activeProjectSubscriptions.length : 0
+    };
   }
 
   // ==================== UI SYSTEM HANDLERS (Phase 3) ====================
