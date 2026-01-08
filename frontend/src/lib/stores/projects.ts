@@ -321,6 +321,85 @@ export const projectsCount = derived(projectsStore, $s => $s.count);
 export const hasProjects = derived(projectsStore, $s => $s.projects.length > 0);
 
 // =============================================================================
+// EVENT SUBSCRIPTIONS
+// =============================================================================
+
+export interface EventSubscription {
+  id: string;
+  event: string;
+  action: 'save_file' | 'send_message' | 'publish_event';
+  filter?: Record<string, string>;
+  config?: Record<string, unknown>;
+  created_at?: string;
+}
+
+export interface SubscriptionsResponse {
+  projectId: string;
+  subscriptions: EventSubscription[];
+  count: number;
+  active: boolean;
+  activeSubscriptionCount: number;
+}
+
+/**
+ * Obtiene las suscripciones de eventos de un proyecto
+ */
+export async function getProjectSubscriptions(projectId: string): Promise<EventSubscription[]> {
+  try {
+    const response = await mqttRequest<SubscriptionsResponse>('project', 'getSubscriptions', { id: projectId });
+    return response.data.subscriptions || [];
+  } catch (error) {
+    console.error('[Projects] Get subscriptions failed:', getErrorMessage(error));
+    throw error;
+  }
+}
+
+/**
+ * Añade una suscripción de evento a un proyecto
+ */
+export async function addProjectSubscription(
+  projectId: string,
+  event: string,
+  action: 'save_file' | 'send_message' | 'publish_event',
+  filter?: Record<string, string>,
+  config?: Record<string, unknown>
+): Promise<EventSubscription> {
+  try {
+    const response = await mqttRequest<{ subscription: EventSubscription; total: number }>('project', 'addSubscription', {
+      id: projectId,
+      event,
+      action,
+      filter,
+      config
+    });
+    console.log('[Projects] Subscription added:', event, action);
+    return response.data.subscription;
+  } catch (error) {
+    console.error('[Projects] Add subscription failed:', getErrorMessage(error));
+    throw error;
+  }
+}
+
+/**
+ * Elimina una suscripción de evento de un proyecto
+ */
+export async function removeProjectSubscription(
+  projectId: string,
+  subscriptionId: string
+): Promise<void> {
+  try {
+    await mqttRequest('project', 'removeSubscription', {
+      id: projectId,
+      subscriptionId
+    });
+    console.log('[Projects] Subscription removed:', subscriptionId);
+  } catch (error) {
+    console.error('[Projects] Remove subscription failed:', getErrorMessage(error));
+    throw error;
+  }
+}
+
+// =============================================================================
 // BACKWARD COMPATIBILITY
 // =============================================================================
 
