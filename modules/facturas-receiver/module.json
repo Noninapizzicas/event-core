@@ -1,0 +1,44 @@
+{
+  "name": "facturas-receiver",
+  "version": "1.0.0",
+  "description": "Recibe archivos del bot Telegram 'facturas' y los guarda en storage/facturas-nonina/recibidas",
+  "author": "Event Core Team",
+  "main": "index.js",
+
+  "config": {
+    "botName": "facturas",
+    "storagePath": "/facturas-nonina/recibidas",
+    "sendConfirmation": true
+  },
+
+  "events": {
+    "publishes": [
+      "facturas.file.received",
+      "facturas.file.saved",
+      "facturas.file.error"
+    ],
+    "subscribes": [
+      "telegram.document.received",
+      "telegram.photo.received"
+    ]
+  },
+
+  "dependencies": {
+    "modules": ["telegram-service", "filesystem"]
+  },
+
+  "observability": {
+    "logging": {
+      "level": "info",
+      "structured": true
+    },
+    "metrics": {
+      "enabled": true,
+      "counters": [
+        "facturas.received.total",
+        "facturas.saved.total",
+        "facturas.errors.total"
+      ]
+    }
+  }
+}
