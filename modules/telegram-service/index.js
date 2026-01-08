@@ -534,11 +534,6 @@ class TelegramServiceModule {
       client.on(clientEvent, async (data) => {
         await this.eventBus.publish(busEvent, data);
         this.metrics?.increment('telegram.messages.received.total');
-
-        // Auto-save files for configured bots
-        if ((clientEvent === 'photo' || clientEvent === 'document') && this.config.autoSave) {
-          await this.processAutoSaveFile(client, botName, clientEvent, data);
-        }
       });
     }
 
@@ -857,93 +852,6 @@ class TelegramServiceModule {
       bots,
       total: bots.length
     };
-  }
-
-  // ==========================================
-  // Auto-Save File Processing
-  // ==========================================
-
-  async processAutoSaveFile(client, botName, fileType, data) {
-    // Check if this bot has auto-save configured
-    const botConfig = this.config.autoSave?.[botName];
-    if (!botConfig) return;
-
-    const { chatId, fileId, fileName } = data;
-    const destinationPath = botConfig.destination;
-
-    try {
-      this.logger.info('telegram.autosave.processing', {
-        botName,
-        fileType,
-        fileId,
-        chatId
-      });
-
-      // Get file info and download
-      const file = await client.getFile(fileId);
-      const originalName = fileName || path.basename(file.file_path);
-      const timestamp = Date.now();
-      const finalFileName = `${timestamp}_${originalName}`;
-      const destPath = path.join(process.cwd(), 'data', destinationPath, finalFileName);
-
-      // Ensure destination directory exists
-      await fs.mkdir(path.dirname(destPath), { recursive: true });
-
-      // Download file
-      await client.downloadFile(fileId, destPath);
-
-      this.logger.info('telegram.autosave.saved', {
-        botName,
-        fileType,
-        destPath,
-        originalName
-      });
-
-      // Send confirmation message
-      const confirmMessage = botConfig.confirmMessage || '✅ Archivo recibido y guardado correctamente';
-      await client.sendMessage(chatId, confirmMessage);
-
-      // Publish event
-      await this.eventBus.publish('telegram.file.autosaved', {
-        botName,
-        chatId,
-        fileType,
-        fileId,
-        originalName,
-        savedPath: destPath,
-        timestamp: new Date().toISOString()
-      });
-
-      this.metrics?.increment('telegram.files.autosaved.total');
-
-    } catch (error) {
-      this.logger.error('telegram.autosave.error', {
-        botName,
-        fileType,
-        fileId,
-        error: error.message
-      });
-
-      // Send error message to user
-      const errorMessage = botConfig.errorMessage || '❌ Error al guardar el archivo';
-      try {
-        await client.sendMessage(chatId, errorMessage);
-      } catch (sendError) {
-        this.logger.error('telegram.autosave.error_message_failed', {
-          error: sendError.message
-        });
-      }
-
-      // Publish error event
-      await this.eventBus.publish('telegram.file.autosave.error', {
-        botName,
-        chatId,
-        fileType,
-        fileId,
-        error: error.message,
-        timestamp: new Date().toISOString()
-      });
-    }
   }
 }
 

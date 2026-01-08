@@ -21,6 +21,7 @@ class FilesystemModule {
     this.logger = null;
     this.eventBus = null;
     this.uiHandler = null;
+    this.config = null;
 
     // Active project context
     this.activeProjectId = null;
@@ -29,6 +30,9 @@ class FilesystemModule {
 
     // Unsubscribe functions
     this.unsubscribes = [];
+
+    // Pending requests for telegram file operations
+    this.pendingTelegramRequests = new Map();
   }
 
   // ==========================================
@@ -39,6 +43,11 @@ class FilesystemModule {
     this.logger = context.logger;
     this.eventBus = context.eventBus;
     this.uiHandler = context.uiHandler;
+
+    // Load config from module.json
+    const moduleJsonPath = path.join(__dirname, 'module.json');
+    const moduleJson = JSON.parse(await fs.readFile(moduleJsonPath, 'utf-8'));
+    this.config = moduleJson.config || {};
 
     // Ensure base data directory exists
     await this.ensureDataDirectory();
@@ -60,8 +69,24 @@ class FilesystemModule {
     const unsubReadReq = await this.eventBus.subscribe('fs.read.request', this.onReadRequest.bind(this));
     this.unsubscribes.push(unsubReadReq);
 
+    // Subscribe to telegram file events (for auto-save)
+    if (this.config.telegramAutoSave) {
+      const unsubTgPhoto = await this.eventBus.subscribe('telegram.photo.received', this.onTelegramFileReceived.bind(this));
+      this.unsubscribes.push(unsubTgPhoto);
+
+      const unsubTgDoc = await this.eventBus.subscribe('telegram.document.received', this.onTelegramFileReceived.bind(this));
+      this.unsubscribes.push(unsubTgDoc);
+
+      const unsubTgFileResp = await this.eventBus.subscribe('telegram.get_file.response', this.onTelegramFileResponse.bind(this));
+      this.unsubscribes.push(unsubTgFileResp);
+
+      this.logger.info('filesystem.telegram.autosave.enabled', {
+        bots: Object.keys(this.config.telegramAutoSave)
+      });
+    }
+
     this.logger.info('filesystem.events.subscribed', {
-      events: ['project.activated', 'project.deactivated', 'fs.write.request', 'fs.copy.request', 'fs.read.request']
+      events: ['project.activated', 'project.deactivated', 'fs.write.request', 'fs.copy.request', 'fs.read.request', 'telegram.photo.received', 'telegram.document.received']
     });
 
     // Register UI handlers
@@ -209,6 +234,181 @@ class FilesystemModule {
       request_id,
       ...result
     });
+  }
+
+  // ==========================================
+  // Telegram Auto-Save Handlers
+  // ==========================================
+
+  /**
+   * Handle incoming telegram photo/document events
+   * Check if bot is configured for auto-save and request file download
+   */
+  async onTelegramFileReceived(event) {
+    const data = event?.data || event?.payload || event;
+    const { botName, chatId, fileId, fileName, caption, messageId } = data;
+
+    // Check if this bot is configured for auto-save
+    const botConfig = this.config.telegramAutoSave?.[botName];
+    if (!botConfig) {
+      this.logger.debug('filesystem.telegram.autosave.skip', {
+        botName,
+        reason: 'bot not configured for auto-save'
+      });
+      return;
+    }
+
+    this.logger.info('filesystem.telegram.autosave.received', {
+      botName,
+      chatId,
+      fileId,
+      fileName
+    });
+
+    // Generate request ID for tracking
+    const requestId = `fs-tg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+    // Store pending request info
+    this.pendingTelegramRequests.set(requestId, {
+      botName,
+      chatId,
+      messageId,
+      fileId,
+      fileName,
+      caption,
+      destination: botConfig.destination,
+      confirmMessage: botConfig.confirmMessage,
+      errorMessage: botConfig.errorMessage,
+      timestamp: Date.now()
+    });
+
+    // Request file download from telegram-service
+    await this.eventBus.publish('telegram.get_file.request', {
+      request_id: requestId,
+      botName,
+      fileId,
+      download: true
+    });
+
+    this.logger.info('filesystem.telegram.autosave.requested', {
+      requestId,
+      botName,
+      fileId
+    });
+  }
+
+  /**
+   * Handle telegram file download response
+   * Save file to destination and send confirmation
+   */
+  async onTelegramFileResponse(event) {
+    const data = event?.data || event?.payload || event;
+    const { request_id, success, localPath, error } = data;
+
+    // Find pending request
+    const pending = this.pendingTelegramRequests.get(request_id);
+    if (!pending) {
+      this.logger.debug('filesystem.telegram.autosave.unknown_request', { request_id });
+      return;
+    }
+
+    // Remove from pending
+    this.pendingTelegramRequests.delete(request_id);
+
+    const { botName, chatId, fileName, destination, confirmMessage, errorMessage } = pending;
+
+    if (!success) {
+      this.logger.error('filesystem.telegram.autosave.download_failed', {
+        request_id,
+        botName,
+        error
+      });
+
+      // Send error message to user
+      await this.eventBus.publish('telegram.send_message.request', {
+        botName,
+        chatId,
+        text: errorMessage || '❌ Error al guardar el archivo'
+      });
+
+      await this.eventBus.publish('fs.telegram.file.error', {
+        botName,
+        chatId,
+        fileName,
+        error,
+        timestamp: new Date().toISOString()
+      });
+      return;
+    }
+
+    try {
+      // Determine final file name - use original fileName or extract from localPath
+      const finalFileName = fileName || path.basename(localPath) || `file_${Date.now()}`;
+      const destPath = path.join(destination, finalFileName);
+
+      // Read downloaded file from localPath and save to destination
+      if (!localPath) {
+        throw new Error('No file path received from telegram-service');
+      }
+
+      // Read the file downloaded by telegram-service
+      const fsNative = require('fs').promises;
+      const fileContent = await fsNative.readFile(localPath);
+      const writeResult = await this.handleWrite({
+        path: destPath,
+        content: fileContent.toString('base64'),
+        encoding: 'base64'
+      });
+
+      if (!writeResult.success) {
+        throw new Error(writeResult.error || 'Failed to save file');
+      }
+
+      this.logger.info('filesystem.telegram.autosave.saved', {
+        botName,
+        chatId,
+        fileName: finalFileName,
+        destination: destPath
+      });
+
+      // Send confirmation message
+      await this.eventBus.publish('telegram.send_message.request', {
+        botName,
+        chatId,
+        text: confirmMessage || '✅ Archivo recibido y guardado correctamente'
+      });
+
+      // Publish success event
+      await this.eventBus.publish('fs.telegram.file.saved', {
+        botName,
+        chatId,
+        fileName: finalFileName,
+        path: destPath,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      this.logger.error('filesystem.telegram.autosave.save_failed', {
+        request_id,
+        botName,
+        error: error.message
+      });
+
+      // Send error message
+      await this.eventBus.publish('telegram.send_message.request', {
+        botName,
+        chatId,
+        text: errorMessage || '❌ Error al guardar el archivo'
+      });
+
+      await this.eventBus.publish('fs.telegram.file.error', {
+        botName,
+        chatId,
+        fileName,
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
+    }
   }
 
   /**

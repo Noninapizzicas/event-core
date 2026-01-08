@@ -190,12 +190,26 @@
       "fs.file.updated",
       "fs.file.deleted",
       "fs.directory.created",
-      "fs.workdir.changed"
+      "fs.workdir.changed",
+      "fs.telegram.file.saved",
+      "fs.telegram.file.error"
     ],
     "subscribes": [
       "project.activated",
-      "project.deactivated"
+      "project.deactivated",
+      "telegram.photo.received",
+      "telegram.document.received"
     ]
+  },
+
+  "config": {
+    "telegramAutoSave": {
+      "facturas-asesoria": {
+        "destination": "storage/facturas-nonina/recibidas",
+        "confirmMessage": "✅ Archivo recibido y guardado correctamente",
+        "errorMessage": "❌ Error al guardar el archivo"
+      }
+    }
   },
 
   "ui": {
