@@ -107,6 +107,16 @@
         "event": "telegram.queue.overflow",
         "description": "Message queue overflow",
         "payload": "{ botName, queueSize }"
+      },
+      {
+        "event": "telegram.file.autosaved",
+        "description": "File auto-saved to storage",
+        "payload": "{ botName, chatId, fileType, fileId, originalName, savedPath, timestamp }"
+      },
+      {
+        "event": "telegram.file.autosave.error",
+        "description": "Error auto-saving file",
+        "payload": "{ botName, chatId, fileType, fileId, error, timestamp }"
       }
     ],
     "subscribes": [
@@ -309,7 +319,14 @@
     "pollingInterval": 1000,
     "rateLimitPerSecond": 25,
     "maxQueueSize": 100,
-    "storagePath": "/storage/telegram"
+    "storagePath": "/storage/telegram",
+    "autoSave": {
+      "facturas-asesoria": {
+        "destination": "storage/facturas-nonina/recibidas",
+        "confirmMessage": "✅ Archivo recibido y guardado correctamente",
+        "errorMessage": "❌ Error al guardar el archivo"
+      }
+    }
   },
 
   "dependencies": {
