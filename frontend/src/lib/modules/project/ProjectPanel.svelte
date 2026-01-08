@@ -29,6 +29,12 @@
     activateProjectMqtt
   } from '$lib/stores';
   import { PROJECT_COLORS } from '$lib/ui-core';
+  import ProjectConfigPanel from './ProjectConfigPanel.svelte';
+
+  // Estado de navegación interna
+  type ViewMode = 'list' | 'config';
+  let viewMode: ViewMode = 'list';
+  let configProject: { id: string; name: string } | null = null;
 
   // Props
   export let panelId: string = '';
@@ -164,6 +170,17 @@
     editingId = null;
   }
 
+  function handleOpenConfig(project: typeof $projectsStore.projects[0], event: MouseEvent): void {
+    event.stopPropagation();
+    configProject = { id: project.id, name: project.name };
+    viewMode = 'config';
+  }
+
+  function handleBackFromConfig(): void {
+    viewMode = 'list';
+    configProject = null;
+  }
+
   function getColorHex(colorId: string): string {
     return PROJECT_COLORS.find(c => c.id === colorId)?.hex || '#3b82f6';
   }
@@ -178,6 +195,14 @@
     : $projectsStore.projects;
 </script>
 
+<!-- Vista principal: lista o config -->
+{#if viewMode === 'config' && configProject}
+  <ProjectConfigPanel
+    projectId={configProject.id}
+    projectName={configProject.name}
+    on:back={handleBackFromConfig}
+  />
+{:else}
 <div class="project-panel">
   <!-- ===== HEADER ===== -->
   <header class="panel-header">
@@ -310,6 +335,13 @@
               ✏️
             </button>
             <button
+              class="btn-icon config"
+              on:click|stopPropagation={(e) => handleOpenConfig(project, e)}
+              title="Configuración"
+            >
+              ⚙️
+            </button>
+            <button
               class="btn-icon delete"
               on:click|stopPropagation={() => handleDelete(project.id)}
               disabled={$activeProject?.id === project.id || deletingId === project.id}
@@ -323,6 +355,7 @@
     {/if}
   </div>
 </div>
+{/if}
 
 <style>
   .project-panel {
@@ -579,6 +612,10 @@
 
   .btn-icon.delete:hover {
     background: rgba(239, 68, 68, 0.2);
+  }
+
+  .btn-icon.config:hover {
+    background: rgba(59, 130, 246, 0.2);
   }
 
   .btn-icon:disabled {
