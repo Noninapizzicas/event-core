@@ -34,7 +34,7 @@
     {
       "id": "verificar-resultado",
       "type": "condition",
-      "if": "{{ steps.extraer-texto.textLength }} > 0",
+      "if": "{{ steps.extraer-texto.data.textLength }} > 0",
       "then": "guardar-texto",
       "else": "notificar-error-ocr"
     },
@@ -44,7 +44,7 @@
       "service": "fs",
       "action": "write",
       "path": "{{ trigger.archivo }}.ocr.txt",
-      "content": "{{ steps.extraer-texto.text }}",
+      "content": "{{ steps.extraer-texto.data.text }}",
       "onError": "continue"
     },
     {
@@ -56,11 +56,11 @@
           "archivo": "{{ trigger.archivo }}",
           "procesado": "{{ now }}",
           "exito": true,
-          "confianza": "{{ steps.extraer-texto.confidence }}",
-          "idioma": "{{ steps.extraer-texto.locale }}",
-          "bloques": "{{ steps.extraer-texto.blocks }}",
-          "caracteresTexto": "{{ steps.extraer-texto.textLength }}",
-          "hint": "{{ steps.extraer-texto.hint }}"
+          "confianza": "{{ steps.extraer-texto.data.confidence }}",
+          "idioma": "{{ steps.extraer-texto.data.locale }}",
+          "bloques": "{{ steps.extraer-texto.data.blocks }}",
+          "caracteresTexto": "{{ steps.extraer-texto.data.textLength }}",
+          "hint": "{{ steps.extraer-texto.data.hint }}"
         }
       }
     },
@@ -79,14 +79,14 @@
       "service": "telegram",
       "action": "send_message",
       "chatId": "{{ trigger.chatId }}",
-      "text": "OCR completado ({{ steps.extraer-texto.confidence }}% confianza).\nTexto extraido: {{ steps.extraer-texto.textLength }} caracteres.",
+      "text": "OCR completado ({{ steps.extraer-texto.data.confidence }}% confianza).\nTexto extraido: {{ steps.extraer-texto.data.textLength }} caracteres.",
       "onError": "continue"
     },
     {
       "id": "log-exito",
       "type": "log",
       "level": "info",
-      "message": "OCR completado: {{ trigger.archivo }} - {{ steps.extraer-texto.textLength }} chars, {{ steps.extraer-texto.confidence }}% confianza"
+      "message": "OCR completado: {{ trigger.archivo }} - {{ steps.extraer-texto.data.textLength }} chars, {{ steps.extraer-texto.data.confidence }}% confianza"
     },
     {
       "id": "notificar-error-ocr",
@@ -94,14 +94,14 @@
       "service": "telegram",
       "action": "send_message",
       "chatId": "{{ trigger.chatId }}",
-      "text": "Error en OCR: {{ default(steps.extraer-texto.error, 'Error desconocido') }}",
+      "text": "Error en OCR: {{ default(steps.extraer-texto.data.error, 'Error desconocido') }}",
       "onError": "continue"
     },
     {
       "id": "log-error",
       "type": "log",
       "level": "error",
-      "message": "Error OCR {{ trigger.archivo }}: {{ default(steps.extraer-texto.error, error.message) }}"
+      "message": "Error OCR {{ trigger.archivo }}: {{ default(steps.extraer-texto.data.error, error.message) }}"
     }
   ]
 }

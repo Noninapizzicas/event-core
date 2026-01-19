@@ -60,7 +60,7 @@
       "service": "fs",
       "action": "write",
       "path": "{{ trigger.archivo }}.ocr.txt",
-      "content": "{{ steps.extraer-texto.text }}",
+      "content": "{{ steps.extraer-texto.data.text }}",
       "onError": "continue"
     },
     {
@@ -73,10 +73,10 @@
           "imagenPNG": "{{ steps.convertir-pdf.data.images[0].path }}",
           "procesado": "{{ now }}",
           "exito": true,
-          "confianza": "{{ steps.extraer-texto.confidence }}",
-          "idioma": "{{ steps.extraer-texto.locale }}",
-          "bloques": "{{ steps.extraer-texto.blocks }}",
-          "caracteresTexto": "{{ steps.extraer-texto.textLength }}",
+          "confianza": "{{ steps.extraer-texto.data.confidence }}",
+          "idioma": "{{ steps.extraer-texto.data.locale }}",
+          "bloques": "{{ steps.extraer-texto.data.blocks }}",
+          "caracteresTexto": "{{ steps.extraer-texto.data.textLength }}",
           "paginasPDF": "{{ steps.convertir-pdf.data.totalPages }}"
         }
       }
@@ -96,14 +96,14 @@
       "service": "telegram",
       "action": "send_message",
       "chatId": "{{ trigger.chatId }}",
-      "text": "📄 PDF procesado ({{ steps.extraer-texto.confidence }}% confianza).\nTexto extraído: {{ steps.extraer-texto.textLength }} caracteres.",
+      "text": "📄 PDF procesado ({{ steps.extraer-texto.data.confidence }}% confianza).\nTexto extraído: {{ steps.extraer-texto.data.textLength }} caracteres.",
       "onError": "continue"
     },
     {
       "id": "log-exito",
       "type": "log",
       "level": "info",
-      "message": "PDF OCR completado: {{ trigger.archivo }} - {{ steps.extraer-texto.textLength }} chars"
+      "message": "PDF OCR completado: {{ trigger.archivo }} - {{ steps.extraer-texto.data.textLength }} chars"
     },
     {
       "id": "notificar-error",
