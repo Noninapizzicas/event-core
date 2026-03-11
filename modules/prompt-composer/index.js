@@ -233,12 +233,27 @@ Fecha actual: {{date}}`,
         || (page_context?.route ? `workspace:${page_context.route.replace(/^\//, '')}` : null)
         || (this.config.usePromptManager !== false && !effectiveBasePrompt ? this.config.defaultPromptName : null);
 
+      this.logger.info('prompt-composer.workspace.resolve', {
+        prompt_name,
+        page_context_route: page_context?.route || null,
+        promptNameToLoad,
+        hasEffectiveBasePrompt: !!effectiveBasePrompt,
+        usePromptManager: this.config.usePromptManager,
+        correlation_id
+      });
+
       if (promptNameToLoad) {
         const managedPrompt = await this.loadPromptFromManager(
           promptNameToLoad,
           projectContext,
           correlation_id
         );
+        this.logger.info('prompt-composer.workspace.loaded', {
+          promptNameToLoad,
+          found: !!managedPrompt,
+          contentLength: managedPrompt?.length || 0,
+          correlation_id
+        });
         if (managedPrompt) {
           effectiveBasePrompt = managedPrompt;
         }
@@ -253,6 +268,12 @@ Fecha actual: {{date}}`,
         } else {
           effectiveTools = this.moduleLoader.getToolsForAI();
         }
+        this.logger.info('prompt-composer.tools.resolved', {
+          route: page_context?.route || null,
+          toolCount: effectiveTools?.length || 0,
+          filtered: !!page_context?.route,
+          correlation_id
+        });
       }
 
       // Compose the prompt (with inherited context and page context if available)
@@ -329,16 +350,37 @@ Fecha actual: {{date}}`,
     const eventData = event.data || event;
     const { request_id, success, prompt, data, error } = eventData;
 
+    this.logger.info('prompt-composer.promptManager.response', {
+      request_id,
+      success,
+      hasPrompt: !!prompt,
+      promptType: typeof prompt,
+      promptName: prompt?.name || null,
+      hasContent: !!prompt?.content,
+      hasData: !!data,
+      error: error || null
+    });
+
     const pending = this.pendingPromptManagerRequests.get(request_id);
-    if (!pending) return;
+    if (!pending) {
+      this.logger.warn('prompt-composer.promptManager.response.no_pending', { request_id });
+      return;
+    }
 
     clearTimeout(pending.timeout);
     this.pendingPromptManagerRequests.delete(request_id);
 
     if (success) {
-      // prompt-manager returns data.prompt or prompt directly
-      pending.resolve(data?.prompt || prompt);
+      // prompt-manager returns the full prompt object { id, name, content, ... }
+      const resolved = data?.prompt || prompt;
+      this.logger.info('prompt-composer.promptManager.resolved', {
+        request_id,
+        resolvedType: typeof resolved,
+        hasContent: typeof resolved === 'object' ? !!resolved?.content : false
+      });
+      pending.resolve(resolved);
     } else {
+      this.logger.warn('prompt-composer.promptManager.failed', { request_id, error });
       pending.resolve(null); // Optional - don't fail, will use defaults
     }
   }

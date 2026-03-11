@@ -121,6 +121,12 @@ class PromptManagerModule {
 
     if (!request_id) return;
 
+    this.logger.info('prompt-manager.get.request', {
+      request_id, name, correlation_id,
+      cachedPrompts: this.prompts.size,
+      cachedNames: [...this.prompts.values()].map(p => p.name)
+    });
+
     try {
       let prompt = null;
 
@@ -134,6 +140,13 @@ class PromptManagerModule {
           }
         }
       }
+
+      this.logger.info('prompt-manager.get.result', {
+        request_id, name,
+        found: !!prompt,
+        promptId: prompt?.id || null,
+        contentLength: prompt?.content?.length || 0
+      });
 
       await this.eventBus.publish('prompt.get.response', {
         request_id,
