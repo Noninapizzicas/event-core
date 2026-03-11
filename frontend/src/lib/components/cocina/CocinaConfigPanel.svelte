@@ -37,18 +37,25 @@
   let loadingCategorias = false;
 
   // Cargar todas las categorías del catálogo
+  // Usa productos/carta_completa (auto-carga desde archivo) con fallback a categorias/list
   async function loadCategorias() {
     const projectId = $page.params.project_id;
     if (!projectId) return;
 
     loadingCategorias = true;
     try {
-      const res = await mqttRequest<any>('categorias', 'list', { project_id: projectId });
-      const data = res?.data?.categorias || res?.data?.data?.categorias || [];
+      // productos/carta_completa auto-carga desde archivo si la memoria está vacía
+      const res = await mqttRequest<any>('productos', 'carta_completa', { project_id: projectId });
+      const data = res?.data?.categorias || [];
       catalogCategorias = data;
     } catch {
-      // Fallback: usar las que aparecen en pedidos activos
-      catalogCategorias = [];
+      try {
+        // Fallback: módulo categorías directo
+        const res2 = await mqttRequest<any>('categorias', 'list', { project_id: projectId });
+        catalogCategorias = res2?.data?.categorias || [];
+      } catch {
+        catalogCategorias = [];
+      }
     }
     loadingCategorias = false;
   }
@@ -260,14 +267,17 @@
   }
 
   .config-panel {
-    width: 360px;
-    max-width: 90vw;
-    height: 100vh;
+    width: 320px;
+    max-width: 85vw;
+    max-height: 100vh;
+    height: auto;
     background: #1e293b;
     display: flex;
     flex-direction: column;
     animation: slideIn 0.2s ease-out;
     box-shadow: -4px 0 20px rgba(0, 0, 0, 0.4);
+    border-radius: 16px 0 0 16px;
+    margin: auto 0;
   }
 
   @keyframes slideIn {
@@ -279,14 +289,14 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 20px 24px;
+    padding: 14px 18px;
     border-bottom: 1px solid #334155;
     flex-shrink: 0;
   }
 
   .panel-header h2 {
     margin: 0;
-    font-size: 1.3rem;
+    font-size: 1.1rem;
     font-weight: 700;
     color: #f8fafc;
   }
@@ -316,7 +326,8 @@
   .panel-body {
     flex: 1;
     overflow-y: auto;
-    padding: 20px 24px;
+    padding: 14px 18px;
+    max-height: 70vh;
   }
 
   .panel-body::-webkit-scrollbar {
@@ -328,12 +339,12 @@
   }
 
   .config-section {
-    margin-bottom: 28px;
+    margin-bottom: 18px;
   }
 
   .config-section h3 {
-    margin: 0 0 12px;
-    font-size: 0.85rem;
+    margin: 0 0 8px;
+    font-size: 0.8rem;
     font-weight: 700;
     color: #94a3b8;
     text-transform: uppercase;
@@ -341,8 +352,8 @@
   }
 
   .section-hint {
-    margin: -8px 0 12px;
-    font-size: 0.75rem;
+    margin: -4px 0 8px;
+    font-size: 0.7rem;
     color: #64748b;
   }
 
@@ -366,9 +377,9 @@
     background: #0f172a;
     border: 1px solid #334155;
     border-radius: 8px;
-    padding: 10px 14px;
+    padding: 8px 12px;
     color: #f8fafc;
-    font-size: 1rem;
+    font-size: 0.9rem;
     font-weight: 600;
     outline: none;
     transition: border-color 0.15s;
@@ -390,12 +401,12 @@
   }
 
   .familia-chip {
-    padding: 10px 18px;
+    padding: 8px 14px;
     border: 2px solid #334155;
-    border-radius: 12px;
+    border-radius: 10px;
     background: transparent;
     color: #94a3b8;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     font-weight: 700;
     letter-spacing: 0.5px;
     cursor: pointer;
@@ -468,20 +479,20 @@
   /* Footer */
   .panel-footer {
     display: flex;
-    gap: 12px;
-    padding: 16px 24px;
+    gap: 10px;
+    padding: 12px 18px;
     border-top: 1px solid #334155;
     flex-shrink: 0;
   }
 
   .btn-cancel {
     flex: 1;
-    padding: 12px;
+    padding: 10px;
     border: 1px solid #334155;
     border-radius: 10px;
     background: transparent;
     color: #94a3b8;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
     transition: background 0.15s;
@@ -493,12 +504,12 @@
 
   .btn-save {
     flex: 1;
-    padding: 12px;
+    padding: 10px;
     border: none;
     border-radius: 10px;
     background: #3b82f6;
     color: #fff;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     font-weight: 700;
     cursor: pointer;
     transition: background 0.15s, opacity 0.15s;
@@ -518,23 +529,24 @@
     .config-panel {
       width: 100vw;
       max-width: 100vw;
+      border-radius: 0;
     }
 
     .panel-header {
-      padding: 14px 16px;
+      padding: 10px 14px;
     }
 
     .panel-body {
-      padding: 16px;
+      padding: 12px 14px;
     }
 
     .panel-footer {
-      padding: 12px 16px;
+      padding: 10px 14px;
     }
 
     .familia-chip {
-      padding: 8px 14px;
-      font-size: 0.8rem;
+      padding: 6px 10px;
+      font-size: 0.75rem;
     }
   }
 </style>
