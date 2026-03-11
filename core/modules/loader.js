@@ -316,10 +316,11 @@ class ModuleLoader {
       // publish request events and receive responses during initialization
       const eventUnsubs = this.wireEventSubscriptions(manifest, instance);
 
-      // Ejecutar onLoad - pasamos el core context + moduleLoader
+      // Ejecutar onLoad - pasamos el core context + moduleLoader + moduleConfig
       const moduleContext = {
         ...this.core,
-        moduleLoader: this  // Añadir referencia al loader para acceso a tools
+        moduleLoader: this,  // Referencia al loader para acceso a tools
+        moduleConfig: manifest.config || {}  // Config específico del módulo (de module.json)
       };
 
       try {
