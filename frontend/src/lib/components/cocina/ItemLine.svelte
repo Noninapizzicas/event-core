@@ -27,6 +27,10 @@
   $: isPreparando = item.estado === 'preparando';
   $: expanded = isPreparando;
 
+  // Multi-device: show who is preparing this item
+  $: deviceColor = item.device_color || null;
+  $: deviceNombre = item.device_nombre || null;
+
   // — Mitad y Mitad —
   $: isMitad = item.tipo === 'mitad_mitad' && (item.pizza_izquierda || item.pizza_derecha);
   $: pizzaIzq = parsePizzaHalf(item.pizza_izquierda);
@@ -140,7 +144,7 @@
   </div>
 
   <div class="item-info">
-    <!-- Línea principal: cantidad + nombre + badge tipo -->
+    <!-- Línea principal: cantidad + nombre + badge tipo + device badge -->
     <div class="item-main">
       <span class="qty">{item.cantidad}x</span>
       <span class="name">{item.nombre}</span>
@@ -148,6 +152,11 @@
         <span class="tipo-badge badge-mitad">MITAD</span>
       {:else if item.tipo === 'al_gusto'}
         <span class="tipo-badge badge-algusto">AL GUSTO</span>
+      {/if}
+      {#if isPreparando && deviceColor}
+        <span class="device-badge" style="background: {deviceColor}" title="{deviceNombre || ''}">
+          {#if deviceNombre}{deviceNombre}{/if}
+        </span>
       {/if}
     </div>
 
@@ -321,6 +330,11 @@
     padding: 4px 12px;
   }
 
+  .item-line.expanded .device-badge {
+    font-size: 0.9rem;
+    padding: 4px 12px;
+  }
+
   /* ===== State indicator ===== */
   .item-state {
     display: flex;
@@ -406,6 +420,22 @@
   .badge-algusto {
     background: #0891b2;
     color: #ecfeff;
+  }
+
+  .device-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    color: #fff;
+    text-transform: uppercase;
+    flex-shrink: 0;
+    line-height: 1.4;
+    min-width: 12px;
+    min-height: 12px;
+    transition: font-size 0.2s, padding 0.2s;
   }
 
   /* ===== EXPANDED DETAILS ===== */
@@ -674,6 +704,7 @@
     .name { font-size: 0.9rem; }
     .item-main { gap: 5px; }
     .tipo-badge { font-size: 0.6rem; padding: 1px 5px; }
+    .device-badge { font-size: 0.55rem; padding: 1px 5px; }
 
     /* Compact summary (pendiente/listo) */
     .compact-summary { gap: 3px 5px; margin-top: 1px; }
@@ -688,6 +719,7 @@
     .item-line.expanded .qty { font-size: 1.6rem; }
     .item-line.expanded .name { font-size: 1.3rem; }
     .item-line.expanded .tipo-badge { font-size: 0.7rem; padding: 2px 8px; }
+    .item-line.expanded .device-badge { font-size: 0.65rem; padding: 2px 8px; }
 
     /* Expanded details — tighter */
     .expanded-details { gap: 8px; margin-top: 8px; }

@@ -26,7 +26,9 @@
     initCocinaSubscriptions,
     resumeAudioContext,
     requestNotificationPermission,
-    isGlovoConfirmado
+    isGlovoConfirmado,
+    filtrosActivos,
+    itemPassesFilter
   } from '$lib/stores/cocina';
   import type { PedidoCocina } from '$lib/stores/cocina';
 
@@ -117,7 +119,7 @@
     {:else}
       <div class="pedidos-grid">
         {#each pedidosOrdenados as pedido (pedido.pedido_id)}
-          <PedidoCard {pedido} />
+          <PedidoCard {pedido} filtros={$filtrosActivos} />
         {/each}
       </div>
     {/if}
