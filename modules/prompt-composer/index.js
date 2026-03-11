@@ -763,27 +763,24 @@ Fecha actual: {{date}}`,
       toolsSection.push('## Capabilities');
       toolsSection.push(`You have ${tools.length} tools available. Key capabilities:`);
 
-      // Group tools by prefix (fs.*, recetas.*, escandallo.*, etc.)
+      // Group tools by prefix (fs.*, db.*, telegram.*, etc.)
       const groups = new Map();
       for (const tool of tools) {
         const name = tool.function?.name || tool.name || '';
-        const desc = tool.function?.description || tool.description || '';
         const prefix = name.includes('.') ? name.split('.')[0] : name.split('_')[0];
         if (!groups.has(prefix)) groups.set(prefix, []);
-        groups.get(prefix).push({ name, description: desc });
+        groups.get(prefix).push(name);
       }
 
-      for (const [prefix, toolList] of groups) {
-        const names = toolList.map(t => t.name);
+      for (const [prefix, names] of groups) {
         if (names.length === 1) {
-          const desc = toolList[0].description ? ` — ${toolList[0].description}` : '';
-          toolsSection.push(`- **${names[0]}**${desc}`);
+          toolsSection.push(`- **${names[0]}**`);
         } else {
-          toolsSection.push(`- **${prefix}** (${names.length} tools): ${names.join(', ')}`);
+          toolsSection.push(`- **${prefix}**: ${names.join(', ')}`);
         }
       }
 
-      toolsSection.push('\nUsa las herramientas proactivamente cuando ayuden a responder al usuario con precisión.');
+      toolsSection.push('\nCall tools proactively when they help answer the user accurately.');
       sections.push(toolsSection.join('\n'));
     }
 

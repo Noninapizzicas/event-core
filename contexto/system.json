@@ -38,7 +38,6 @@
       "tier_4_features": ["calling-generator", "bot-manager", "chat-ai-bridge", "chat-session", "code-executor"],
       "tier_5_domain_pizzepos": ["cuentas", "cuentas-canales", "pedidos", "cobros", "cocina", "comandero", "productos", "categorias", "ingredientes", "variaciones", "persistencia-comandero", "impresion"],
       "tier_5_domain_facturacion": ["asesoria", "fuentes"],
-      "tier_5_domain_negocio_alimentario": ["recetas", "escandallo", "viabilidad"],
       "tier_6_ui": ["admin-panel", "pdf-viewer", "telegram-service", "text-editor", "menu-generator", "carta-digital", "carta-impresion"]
     },
     "razon": "credential-manager y database-manager deben cargar primero porque otros módulos (prompt-manager, project-manager) los necesitan durante su onLoad para consultas a DB y resolución de credenciales",
@@ -47,7 +46,7 @@
 
   "directories": {
     "core": "Core framework code (EventBus, ServiceExecutor, HandlerLoader, etc)",
-    "modules": "Loadable modules (38 core [30 active + 8 disabled] + 15 pizzepos + 2 facturacion = 55 total, 47 active)",
+    "modules": "Loadable modules (34 core [26 active + 8 disabled] + 15 pizzepos + 2 facturacion = 51 total, 43 active)",
     "handlers": "Global event handlers (JavaScript directo)",
     "frontend": "SvelteKit 2 + Svelte 5 + TypeScript app",
     "data": "Runtime data (projects, logs, scheduler, etc)",
@@ -269,10 +268,7 @@
         "project_scoped": [
           "/[project_id]/comandero — pantalla de cuentas",
           "/[project_id]/comandero/[cuenta_id] — pedido de cuenta",
-          "/[project_id]/menu-generator — pipeline de cartas",
-          "/[project_id]/recetas — gestión de recetas",
-          "/[project_id]/escandallo — análisis de costes",
-          "/[project_id]/viabilidad — estudio de viabilidad"
+          "/[project_id]/menu-generator — pipeline de cartas"
         ],
         "globales": [
           "/ — home (LazyShell)",
