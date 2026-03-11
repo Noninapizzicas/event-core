@@ -10,7 +10,7 @@
   import { goto } from '$app/navigation';
   import { onMount, onDestroy } from 'svelte';
   import { setContext } from 'svelte';
-  import { writable } from 'svelte/store';
+  import { writable, get } from 'svelte/store';
   import { mqttRequest, MqttNotConnectedError, MqttRequestError } from '$lib/ui-core/mqtt-request';
   import { connected } from '$lib/ui-core/mqtt';
   import { activeProjectId, activateProject } from '$lib/stores/projects';
@@ -78,8 +78,16 @@
 
     // If MQTT wasn't ready, retry when it connects
     unsubConnected = connected.subscribe((isConnected) => {
-      if (isConnected && !loaded && project_id) {
-        loadProject();
+      if (isConnected && project_id) {
+        if (!loaded) {
+          loadProject();
+        }
+        // Activate project from URL if not already active
+        if (project_id !== get(activeProjectId)) {
+          activateProject(project_id).catch(err => {
+            console.warn('[ProjectLayout] Activate on connect failed:', err);
+          });
+        }
       }
     });
   });
