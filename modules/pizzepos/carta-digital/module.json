@@ -3,6 +3,7 @@
   "version": "1.1.0",
   "description": "Carta digital para clientes — config, sesiones, pedidos, media serving y carta enriquecida",
   "author": "Pizzepos Team",
+  "routes": ["/carta-digital"],
 
   "provides": {
     "events": ["carta-digital.sesion_creada", "carta-digital.pedido_recibido"],

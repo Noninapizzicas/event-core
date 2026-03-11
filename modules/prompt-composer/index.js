@@ -102,7 +102,7 @@ class PromptComposerModule {
     this.templates.set('default', {
       id: 'default',
       name: 'Asistente General',
-      prompt: 'You are a helpful AI assistant.',
+      prompt: 'Eres un asistente AI integrado en el sistema event-core. Responde siempre en español.\n\nTu rol es ayudar al usuario usando las herramientas disponibles según el contexto del proyecto activo y la página en la que se encuentra. No listes tus capacidades genéricamente — responde directamente a lo que el usuario necesita.',
       variables: []
     });
 
@@ -225,10 +225,17 @@ Fecha actual: {{date}}`,
         }
       }
 
-      // Try to load from prompt-manager if prompt_name provided or usePromptManager enabled
-      if (prompt_name || (this.config.usePromptManager !== false && !effectiveBasePrompt)) {
+      // Load prompt from prompt-manager:
+      // 1. If explicit prompt_name provided, use that
+      // 2. If page_context has a route, try workspace:{route-name} (e.g., workspace:menu-generator)
+      // 3. Otherwise, try the default prompt name from config
+      const promptNameToLoad = prompt_name
+        || (page_context?.route ? `workspace:${page_context.route.replace(/^\//, '')}` : null)
+        || (this.config.usePromptManager !== false && !effectiveBasePrompt ? this.config.defaultPromptName : null);
+
+      if (promptNameToLoad) {
         const managedPrompt = await this.loadPromptFromManager(
-          prompt_name || this.config.defaultPromptName,
+          promptNameToLoad,
           projectContext,
           correlation_id
         );
@@ -238,9 +245,14 @@ Fecha actual: {{date}}`,
       }
 
       // Load tools info for system prompt (so the AI knows its capabilities)
+      // If page_context has a route, filter tools to only those relevant to the workspace
       let effectiveTools = tools || null;
       if (include_tools && !effectiveTools && this.moduleLoader) {
-        effectiveTools = this.moduleLoader.getToolsForAI();
+        if (page_context?.route) {
+          effectiveTools = this.moduleLoader.getToolsByRoute(page_context.route);
+        } else {
+          effectiveTools = this.moduleLoader.getToolsForAI();
+        }
       }
 
       // Compose the prompt (with inherited context and page context if available)
@@ -694,7 +706,7 @@ Fecha actual: {{date}}`,
     // Start with conversation's system prompt or default
     let basePrompt = conversation?.system_prompt ||
       this.config.defaultSystemPrompt ||
-      'You are a helpful AI assistant.';
+      'Eres un asistente AI integrado en el sistema event-core. Responde siempre en español.';
 
     // Template variables available for substitution
     const variables = {
@@ -760,27 +772,30 @@ Fecha actual: {{date}}`,
     // Summarize by category to save tokens (listing 100+ tools individually is wasteful)
     if ((this.config.includeTools !== false) && tools && tools.length > 0) {
       const toolsSection = [];
-      toolsSection.push('## Capabilities');
-      toolsSection.push(`You have ${tools.length} tools available. Key capabilities:`);
+      toolsSection.push('## Herramientas Disponibles');
+      toolsSection.push(`Tienes ${tools.length} herramientas disponibles:`);
 
-      // Group tools by prefix (fs.*, db.*, telegram.*, etc.)
+      // Group tools by prefix (fs.*, menu.*, etc.) with descriptions
       const groups = new Map();
       for (const tool of tools) {
         const name = tool.function?.name || tool.name || '';
+        const desc = tool.function?.description || tool.description || '';
         const prefix = name.includes('.') ? name.split('.')[0] : name.split('_')[0];
         if (!groups.has(prefix)) groups.set(prefix, []);
-        groups.get(prefix).push(name);
+        groups.get(prefix).push({ name, description: desc });
       }
 
-      for (const [prefix, names] of groups) {
+      for (const [prefix, toolList] of groups) {
+        const names = toolList.map(t => t.name);
         if (names.length === 1) {
-          toolsSection.push(`- **${names[0]}**`);
+          const desc = toolList[0].description ? ` — ${toolList[0].description}` : '';
+          toolsSection.push(`- **${names[0]}**${desc}`);
         } else {
-          toolsSection.push(`- **${prefix}**: ${names.join(', ')}`);
+          toolsSection.push(`- **${prefix}** (${names.length} tools): ${names.join(', ')}`);
         }
       }
 
-      toolsSection.push('\nCall tools proactively when they help answer the user accurately.');
+      toolsSection.push('\nUsa las herramientas proactivamente cuando ayuden a responder al usuario con precisión.');
       sections.push(toolsSection.join('\n'));
     }
 

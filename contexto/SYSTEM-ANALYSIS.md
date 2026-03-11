@@ -1,23 +1,23 @@
 # Event-Core: Análisis Honesto del Sistema
 
-**Fecha:** 2026-03-03
+**Fecha:** 2026-03-11 (actualización) | Original: 2026-03-03
 **Metodología:** Verificación línea por línea del código real contra documentación
-**Versiones encontradas:** v0.1.0 (index.js, config.json) | v0.2.0 (package.json) | v0.5.0 (README)
+**Versiones encontradas:** v0.1.0 (index.js) | v0.2.0 (package.json) | v0.5.0 (README) — SIN CAMBIOS
 
 ---
 
 ## 0. VEREDICTO EJECUTIVO
 
-Event-Core es un **framework ambicioso y arquitectónicamente sólido** con patrones de diseño genuinamente buenos (IoC, event-driven, auto-wiring declarativo). Sin embargo, presenta un **desajuste sistemático entre lo documentado y lo real**: cifras infladas, features "implementadas" que son código muerto, y una postura de seguridad que lo hace inapto para producción.
+Event-Core es un **framework ambicioso y arquitectónicamente sólido** con patrones de diseño genuinamente buenos (IoC, event-driven, auto-wiring declarativo). Ha mejorado en organización interna (project-manager split, módulos experimentales revertidos limpiamente, documentación de contexto más alineada). Sin embargo, los problemas fundamentales — **seguridad, testing, código muerto** — siguen exactamente donde estaban.
 
-| Dimensión | Nota | Justificación |
-|-----------|------|---------------|
-| Arquitectura | 8/10 | Patrones sólidos, IoC real, event-driven puro |
-| Implementación | 6/10 | Core funcional, pero código muerto y features no conectadas |
-| Documentación | 4/10 | Cifras infladas 10-30x, discrepancias de versión, estados inventados |
-| Testing | 2/10 | 8 archivos de test, 2 fallan por dependencias, 0 tests frontend |
-| Seguridad | 3/10 | Sin auth HTTP ni MQTT, code-executor abierto, credentials en plaintext |
-| Producción | 2/10 | No desplegable sin trabajo significativo de seguridad y estabilización |
+| Dimensión | Nota (mar-03) | Nota (mar-11) | Justificación |
+|-----------|---------------|---------------|---------------|
+| Arquitectura | 8/10 | 8/10 | Patrones sólidos, IoC real, event-driven puro. Sin cambios estructurales |
+| Implementación | 6/10 | 6.5/10 | project-manager split, módulos revertidos limpiamente |
+| Documentación | 4/10 | 5/10 | Contexto más alineado, pero aún con lagunas (modules.json incompleto) |
+| Testing | 2/10 | 2/10 | 10 archivos de test, varios fallan por dependencias, 0 tests frontend |
+| Seguridad | 3/10 | 3/10 | Ninguno de los 9 problemas abordado en 8 días |
+| Producción | 2/10 | 2/10 | No desplegable sin trabajo significativo de seguridad y estabilización |
 
 ---
 
@@ -46,17 +46,18 @@ Event-Core es un **framework ambicioso y arquitectónicamente sólido** con patr
 
 No hay una única fuente de verdad para la versión del sistema.
 
-### 1.3 Conteo de Módulos Inconsistente
+### 1.3 Conteo de Módulos — Parcialmente Corregido (mar-11)
 
-| Fuente | Core | PizzePOS | Total |
-|--------|------|----------|-------|
-| `index.json` | 30 | 15 | 45 |
-| `modules.json` | 30 (24 active) | 13 | 43 discovered, 37 active |
-| **Realidad (module.json)** | **35** | **15** | **52** |
+| Fuente | Core | PizzePOS | Facturación | Total |
+|--------|------|----------|-------------|-------|
+| `index.json` (mar-11) | 35 | 15 | 2 | 52 |
+| `modules.json` (mar-11) | 35 (27 active, 8 disabled) | 15 | 2 | 52 discovered, 44 active |
+| **config.json enabled** | — | — | — | **45** (incluye entradas padre `pizzepos`, `facturas`) |
+| **module.json files reales** | **35** | **15** | **2** | **52** |
 
-Módulos reales no listados en docs: `security-p2p`, `staff-manager` (existen pero están disabled).
-Módulos en `config.json` disabled pero no documentados como tal: `security-p2p`, `staff-manager`.
-Módulos `composition-manager` y `context-manager` existen en filesystem pero **no aparecen en config.json** (ni enabled ni disabled).
+**Corregido vs mar-03:** `composition-manager` y `context-manager` ahora aparecen en config.json enabled.
+**Pendiente:** `modules.json active_modules` falta `carta-digital` y `carta-impresion` (existen en config.json y filesystem).
+**Pendiente:** `modules.json categories.pizzepos` lista 13 nombres textuales pero dice 15 — falta `carta-digital`, `carta-impresion`.
 
 ### 1.4 Features "Implementadas" que son Código Muerto
 
@@ -249,8 +250,8 @@ El README clama "100+ tests" y "60+ unit tests + 18 integration tests." La reali
 - `npm test` falla en el entorno actual
 
 ### Código Muerto / Deuda Técnica
-- `_archived/` — 2.9MB de código archivado
-- `handlers/global/archived/` — 30+ handlers deprecated
+- `_archived/` — 3.4MB de código archivado (3 subdirectorios: ui, reset, otros-modulos)
+- `handlers/global/archived/` — 37 handlers deprecated (facturas/OCR/Gmail legacy)
 - `modules/conversation-manager/` — disabled, reemplazado pero no eliminado
 - `core/discovery/` — implementado, nunca conectado
 - `core/flow/` — implementado, nunca conectado
@@ -261,21 +262,18 @@ El README clama "100+ tests" y "60+ unit tests + 18 integration tests." La reali
 
 ## 7. MÉTRICAS REALES DEL CODEBASE
 
-| Métrica | Valor Verificado |
-|---------|-----------------|
-| Líneas backend (JS) | ~100,584 |
-| Líneas frontend (Svelte + TS) | ~41,062 |
-| Total estimado | ~141,646 |
-| Archivos JS (backend) | 251 |
-| Archivos Svelte | 90 (docs decía 68) |
-| Archivos TS | 61 (docs decía 48) |
-| Módulos con module.json | 52 |
-| Módulos activos (config.json enabled) | 36 |
-| Módulos disabled | 8 |
-| Módulos sin listar en config | 8 |
-| Archivos de test | 8 (4 rotos) |
-| Stores frontend | 24 |
-| node_modules instalado | No |
+| Métrica | mar-03 | mar-11 | Cambio |
+|---------|--------|--------|--------|
+| Archivos Svelte | 90 | 97 | +7 |
+| Archivos TS | 61 | 64 | +3 |
+| Módulos con module.json | 52 | 52 | = |
+| Módulos activos (config.json enabled) | 36 | 45 | +9 (composición, contexto, carta-*, channel-manager) |
+| Módulos disabled | 8 | 8 | = |
+| Archivos de test | 8 | 10 | +2 |
+| node_modules instalado | No | No | = |
+| CI/CD configurado | No | No | = |
+| ESLint/Prettier | No | No | = |
+| Tests frontend | 0 | 0 | = |
 
 ---
 
@@ -325,3 +323,31 @@ Pero el sistema sufre de:
 5. **Deuda técnica acumulada** — módulos deprecated sin limpiar, handlers archivados
 
 **Estado real:** entre v0.2.0 y v0.3.0. Un prototipo funcional con buena arquitectura que necesita trabajo serio de hardening, testing y limpieza antes de considerarse apto para producción.
+
+---
+
+## 11. ACTUALIZACIÓN 2026-03-11 — Qué cambió en 8 días
+
+### 11.1 Mejoras confirmadas
+- **project-manager split:** De 3,731 líneas monolíticas a 12 archivos (index.js = 128 líneas + lib/)
+- **composition-manager y context-manager:** Ahora en config.json enabled (antes faltaban)
+- **Módulos experimentales revertidos limpiamente:** recetas, escandallo, viabilidad añadidos y luego revertidos en commit `820756d` sin dejar residuo
+- **carta-digital y carta-impresion:** Funcionales y en config.json enabled
+- **channel-manager:** Nuevo módulo integrado
+
+### 11.2 Sin cambios (problemas que persisten)
+- **Seguridad:** 9/9 problemas documentados siguen exactamente igual
+- **Testing:** Sin nuevos tests significativos, node_modules sin instalar
+- **CI/CD:** No existe
+- **Versiones inconsistentes:** 3 versiones distintas en 3 archivos
+- **Código muerto:** core/discovery/, core/flow/, _archived/ (3.4MB), 37 handlers archived
+- **Frontend:** 0 tests, 0 linting, 0 formatting
+
+### 11.3 Discrepancias documentación pendientes de corregir
+1. `modules.json active_modules` falta `carta-digital` y `carta-impresion`
+2. `modules.json categories.pizzepos` lista 13 nombres pero total dice 15
+3. `modules.json key_modules.ai-gateway.providers` muestra 4 pero hay 6 (falta Groq, Gemini)
+4. `config.json` enabled tiene 45 entradas pero incluye `pizzepos` y `facturas` como pseudo-módulos (son directorios padre)
+
+### 11.4 Veredicto actualizado
+El sistema avanza en features y organización. Pero la brecha entre "prototipo funcional" y "producto" sigue sin cerrarse porque no se invierte en seguridad, testing ni limpieza. **El reto no es de diseño — es de disciplina operacional.**

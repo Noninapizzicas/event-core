@@ -3,6 +3,7 @@
   "version": "2.1.0",
   "description": "Display de cocina en tiempo real - Sistema de preparación de pedidos",
   "author": "Pizzepos Team",
+  "routes": ["/cocina"],
 
   "provides": {
     "events": [

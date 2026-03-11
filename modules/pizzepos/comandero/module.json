@@ -3,6 +3,7 @@
   "version": "2.0.0",
   "description": "Gestión de pedidos - Añadir productos a cuentas",
   "author": "Pizzepos Team",
+  "routes": ["/comandero"],
 
   "provides": {
     "events": [

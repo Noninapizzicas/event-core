@@ -4,6 +4,7 @@
   "description": "Asistente de cartas de restaurante — genera, ajusta, consulta cartas via herramientas AI en el chat",
   "author": "Pizzepos Team",
   "main": "index.js",
+  "routes": ["/menu-generator"],
 
   "provides": {
     "events": ["carta.generada", "menu.generado", "menu.validado", "menu.error"]

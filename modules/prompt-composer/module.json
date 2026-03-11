@@ -117,7 +117,7 @@
     "includeProjectContext": true,
     "includeStorageInfo": false,
     "includeTools": true,
-    "defaultSystemPrompt": "You are a helpful AI assistant.",
+    "defaultSystemPrompt": "Eres un asistente AI integrado en el sistema event-core. Responde siempre en español.\n\nTu rol es ayudar al usuario usando las herramientas disponibles según el contexto del proyecto activo y la página en la que se encuentra. No listes tus capacidades genéricamente — responde directamente a lo que el usuario necesita.",
     "usePromptManager": true,
     "defaultPromptName": "assistant-default",
     "requestTimeout": 10000

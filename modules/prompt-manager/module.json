@@ -13,6 +13,7 @@
   "subscribes": [
     { "event": "db.query.response", "handler": "onQueryResponse" },
     { "event": "db.schema.init.response", "handler": "onSchemaInitResponse" },
+    { "event": "prompt.get.request", "handler": "onPromptGetRequest" },
     "ai.completion.completed",
     "ai.request.started"
   ],

@@ -60,6 +60,9 @@ class PromptManagerModule {
     // Load prompts and presets into cache
     await this.loadFromDatabase();
 
+    // Seed default workspace prompts (idempotent — only creates if missing)
+    await this.seedDefaultPrompts();
+
     this.logger.info('prompt-manager.loaded', {
       prompts_count: this.prompts.size,
       presets_count: this.presets.size,
@@ -105,6 +108,49 @@ class PromptManagerModule {
       } else {
         reject(new Error(error || 'Schema init failed'));
       }
+    }
+  }
+
+  // ==========================================
+  // Event Handler: prompt.get.request
+  // Used by prompt-composer to load prompts by name (e.g., workspace:menu-generator)
+  // ==========================================
+
+  async onPromptGetRequest(event) {
+    const { request_id, name, correlation_id } = event.data || event;
+
+    if (!request_id) return;
+
+    try {
+      let prompt = null;
+
+      if (name) {
+        // Find by name (case-insensitive)
+        const nameLower = name.toLowerCase();
+        for (const p of this.prompts.values()) {
+          if (p.name.toLowerCase() === nameLower) {
+            prompt = p;
+            break;
+          }
+        }
+      }
+
+      await this.eventBus.publish('prompt.get.response', {
+        request_id,
+        success: true,
+        prompt: prompt?.content || null,
+        correlation_id
+      });
+    } catch (error) {
+      this.logger.error('prompt-manager.get.request.error', {
+        request_id, name, error: error.message
+      });
+      await this.eventBus.publish('prompt.get.response', {
+        request_id,
+        success: false,
+        error: error.message,
+        correlation_id
+      });
     }
   }
 
@@ -194,6 +240,174 @@ class PromptManagerModule {
     } catch (error) {
       this.logger.warn('prompt-manager.cache.load.error', { error: error.message });
       // Not fatal - might be first run
+    }
+  }
+
+  // ==========================================
+  // Seed Default Workspace Prompts
+  // ==========================================
+
+  async seedDefaultPrompts() {
+    const defaults = [
+      {
+        name: 'workspace:menu-generator',
+        title: 'Workspace: Menu Generator',
+        description: 'Instrucciones para el chat en el pipeline de generación de cartas',
+        content: `Estás en el workspace Menu Generator — pipeline de creación de cartas de restaurante.
+
+El usuario puede:
+- Subir PDFs/imágenes de cartas existentes para extraer texto via OCR
+- Generar cartas estructuradas con IA a partir del texto extraído
+- Editar productos, categorías y precios de cartas generadas
+- Consultar estadísticas de sus cartas
+
+Comportamiento contextual:
+- Cuando el usuario dice "genera con eso" o "usa el texto que escaneé", usa el valor de ocrText del estado de página.
+- Cuando menciona "la carta" o "esa carta", se refiere a la activeCarta del estado (si existe).
+- Responde siempre en español y sé directo.`
+      },
+      {
+        name: 'workspace:carta-digital',
+        title: 'Workspace: Carta Digital',
+        description: 'Instrucciones para el chat en gestión de carta digital',
+        content: `Estás en el workspace Carta Digital — gestión de la carta digital del restaurante.
+
+El usuario puede:
+- Configurar la carta digital (tema, colores, WhatsApp, logo)
+- Previsualizar la carta como la verían los clientes
+- Enriquecer productos con descripciones, emojis y tags
+- Asignar imágenes a productos y categorías
+- Ajustar precios y buscar productos
+
+Comportamiento contextual:
+- Cuando el usuario dice "la carta" o "mi carta digital", se refiere a la carta digital del proyecto activo.
+- Cuando menciona "configurar", "tema", "colores" o "WhatsApp", se refiere a la configuración de la carta digital.
+- Responde siempre en español y sé directo.`
+      },
+      {
+        name: 'workspace:facturas',
+        title: 'Workspace: Facturas',
+        description: 'Instrucciones para el chat en procesamiento de facturas',
+        content: `Estás en el workspace Facturas — procesamiento y gestión de facturas del proyecto.
+
+El usuario puede:
+- Subir facturas (PDF o imagen) para procesar
+- Extraer datos estructurados via OCR + IA
+- Listar y filtrar facturas del proyecto
+- Consultar estadísticas de facturación
+
+Comportamiento contextual:
+- Cuando el usuario dice "factura", "subir factura" o "mis facturas", se refiere a las facturas del proyecto activo.
+- Cuando menciona "procesar", "OCR" o "extraer datos", se refiere al pipeline de procesamiento.
+- Responde siempre en español y sé directo.`
+      },
+      {
+        name: 'workspace:cocina',
+        title: 'Workspace: Cocina',
+        description: 'Instrucciones para el chat en el display de cocina',
+        content: `Estás en el workspace Cocina — display de cocina en tiempo real para preparación de pedidos.
+
+El usuario puede:
+- Ver pedidos activos pendientes de preparación
+- Marcar ítems como en preparación o preparados
+- Marcar pedidos como listos para servir
+- Consultar historial de pedidos
+
+Comportamiento contextual:
+- El display está diseñado para tablets/pantallas en cocina.
+- Cuando el usuario dice "pedido", se refiere a los pedidos activos en pantalla.
+- Cuando dice "listo" o "preparado", se refiere a marcar ítems/pedidos como completados.
+- Responde siempre en español y sé directo.`
+      },
+      {
+        name: 'workspace:comandero',
+        title: 'Workspace: Comandero',
+        description: 'Instrucciones para el chat en gestión de pedidos',
+        content: `Estás en el workspace Comandero — gestión de pedidos y cuentas del restaurante.
+
+El usuario puede:
+- Añadir productos a cuentas/mesas
+- Eliminar productos de pedidos
+- Enviar pedidos a cocina
+- Gestionar cuentas abiertas
+
+Comportamiento contextual:
+- Cuando el usuario dice "añadir", "agregar" o "poner", se refiere a añadir productos al pedido activo.
+- Cuando dice "enviar" o "mandar a cocina", se refiere a enviar el pedido a preparación.
+- Responde siempre en español y sé directo.`
+      },
+      {
+        name: 'workspace:certificate-authority',
+        title: 'Workspace: Certificate Authority',
+        description: 'Instrucciones para el chat en gestión de certificados',
+        content: `Estás en el workspace Certificate Authority — gestión de certificados digitales.
+
+El usuario puede:
+- Emitir nuevos certificados (client para portal, device para dispositivos)
+- Revocar certificados existentes
+- Renovar certificados (revoca el viejo y emite uno nuevo)
+- Descargar bundles .p12 para instalar en navegador/dispositivo
+- Consultar estado de la CA y listar certificados
+
+Comportamiento contextual:
+- Cuando el usuario dice "certificado", "emitir" o "crear certificado", se refiere a emitir uno nuevo.
+- Cuando dice "revocar" o "anular", se refiere a revocar un certificado existente.
+- Cuando dice "renovar", se refiere a renovar (revoca+emite nuevo).
+- Tipos: client (portal facturación), device (dispositivos de trabajo).
+- Responde siempre en español y sé directo.`
+      }
+    ];
+
+    let seeded = 0;
+    for (const def of defaults) {
+      // Skip if already exists (case-insensitive)
+      const exists = [...this.prompts.values()].some(
+        p => p.name.toLowerCase() === def.name.toLowerCase()
+      );
+      if (exists) continue;
+
+      const id = this.generateId();
+      const now = new Date().toISOString();
+
+      try {
+        await this.dbQuery(
+          `INSERT INTO prompts (id, name, title, description, slot_type, content, variables, tags, metadata, current_version, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [id, def.name, def.title, def.description, 'system', def.content, '[]', '["workspace"]', '{}', '1.0.0', now, now]
+        );
+
+        await this.dbQuery(
+          `INSERT INTO prompt_versions (prompt_id, version, content, variables, created_at, created_by)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+          [id, '1.0.0', def.content, '[]', now, 'system']
+        );
+
+        this.prompts.set(id, {
+          id,
+          name: def.name,
+          title: def.title,
+          description: def.description,
+          slot_type: 'system',
+          content: def.content,
+          variables: [],
+          tags: ['workspace'],
+          metadata: {},
+          level: 'GLOBAL',
+          project_id: this.GLOBAL_PROJECT_ID,
+          current_version: '1.0.0',
+          created_at: now,
+          updated_at: now
+        });
+
+        seeded++;
+        this.logger.info('prompt-manager.seed.created', { name: def.name });
+      } catch (err) {
+        this.logger.warn('prompt-manager.seed.error', { name: def.name, error: err.message });
+      }
+    }
+
+    if (seeded > 0) {
+      this.logger.info('prompt-manager.seed.complete', { seeded, total: defaults.length });
     }
   }
 

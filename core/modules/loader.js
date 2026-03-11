@@ -1213,6 +1213,58 @@ class ModuleLoader {
   }
 
   /**
+   * Get tools filtered by route — only tools from modules that declare matching routes.
+   * Falls back to all tools if no modules match the route.
+   *
+   * @param {string} route - The workspace route (e.g., '/menu-generator')
+   * @returns {Array} Array of tool definitions
+   */
+  getToolsByRoute(route) {
+    if (!route) return this.getToolsForAI();
+
+    // Find module names whose manifest declares a matching route
+    const matchingModuleNames = new Set();
+    for (const [moduleName, moduleData] of this.loadedModules) {
+      const routes = moduleData.manifest?.routes || [];
+      for (const r of routes) {
+        if (route === r || route.startsWith(r + '/')) {
+          matchingModuleNames.add(moduleName);
+          break;
+        }
+      }
+    }
+
+    if (matchingModuleNames.size === 0) {
+      return this.getToolsForAI();
+    }
+
+    // Filter tools to only those belonging to matching modules
+    const filtered = [];
+    for (const tool of this.toolsRegistry.values()) {
+      if (matchingModuleNames.has(tool.module)) {
+        filtered.push({
+          name: tool.name,
+          description: tool.description,
+          parameters: tool.parameters,
+          confirmation: tool.confirmation
+        });
+      }
+    }
+
+    if (this.logger) {
+      this.logger.info('tools.filtered.by.route', {
+        route,
+        matchingModules: [...matchingModuleNames],
+        filteredCount: filtered.length,
+        totalCount: this.toolsRegistry.size
+      });
+    }
+
+    // Fallback to all tools if no tools found for matching modules
+    return filtered.length > 0 ? filtered : this.getToolsForAI();
+  }
+
+  /**
    * Get a specific tool by name
    *
    * @param {string} toolName - Tool name (e.g., 'fs.read')
