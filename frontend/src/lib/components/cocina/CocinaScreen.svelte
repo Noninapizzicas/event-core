@@ -34,6 +34,9 @@
 
   import CocinaHeader from './CocinaHeader.svelte';
   import PedidoCard from './PedidoCard.svelte';
+  import CocinaConfigPanel from './CocinaConfigPanel.svelte';
+
+  let showConfig = false;
 
   let cleanupSubs: (() => void) | null = null;
   let audioUnlocked = false;
@@ -102,7 +105,7 @@
 </svelte:head>
 
 <div class="cocina-screen">
-  <CocinaHeader />
+  <CocinaHeader on:configOpen={() => showConfig = true} />
 
   <main class="cocina-grid-area">
     {#if $cocinaLoading && $pedidosCount === 0}
@@ -124,6 +127,10 @@
       </div>
     {/if}
   </main>
+
+  {#if showConfig}
+    <CocinaConfigPanel on:close={() => showConfig = false} />
+  {/if}
 </div>
 
 <style>

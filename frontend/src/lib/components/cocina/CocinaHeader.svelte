@@ -30,7 +30,9 @@
     clock = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   }
 
-  import { onMount, onDestroy } from 'svelte';
+  import { createEventDispatcher, onMount, onDestroy } from 'svelte';
+
+  const dispatch = createEventDispatcher();
 
   onMount(() => {
     updateClock();
@@ -101,6 +103,9 @@
         {/each}
       </div>
     {/if}
+    <button class="config-btn" on:click={() => dispatch('configOpen')} title="Configuración de estación">
+      &#x2699;
+    </button>
     <button class="refresh-btn" class:spinning={refreshing} on:click={handleRefresh} title="Recargar pedidos">
       &#x21bb;
     </button>
@@ -206,6 +211,27 @@
     color: #94a3b8;
     font-variant-numeric: tabular-nums;
     font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+
+  .config-btn {
+    background: none;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    color: #94a3b8;
+    font-size: 1.4rem;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s, border-color 0.2s;
+    flex-shrink: 0;
+  }
+
+  .config-btn:active {
+    color: #f8fafc;
+    border-color: #60a5fa;
   }
 
   .refresh-btn {
@@ -337,6 +363,7 @@
     .metric-label { font-size: 0.5rem; letter-spacing: 0.5px; }
     .metric-divider { height: 24px; }
     .clock { font-size: 0.8rem; }
+    .config-btn { width: 32px; height: 32px; font-size: 1.1rem; border-radius: 6px; }
     .refresh-btn { width: 32px; height: 32px; font-size: 1.1rem; border-radius: 6px; }
     .device-indicator { gap: 4px; }
     .device-dot { width: 10px; height: 10px; }
