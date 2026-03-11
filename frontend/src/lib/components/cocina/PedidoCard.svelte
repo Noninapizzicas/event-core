@@ -63,6 +63,15 @@
   $: elapsedSeconds = (Date.now() - new Date(pedido.recibido_at).getTime()) / 1000;
   $: isUrgent = elapsedSeconds > 600 && !isListo;
 
+  // Split items by filter
+  $: hasFilters = filtros.length > 0;
+  $: myItems = hasFilters
+    ? pedido.items.filter(i => itemPassesFilter(i, filtros))
+    : pedido.items;
+  $: otherItems = hasFilters
+    ? pedido.items.filter(i => !itemPassesFilter(i, filtros))
+    : [];
+
   $: borderColor = isListo
     ? '#22c55e'
     : isGlovo && pendienteConfirmacion
@@ -182,13 +191,35 @@
     </div>
   {:else}
     <!-- Flujo normal: items interactivos -->
-    <div class="card-items">
-      {#each pedido.items as item (item.item_id)}
-        <div class="item-filter-wrap" class:filtered-out={filtros.length > 0 && !itemPassesFilter(item, filtros)}>
-          <ItemLine {item} on:tap={handleItemTap} />
+    {#if hasFilters && otherItems.length > 0}
+      <!-- Two-column layout: my items | other items -->
+      <div class="card-items-split">
+        <div class="split-mine">
+          {#each myItems as item (item.item_id)}
+            <ItemLine {item} on:tap={handleItemTap} />
+          {/each}
+          {#if myItems.length === 0}
+            <p class="split-empty">Sin items de tu estación</p>
+          {/if}
         </div>
-      {/each}
-    </div>
+        <div class="split-others">
+          <span class="split-others-label">OTROS</span>
+          {#each otherItems as item (item.item_id)}
+            <div class="other-item-line">
+              <span class="other-qty">{item.cantidad}x</span>
+              <span class="other-name">{item.nombre}</span>
+            </div>
+          {/each}
+        </div>
+      </div>
+    {:else}
+      <!-- No filters: single column -->
+      <div class="card-items">
+        {#each pedido.items as item (item.item_id)}
+          <ItemLine {item} on:tap={handleItemTap} />
+        {/each}
+      </div>
+    {/if}
   {/if}
 
   <!-- Notas generales del pedido -->
@@ -308,13 +339,67 @@
     flex-direction: column;
   }
 
-  .item-filter-wrap {
-    transition: opacity 0.2s;
+  /* ===== TWO-COLUMN SPLIT LAYOUT ===== */
+  .card-items-split {
+    display: flex;
+    min-height: 0;
   }
 
-  .item-filter-wrap.filtered-out {
-    opacity: 0.25;
-    pointer-events: none;
+  .split-mine {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .split-others {
+    width: 35%;
+    max-width: 180px;
+    min-width: 100px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 6px 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border-left: 1px solid #1e293b;
+  }
+
+  .split-others-label {
+    font-size: 0.55rem;
+    font-weight: 800;
+    color: #475569;
+    letter-spacing: 1.5px;
+    margin-bottom: 2px;
+  }
+
+  .other-item-line {
+    display: flex;
+    gap: 4px;
+    align-items: baseline;
+    padding: 1px 0;
+  }
+
+  .other-qty {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #475569;
+    flex-shrink: 0;
+  }
+
+  .other-name {
+    font-size: 0.65rem;
+    color: #475569;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .split-empty {
+    padding: 10px 14px;
+    margin: 0;
+    color: #334155;
+    font-size: 0.8rem;
+    font-style: italic;
   }
 
   /* Notas generales del pedido */
@@ -514,6 +599,14 @@
   }
 
   /* ===== MOBILE COMPACT ===== */
+  @media (max-width: 600px) {
+    .split-others { width: 30%; max-width: 120px; min-width: 80px; padding: 4px 6px; }
+    .split-others-label { font-size: 0.5rem; }
+    .other-qty { font-size: 0.55rem; }
+    .other-name { font-size: 0.55rem; }
+    .split-empty { padding: 6px 10px; font-size: 0.7rem; }
+  }
+
   @media (max-width: 600px) {
     .pedido-card { border-radius: 8px; border-width: 1.5px; }
     .card-header { padding: 6px 10px; min-height: 36px; }
