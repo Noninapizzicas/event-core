@@ -57,7 +57,7 @@ class PromptComposerModule {
     this.logger = context.logger;
     this.eventBus = context.eventBus;
     this.uiHandler = context.uiHandler;
-    this.config = context.config || {};
+    this.config = context.moduleConfig || context.config || {};
     this.moduleLoader = context.moduleLoader || null;
 
     this.logger.info('prompt-composer.loading', {
