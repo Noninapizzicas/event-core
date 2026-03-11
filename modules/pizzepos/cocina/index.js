@@ -207,6 +207,7 @@ class CocinaModule {
           item_id: item.item_id,
           producto_id: item.producto_id,
           nombre: item.nombre,
+          categoria: item.categoria || null,
           cantidad: item.cantidad,
           variaciones: item.variaciones || null,
           notas: item.notas || '',
