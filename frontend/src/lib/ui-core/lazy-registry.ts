@@ -412,6 +412,13 @@ export function setCurrentRoute(route: string): void {
   const matchingModules = [...defs.values()]
     .filter(d => d.routes && routeMatches(route, d.routes));
 
+  console.log('[LazyRegistry] setCurrentRoute:', {
+    route,
+    totalDefs: defs.size,
+    matchingModules: matchingModules.map(d => ({ id: d.id, routes: d.routes })),
+    allRoutes: [...defs.values()].filter(d => d.routes).map(d => ({ id: d.id, routes: d.routes }))
+  });
+
   if (matchingModules.length > 0) {
     // Extract project_id from route: /peppone/menu-generator → peppone
     const segments = route.split('/').filter(Boolean);
@@ -422,7 +429,7 @@ export function setCurrentRoute(route: string): void {
 
     const title = matchingModules[0].label || matchingModules[0].id;
 
-    setPageCtx({
+    const ctx = {
       route: workspaceRoute,
       title,
       description: `Workspace: ${title}`,
@@ -430,8 +437,11 @@ export function setCurrentRoute(route: string): void {
         projectId: projectId || '',
         moduleIds: matchingModules.map(d => d.id)
       }
-    });
+    };
+    console.log('[LazyRegistry] setPageContext:', ctx);
+    setPageCtx(ctx);
   } else {
+    console.log('[LazyRegistry] No matching modules — clearing page context');
     clearPageCtx();
   }
 }
