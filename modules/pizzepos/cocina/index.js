@@ -15,14 +15,12 @@ class CocinaModule {
     this.logger = null;
     this.metrics = null;
     this.uiHandler = null;
+    this.validator = null;
 
     // Estado en memoria
     this.pedidosActivos = new Map(); // pedido_id -> pedido_cocina
     this.historial = []; // últimos 50 pedidos completados
     this.maxHistorial = 50;
-
-    // SSE clients
-    this.sseClients = new Set();
 
     // Rolling average tiempos preparación (últimos 100)
     this.tiemposPreparacion = [];
@@ -37,8 +35,12 @@ class CocinaModule {
     this.metrics = core.metrics;
     this.eventBus = core.eventBus;
     this.uiHandler = core.uiHandler;
+    this.validator = core.validationManager || null;
 
     this.logger.info('module.loading', { module: this.name, version: this.version });
+
+    // Registrar schemas de validación
+    this.registerSchemas();
 
     // Event subscriptions are auto-wired from module.json by the loader.
     this.registerUIHandlers();
@@ -52,19 +54,11 @@ class CocinaModule {
   async onUnload() {
     this.logger.info('module.unloading', { module: this.name });
 
-    // Cerrar clientes SSE
-    for (const client of this.sseClients) {
-      try {
-        if (client.close) client.close();
-      } catch (_) { /* ignore */ }
-    }
-    this.sseClients.clear();
-
     // Desregistrar UI handlers
     if (this.uiHandler) {
       const actions = [
         'list-active', 'get', 'history', 'prepare-item',
-        'mark-ready', 'stream', 'health', 'metrics'
+        'mark-ready', 'health', 'metrics'
       ];
       for (const action of actions) {
         this.uiHandler.unregister('cocina', action);
@@ -77,6 +71,49 @@ class CocinaModule {
     this.tiemposPreparacion = [];
 
     this.logger.info('module.unloaded', { module: this.name });
+  }
+
+  // ==========================================
+  // Validation Schemas
+  // ==========================================
+
+  registerSchemas() {
+    if (!this.validator) return;
+
+    this.validator.registerSchema('cocina.prepare-item', {
+      type: 'object',
+      required: ['item_id'],
+      properties: {
+        item_id: { type: 'string', minLength: 1 }
+      }
+    });
+
+    this.validator.registerSchema('cocina.mark-ready', {
+      type: 'object',
+      required: ['pedido_id'],
+      properties: {
+        pedido_id: { type: 'string', minLength: 1 }
+      }
+    });
+
+    this.validator.registerSchema('cocina.get', {
+      type: 'object',
+      required: ['pedido_id'],
+      properties: {
+        pedido_id: { type: 'string', minLength: 1 }
+      }
+    });
+
+    this.logger.info('cocina.schemas.registered', { count: 3 });
+  }
+
+  validateInput(schemaId, data) {
+    if (!this.validator) return null;
+    const result = this.validator.validate(schemaId, data);
+    if (!result.valid) {
+      return { status: 400, error: 'Validación fallida', validation_errors: result.errors };
+    }
+    return null;
   }
 
   // ==========================================
@@ -94,12 +131,11 @@ class CocinaModule {
     this.uiHandler.register('cocina', 'history', this.handleGetHistorial.bind(this));
     this.uiHandler.register('cocina', 'prepare-item', this.handlePrepararItem.bind(this));
     this.uiHandler.register('cocina', 'mark-ready', this.handleMarcarListo.bind(this));
-    this.uiHandler.register('cocina', 'stream', this.handleSSEStream.bind(this));
     this.uiHandler.register('cocina', 'health', this.handleHealthCheck.bind(this));
     this.uiHandler.register('cocina', 'metrics', this.handleGetMetrics.bind(this));
 
     this.logger.info('cocina.ui_handlers.registered', {
-      handlers: ['list-active', 'get', 'history', 'prepare-item', 'mark-ready', 'stream', 'health', 'metrics']
+      handlers: ['list-active', 'get', 'history', 'prepare-item', 'mark-ready', 'health', 'metrics']
     });
   }
 
@@ -151,8 +187,6 @@ class CocinaModule {
 
     this.metrics?.increment?.('cocina.pedido_recibido.total');
     this.metrics?.gauge?.('cocina.pedidos_activos.count', this.pedidosActivos.size);
-
-    this.broadcastSSE({ type: 'nuevo_pedido', data: pedidoCocina });
   }
 
   async onPedidoCancelado(event) {
@@ -165,8 +199,6 @@ class CocinaModule {
 
     this.metrics?.increment?.('cocina.pedido_cancelado.total');
     this.metrics?.gauge?.('cocina.pedidos_activos.count', this.pedidosActivos.size);
-
-    this.broadcastSSE({ type: 'pedido_cancelado', data: { pedido_id } });
 
     this.logger.info('cocina.pedido.cancelado', { pedido_id });
   }
@@ -205,6 +237,9 @@ class CocinaModule {
   }
 
   async handleGetPedido(data) {
+    const invalid = this.validateInput('cocina.get', data);
+    if (invalid) return invalid;
+
     const { pedido_id } = data;
     const pedido = this.pedidosActivos.get(pedido_id);
 
@@ -222,6 +257,9 @@ class CocinaModule {
    * Si todos los items quedan listo → auto-completa el pedido.
    */
   async handlePrepararItem(data) {
+    const invalid = this.validateInput('cocina.prepare-item', data);
+    if (invalid) return invalid;
+
     const { item_id } = data;
 
     // Buscar item en pedidos activos
@@ -254,11 +292,6 @@ class CocinaModule {
 
       await this.publishItemPreparando(pedidoEncontrado, itemEncontrado);
 
-      this.broadcastSSE({
-        type: 'item_preparando',
-        data: { pedido_id: pedidoEncontrado.pedido_id, item_id }
-      });
-
       this.logger.info('cocina.item.preparando', {
         pedido_id: pedidoEncontrado.pedido_id, item_id
       });
@@ -276,11 +309,6 @@ class CocinaModule {
     this.metrics?.increment?.('cocina.item_preparado.total');
 
     await this.publishItemPreparado(pedidoEncontrado, itemEncontrado);
-
-    this.broadcastSSE({
-      type: 'item_preparado',
-      data: { pedido_id: pedidoEncontrado.pedido_id, item_id }
-    });
 
     // Auto-completar si todos listos
     const todosListos = pedidoEncontrado.items.every(i => i.estado === 'listo');
@@ -303,6 +331,9 @@ class CocinaModule {
    * Todos los items pendientes/preparando pasan a listo.
    */
   async handleMarcarListo(data) {
+    const invalid = this.validateInput('cocina.mark-ready', data);
+    if (invalid) return invalid;
+
     const { pedido_id } = data;
 
     const pedido = this.pedidosActivos.get(pedido_id);
@@ -324,46 +355,6 @@ class CocinaModule {
     return { status: 200, data: pedido };
   }
 
-  /**
-   * Registra un cliente SSE y devuelve estado inicial.
-   * El cliente se pasa en data.client (inyectado por el core/ui SSE handler).
-   * Si no hay client (ej. MQTT request), solo devuelve estado.
-   */
-  async handleSSEStream(data) {
-    const { client } = data || {};
-
-    if (client) {
-      this.sseClients.add(client);
-
-      // Auto-cleanup cuando el cliente se desconecta
-      const onClose = () => {
-        this.sseClients.delete(client);
-        this.logger.info('cocina.sse.client_disconnected', {
-          clientes_sse: this.sseClients.size
-        });
-      };
-
-      if (client.on) client.on('close', onClose);
-      else if (client.onclose) client.onclose = onClose;
-
-      this.logger.info('cocina.sse.client_connected', {
-        clientes_sse: this.sseClients.size
-      });
-    }
-
-    const activos = Array.from(this.pedidosActivos.values());
-    activos.sort((a, b) => new Date(a.recibido_at) - new Date(b.recibido_at));
-
-    return {
-      status: 200,
-      data: {
-        type: 'connected',
-        pedidos_activos: activos,
-        clientes_sse: this.sseClients.size
-      }
-    };
-  }
-
   async handleHealthCheck() {
     return {
       status: 200,
@@ -371,8 +362,7 @@ class CocinaModule {
         status: 'healthy',
         module: this.name,
         version: this.version,
-        pedidos_activos: this.pedidosActivos.size,
-        clientes_sse: this.sseClients.size
+        pedidos_activos: this.pedidosActivos.size
       }
     };
   }
@@ -395,7 +385,6 @@ class CocinaModule {
         items_preparando: itemsPreparando,
         historial_count: this.historial.length,
         tiempo_promedio_preparacion: Math.round(tiempoPromedio),
-        clientes_sse: this.sseClients.size,
         timestamp: new Date().toISOString()
       }
     };
@@ -523,30 +512,11 @@ class CocinaModule {
 
     await this.publishPedidoListo(pedido);
 
-    this.broadcastSSE({
-      type: 'pedido_listo',
-      data: {
-        pedido_id: pedido.pedido_id,
-        canal: pedido.canal || null,
-        tiempo_preparacion: tiempoPreparacion
-      }
-    });
-
     this.logger.info('cocina.pedido.listo', {
       pedido_id: pedido.pedido_id,
       canal: pedido.canal || null,
       tiempo_preparacion: tiempoPreparacion
     });
-  }
-
-  broadcastSSE(message) {
-    for (const client of this.sseClients) {
-      try {
-        client.send(message);
-      } catch (error) {
-        this.sseClients.delete(client);
-      }
-    }
   }
 
   // ==========================================

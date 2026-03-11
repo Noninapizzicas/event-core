@@ -374,6 +374,7 @@ async function main() {
         tracer: core.tracer,
         activity: core.activity,
         uiHandler: core.uiHandler,
+        validationManager: core.validationManager,
         // Provider registry for AI agent tool auto-discovery
         providerRegistry: core.providerSystem?.registry || null
       };
