@@ -24,6 +24,7 @@
    * Botones de familia hacen scroll-to-section.
    */
   import { onMount, onDestroy } from 'svelte';
+  import { get } from 'svelte/store';
   import { connect, disconnect, setupVisibilityHandler, removeVisibilityHandler } from '$lib/ui-core';
   import {
     comanderoStore,
@@ -46,7 +47,7 @@
     type Producto,
     type Categoria
   } from '$lib/stores/comandero';
-  import { renameMesa, renameCuenta } from '$lib/stores/cuentas';
+  import { renameMesa, renameCuenta, getCuenta } from '$lib/stores/cuentas';
   import { imprimirComanda, type ComandaItem, type Canal } from '$lib/stores/impresion';
 
   import BotonEspecial from './BotonEspecial.svelte';
@@ -242,6 +243,7 @@
 
   // Estado del panel de cobro
   let showCobro = false;
+  let cobroMonto = 0;
 
   // Estado del panel mitad y mitad
   let showMitadMitad = false;
@@ -292,6 +294,22 @@
   function handleVariacionesClose() {
     showVariaciones = false;
     productoVariaciones = null;
+  }
+
+  /**
+   * Abre el panel de cobro con el monto correcto.
+   * Usa Math.max entre el buffer del comandero y el total acumulado
+   * en persistencia (cuentas), para que tras reinicio del servidor
+   * el monto refleje el total real aunque el buffer esté vacío.
+   */
+  async function openCobro() {
+    let cuentaTotal = 0;
+    try {
+      const cuenta = await getCuenta(projectId, cuenta_id);
+      if (cuenta?.total) cuentaTotal = cuenta.total;
+    } catch { /* usar solo pedidoTotal */ }
+    cobroMonto = Math.max(get(pedidoTotal), cuentaTotal);
+    showCobro = true;
   }
 
   function handleCobroClose() {
@@ -492,7 +510,7 @@
         }
         break;
       case 'cobro':
-        showCobro = true;
+        openCobro();
         break;
       case 'salir':
         if (onNavigate) onNavigate('/comandero');
@@ -530,7 +548,7 @@
 
       // Auto-abrir cobro si se navega con ?view=cuenta
       if (initialView === 'cuenta') {
-        showCobro = true;
+        openCobro();
       }
     }).catch((err) => {
       console.error('[ComanderoScreen] MQTT connection failed', err);
@@ -710,7 +728,7 @@
     <CobroPanel
       {cuenta_id}
       project_id={projectId}
-      monto={$pedidoTotal}
+      monto={cobroMonto}
       pedido_ids={$pedidoItems.map(i => i.id)}
       visible={showCobro}
       on:close={handleCobroClose}
