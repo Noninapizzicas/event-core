@@ -148,6 +148,8 @@
     "pizzepos/menu-generator",
     "pizzepos/persistencia-comandero",
     "pizzepos/impresion",
+    "pizzepos/carta-digital",
+    "pizzepos/carta-impresion",
     "facturacion/asesoria",
     "facturacion/fuentes",
     "certificate-authority",
@@ -163,6 +165,7 @@
     "facturacion": 2,
     "total_discovered": 52,
     "total_active": 44,
+    "_nota": "config.json enabled tiene 45 entradas pero incluye 'pizzepos' y 'facturas' como directorios padre, no como módulos reales",
     "disabled": 8
   },
   "module_categories": {
@@ -214,7 +217,8 @@
         "cuentas", "cuentas-canales (5 canales: mesa, telefono, llevar, glovo, whatsapp)",
         "pedidos", "cobros", "cocina", "comandero",
         "productos", "categorias", "ingredientes", "variaciones",
-        "menu-generator", "persistencia-comandero", "impresion"
+        "menu-generator", "persistencia-comandero", "impresion",
+        "carta-digital", "carta-impresion"
       ]
     },
     "facturacion": {
