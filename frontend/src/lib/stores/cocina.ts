@@ -375,6 +375,43 @@ export function clearFiltros(): void {
 }
 
 /**
+ * Establece filtros de golpe (reemplaza todos los activos).
+ * Usado por el panel de configuración.
+ */
+export function setFiltros(familias: string[]): void {
+  cocinaStore.update(s => ({ ...s, filtrosActivos: familias }));
+
+  const state = get(cocinaStore);
+  if (state.myDeviceId) {
+    mqttRequest('cocina', 'register-device', {
+      device_id: state.myDeviceId,
+      filtros: { familias }
+    }).catch(() => {});
+  }
+}
+
+/**
+ * Actualiza el nombre del dispositivo (persiste en backend).
+ */
+export async function updateDeviceName(nombre: string): Promise<boolean> {
+  const state = get(cocinaStore);
+  if (!state.myDeviceId) return false;
+
+  cocinaStore.update(s => ({ ...s, myNombre: nombre }));
+
+  try {
+    await mqttRequest('cocina', 'register-device', {
+      device_id: state.myDeviceId,
+      nombre,
+      filtros: { familias: state.filtrosActivos }
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Comprueba si un item pasa el filtro activo del dispositivo.
  * Si no hay filtros activos, pasa todo.
  * Usa el campo `categoria` del item si existe, o intenta inferir de la metadata.
