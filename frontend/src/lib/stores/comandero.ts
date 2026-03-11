@@ -282,6 +282,7 @@ export async function addItem(
       nombre: nombreFinal,
       precio: precioFinal,
       cantidad,
+      categoria: producto?.categoria || producto?.categoria_id || null,
       notas,
       // Campos opcionales — solo enviar si existen
       ...(variaciones && { variaciones }),
