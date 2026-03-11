@@ -100,6 +100,7 @@ export async function sendMessage(content: string): Promise<void> {
   try {
     // Capturar contexto de página (si hay) para inyectar en el system prompt
     const currentPageContext = getPageContextSnapshot();
+    console.log('[Chat] sendMessage pageContext:', currentPageContext ? { route: currentPageContext.route, title: currentPageContext.title, stateKeys: Object.keys(currentPageContext.state || {}) } : null);
 
     const response = await mqttRequest<{
       conversationId: string;

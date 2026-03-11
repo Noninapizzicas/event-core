@@ -816,7 +816,12 @@ class ChatAiBridgeModule {
     const { conversationId, content, attachments, pageContext } = data;
     const correlationId = request?.correlationId || crypto.randomUUID();
 
-    this.logger.info('chat-ai-bridge.handleConversationSend', { correlationId, conversationId });
+    this.logger.info('chat-ai-bridge.handleConversationSend', {
+      correlationId, conversationId,
+      hasPageContext: !!pageContext,
+      pageContextRoute: pageContext?.route || null,
+      pageContextTitle: pageContext?.title || null
+    });
 
     if (!content || content.trim().length === 0) {
       throw { status: 400, code: 'VALIDATION_ERROR', message: 'Content is required' };
