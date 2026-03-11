@@ -37,21 +37,21 @@
   let loadingCategorias = false;
 
   // Cargar todas las categorías del catálogo
-  // Usa productos/carta_completa (auto-carga desde archivo) con fallback a categorias/list
+  // Usa productos/categorias (auto-carga desde archivo si la memoria está vacía)
   async function loadCategorias() {
     const projectId = $page.params.project_id;
     if (!projectId) return;
 
     loadingCategorias = true;
     try {
-      // productos/carta_completa auto-carga desde archivo si la memoria está vacía
-      const res = await mqttRequest<any>('productos', 'carta_completa', { project_id: projectId });
+      // productos/categorias auto-carga desde archivo si no hay categorías en memoria
+      const res = await mqttRequest<any>('productos', 'categorias', { project_id: projectId });
       const data = res?.data?.categorias || [];
       catalogCategorias = data;
     } catch {
       try {
-        // Fallback: módulo categorías directo
-        const res2 = await mqttRequest<any>('categorias', 'list', { project_id: projectId });
+        // Fallback: carta_completa
+        const res2 = await mqttRequest<any>('productos', 'carta_completa', { project_id: projectId });
         catalogCategorias = res2?.data?.categorias || [];
       } catch {
         catalogCategorias = [];
