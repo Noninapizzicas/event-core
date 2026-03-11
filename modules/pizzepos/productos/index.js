@@ -210,24 +210,35 @@ class ProductosModule {
     // Request project info from project-manager
     const requestId = crypto.randomUUID();
 
-    const project = await new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        this.pendingProjectRequests.delete(requestId);
-        reject(new Error(`Project path resolve timeout: ${projectId}`));
-      }, 5000);
+    try {
+      const project = await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          this.pendingProjectRequests.delete(requestId);
+          reject(new Error(`Project path resolve timeout: ${projectId}`));
+        }, 5000);
 
-      this.pendingProjectRequests.set(requestId, { resolve, reject, timeout });
+        this.pendingProjectRequests.set(requestId, { resolve, reject, timeout });
 
-      this.eventBus.publish('project.get.request', {
-        request_id: requestId, project_id: projectId
-      }).catch(err => {
-        clearTimeout(timeout);
-        this.pendingProjectRequests.delete(requestId);
-        reject(err);
+        this.eventBus.publish('project.get.request', {
+          request_id: requestId, project_id: projectId
+        }).catch(err => {
+          clearTimeout(timeout);
+          this.pendingProjectRequests.delete(requestId);
+          reject(err);
+        });
       });
-    });
 
-    return this.projectPaths.get(projectId) || path.join(project.base_path, 'storage', this.storageSection);
+      return this.projectPaths.get(projectId) || path.join(project.base_path, 'storage', this.storageSection);
+    } catch (err) {
+      // Fallback: use cwd-based default path (covers cases where project-manager hasn't loaded yet)
+      const fallbackPath = path.join(process.cwd(), 'storage', this.storageSection);
+      this.logger.warn('productos.resolve_path.fallback', {
+        project_id: projectId,
+        fallback: fallbackPath,
+        reason: err.message
+      });
+      return fallbackPath;
+    }
   }
 
   // ==========================================
