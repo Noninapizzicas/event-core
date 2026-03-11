@@ -138,7 +138,7 @@ class PromptManagerModule {
       await this.eventBus.publish('prompt.get.response', {
         request_id,
         success: true,
-        prompt: prompt?.content || null,
+        prompt: prompt || null,
         correlation_id
       });
     } catch (error) {
