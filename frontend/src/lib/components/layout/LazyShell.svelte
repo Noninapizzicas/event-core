@@ -58,6 +58,10 @@
     perfEnd('LazyShell.defineModules');
     logMsg(`📋 ${moduleDefinitions.length} módulos definidos (sin cargar)`);
 
+    // Re-evaluate route now that definitions are loaded
+    // (the reactive $: setCurrentRoute runs before onMount, when definitionsStore is empty)
+    setCurrentRoute($page.url.pathname);
+
     // 2. Inicializar subscripciones core
     perfStart('LazyShell.initSubscriptions');
     cleanupWorkspace = initWorkspaceSubscriptions();
