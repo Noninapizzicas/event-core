@@ -4,6 +4,7 @@
   "description": "Internal Certificate Authority with mTLS authentication for client portal and device management",
   "author": "Event Core Team",
   "routeCode": "3333",
+  "routes": ["/certificate-authority"],
 
   "apis": [
     {

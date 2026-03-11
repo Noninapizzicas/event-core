@@ -357,12 +357,17 @@ class ChatAiBridgeModule {
   async composePrompt(flowState, context) {
     const { flowId, conversation_id, use_tools, page_context, correlation_id } = flowState;
     const requestId = crypto.randomUUID();
-    const timeout = this.config.requestTimeout || 10000;
+    const timeout = this.config.promptComposeTimeout || 15000;
 
     const promise = new Promise((resolve, reject) => {
       const timeoutId = setTimeout(() => {
         this.pendingPromptRequests.delete(requestId);
-        // Don't fail - return default prompt
+        this.logger.warn('chat-ai-bridge.composePrompt.timeout', {
+          flowId,
+          timeout,
+          page_context_route: page_context?.route || null
+        });
+        // Don't fail - return default prompt (but page context is LOST)
         resolve('You are a helpful AI assistant.');
       }, timeout);
 
@@ -707,7 +712,11 @@ class ChatAiBridgeModule {
     if (success) {
       pending.resolve(prompt);
     } else {
-      // Don't fail - return default prompt
+      this.logger.warn('chat-ai-bridge.composePrompt.failed', {
+        error,
+        flowId: pending.flowId
+      });
+      // Don't fail - return default prompt (but composed context is LOST)
       pending.resolve('You are a helpful AI assistant.');
     }
   }

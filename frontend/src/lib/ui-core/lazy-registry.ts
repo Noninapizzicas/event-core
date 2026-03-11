@@ -12,6 +12,7 @@ import { writable, derived, get } from 'svelte/store';
 import { publish, subscribe as mqttSubscribe, isConnected } from './mqtt';
 import type { UIModule, UIZone, ModuleContext, AppState } from './types';
 import { getPanel, loadPanelComponent } from '$lib/modules/panels';
+import { setPageContext as setPageCtx, clearPageContext as clearPageCtx } from '$lib/stores/page-context';
 
 // ============================================================================
 // TIPOS PARA LAZY LOADING
@@ -401,9 +402,38 @@ const currentRouteStore = writable<string>('/');
 /**
  * Informa la ruta actual al registry.
  * Llamado desde LazyShell reactivamente con $page.url.pathname.
+ * Auto-sets page context when modules match the route.
  */
 export function setCurrentRoute(route: string): void {
   currentRouteStore.set(route);
+
+  // Auto page context: find modules that match this route
+  const defs = get(definitionsStore);
+  const matchingModules = [...defs.values()]
+    .filter(d => d.routes && routeMatches(route, d.routes));
+
+  if (matchingModules.length > 0) {
+    // Extract project_id from route: /peppone/menu-generator → peppone
+    const segments = route.split('/').filter(Boolean);
+    const projectId = segments.length > 1 ? segments[0] : undefined;
+    const workspaceRoute = segments.length > 1
+      ? '/' + segments.slice(1).join('/')
+      : route;
+
+    const title = matchingModules[0].label || matchingModules[0].id;
+
+    setPageCtx({
+      route: workspaceRoute,
+      title,
+      description: `Workspace: ${title}`,
+      state: {
+        projectId: projectId || '',
+        moduleIds: matchingModules.map(d => d.id)
+      }
+    });
+  } else {
+    clearPageCtx();
+  }
 }
 
 /**

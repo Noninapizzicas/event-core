@@ -4,6 +4,7 @@
   "description": "Adaptadores de fuentes de entrada para facturas: Telegram, Gmail, y extensible a más",
   "author": "Event-Core Team",
   "main": "index.js",
+  "routes": ["/facturas"],
   "dependencies": ["channel-manager"],
 
   "handlers": [

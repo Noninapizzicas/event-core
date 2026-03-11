@@ -109,6 +109,49 @@ class PromptManagerModule {
   }
 
   // ==========================================
+  // Event Handler: prompt.get.request
+  // Used by prompt-composer to load prompts by name (e.g., workspace:menu-generator)
+  // ==========================================
+
+  async onPromptGetRequest(event) {
+    const { request_id, name, correlation_id } = event.data || event;
+
+    if (!request_id) return;
+
+    try {
+      let prompt = null;
+
+      if (name) {
+        // Find by name (case-insensitive)
+        const nameLower = name.toLowerCase();
+        for (const p of this.prompts.values()) {
+          if (p.name.toLowerCase() === nameLower) {
+            prompt = p;
+            break;
+          }
+        }
+      }
+
+      await this.eventBus.publish('prompt.get.response', {
+        request_id,
+        success: true,
+        prompt: prompt?.content || null,
+        correlation_id
+      });
+    } catch (error) {
+      this.logger.error('prompt-manager.get.request.error', {
+        request_id, name, error: error.message
+      });
+      await this.eventBus.publish('prompt.get.response', {
+        request_id,
+        success: false,
+        error: error.message,
+        correlation_id
+      });
+    }
+  }
+
+  // ==========================================
   // Database Operations (via events)
   // ==========================================
 
