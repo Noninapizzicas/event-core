@@ -1549,11 +1549,11 @@ class AIGatewayModule {
 
       case 'gemini':
         // Gemini format: handled inside gemini-provider.convertTools()
-        // Tool names must be valid identifiers — convert dots to underscores
+        // Pass through as-is — the provider will convert
         return tools.map(tool => ({
           type: 'function',
           function: {
-            name: (tool.name || '').replace(/\./g, '_'),
+            name: tool.name,
             description: tool.description || '',
             parameters: tool.parameters || {
               type: 'object',
@@ -1569,11 +1569,10 @@ class AIGatewayModule {
       case 'ollama':
       default:
         // OpenAI-compatible format (DeepSeek, Groq, Ollama all use this)
-        // Tool names must match [a-zA-Z0-9_-] — convert dots to underscores
         return tools.map(tool => ({
           type: 'function',
           function: {
-            name: (tool.name || '').replace(/\./g, '_'),
+            name: tool.name,
             description: tool.description || '',
             parameters: tool.parameters || {
               type: 'object',
@@ -1833,24 +1832,15 @@ class AIGatewayModule {
   normalizeToolName(name) {
     if (!name || typeof name !== 'string') return name;
 
-    // First try exact match (handles both "recetas.crear" and "recetas_crear")
+    // First try exact match
     if (this.moduleLoader?.getTool(name)) {
       return name;
     }
 
-    // Try converting underscores to dots (AI returns "recetas_crear", registry has "recetas.crear")
-    const withDots = name.replace(/_/g, '.');
-    if (this.moduleLoader?.getTool(withDots)) {
-      return withDots;
-    }
-
-    // Try converting only first underscore to dot (e.g., "recetas_precio_mercado" → "recetas.precio_mercado")
-    const firstUnderscoreIdx = name.indexOf('_');
-    if (firstUnderscoreIdx > 0) {
-      const dotVersion = name.substring(0, firstUnderscoreIdx) + '.' + name.substring(firstUnderscoreIdx + 1);
-      if (this.moduleLoader?.getTool(dotVersion)) {
-        return dotVersion;
-      }
+    // Try converting dots to underscores (provider tool format)
+    const normalized = name.replace(/\./g, '_');
+    if (this.moduleLoader?.getTool(normalized)) {
+      return normalized;
     }
 
     // Return original if no match found (will error later with proper message)

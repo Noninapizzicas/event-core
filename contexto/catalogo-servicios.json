@@ -1,23 +1,22 @@
 {
   "_VERSION": "1.1.0",
   "_CREATED": "2026-01-17",
-  "_UPDATED": "2026-03-10",
+  "_UPDATED": "2026-03-05",
   "_DESCRIPTION": "Catálogo completo de servicios, módulos, utilidades y acciones del sistema Event-Core",
 
   "resumen": {
-    "total_modulos": "55 (38 core + 15 pizzepos + 2 facturacion)",
-    "total_active": 47,
+    "total_modulos": "52 (35 core + 15 pizzepos + 2 facturacion)",
+    "total_active": 44,
     "total_disabled": 8,
     "total_providers": 34,
     "total_provider_functions": 119,
     "total_apis": 282,
-    "total_eventos": "214 publicados, 173 suscritos",
-    "total_tools_modulos": 88,
-    "total_ui_handlers": 130,
+    "total_eventos": "206 publicados, 160 suscritos",
+    "total_tools_modulos": 63,
+    "total_ui_handlers": 116,
     "verticales": [
       "pizzepos (POS pizzería, 12 módulos, 5 canales de venta)",
-      "facturacion (procesamiento contable, 2 módulos: asesoria, fuentes)",
-      "negocio alimentario (recetas, escandallo, viabilidad — 3 módulos)"
+      "facturacion (procesamiento contable, 2 módulos: asesoria, fuentes)"
     ]
   },
 
@@ -381,37 +380,6 @@
         "apis": ["CRUD notas", "Pin/unpin"],
         "eventos_publica": ["nota.creada", "nota.actualizada", "nota.eliminada"],
         "caracteristicas": ["Codificación por color", "Filtrado de notas fijadas"]
-      }
-    },
-
-    "negocio_alimentario": {
-      "recetas": {
-        "version": "1.0.0",
-        "descripcion": "Gestión de recetas con ingredientes, cantidades y precios de mercado. Base para escandallo y viabilidad.",
-        "tools": ["recetas.crear", "recetas.listar", "recetas.obtener", "recetas.actualizar", "recetas.eliminar", "recetas.buscar", "recetas.investigar", "recetas.ingredientes", "recetas.precio_mercado", "recetas.duplicar", "recetas.escandallo", "recetas.resumen"],
-        "ui_handlers": ["recetas/list", "recetas/get", "recetas/create", "recetas/update", "recetas/delete", "recetas/ingredientes", "recetas/stats"],
-        "eventos_publica": ["receta.creada", "receta.actualizada", "receta.eliminada", "ingrediente.precio.actualizado"],
-        "eventos_suscribe": ["project.activated", "project.deactivated", "factura.procesada"],
-        "persistencia": "JSON — storage/recetas/recetas.json, ingredientes.json"
-      },
-      "escandallo": {
-        "version": "1.0.0",
-        "descripcion": "Análisis de costes y escandallo de recetas — desglose, márgenes, food cost, optimización",
-        "tools": ["escandallo.receta", "escandallo.global", "escandallo.comparar_precios", "escandallo.simular_precio", "escandallo.ingrediente_impacto", "escandallo.optimizar", "escandallo.ficha_tecnica"],
-        "ui_handlers": ["escandallo/receta", "escandallo/global", "escandallo/comparativa", "escandallo/stats"],
-        "eventos_publica": ["escandallo.calculado", "escandallo.global.calculado"],
-        "eventos_suscribe": ["project.activated", "project.deactivated", "receta.creada", "receta.actualizada", "ingrediente.precio.actualizado"],
-        "lee_datos_de": "recetas (storage/recetas/)"
-      },
-      "viabilidad": {
-        "version": "1.0.0",
-        "descripcion": "Estudio de viabilidad de negocio — escenarios, break-even, proyecciones financieras, ROI",
-        "tools": ["viabilidad.estudio", "viabilidad.punto_equilibrio", "viabilidad.escenario", "viabilidad.comparar_escenarios", "viabilidad.proyeccion", "viabilidad.guardar_config"],
-        "ui_handlers": ["viabilidad/estudio", "viabilidad/escenario", "viabilidad/config"],
-        "eventos_publica": ["viabilidad.estudio.generado", "viabilidad.config.guardada"],
-        "eventos_suscribe": ["project.activated", "project.deactivated", "receta.creada", "receta.actualizada", "receta.eliminada"],
-        "persistencia": "JSON — storage/viabilidad/config.json",
-        "lee_datos_de": "recetas (storage/recetas/)"
       }
     },
 
@@ -809,20 +777,6 @@
       "prompt.render",
       "prompt.compose",
       "prompt.get_context"
-    ],
-    "recetas": [
-      "recetas.crear", "recetas.listar", "recetas.obtener", "recetas.actualizar",
-      "recetas.eliminar", "recetas.buscar", "recetas.investigar", "recetas.ingredientes",
-      "recetas.precio_mercado", "recetas.duplicar", "recetas.escandallo", "recetas.resumen"
-    ],
-    "escandallo": [
-      "escandallo.receta", "escandallo.global", "escandallo.comparar_precios",
-      "escandallo.simular_precio", "escandallo.ingrediente_impacto",
-      "escandallo.optimizar", "escandallo.ficha_tecnica"
-    ],
-    "viabilidad": [
-      "viabilidad.estudio", "viabilidad.punto_equilibrio", "viabilidad.escenario",
-      "viabilidad.comparar_escenarios", "viabilidad.proyeccion", "viabilidad.guardar_config"
     ],
     "asesoria": [
       "asesoria.generar-paquete",

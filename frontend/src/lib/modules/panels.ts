@@ -173,42 +173,6 @@ export const panels: Record<string, PanelDef> = {
     loader: () => import('$lib/modules/carta-stats/CartaStatsPanel.svelte')
   },
 
-  // === WORK BAR — Recetas ===
-  'recetas-panel': {
-    id: 'recetas-panel',
-    title: 'Recetas',
-    icon: '📖',
-    size: 'lg',
-    position: 'top',
-    zone: 'work-bar',
-    order: 8,
-    loader: () => import('$lib/modules/recetas/RecetasPanel.svelte')
-  },
-
-  // === WORK BAR — Escandallo ===
-  'escandallo-panel': {
-    id: 'escandallo-panel',
-    title: 'Escandallo',
-    icon: '📊',
-    size: 'lg',
-    position: 'top',
-    zone: 'work-bar',
-    order: 8,
-    loader: () => import('$lib/modules/escandallo/EscandalloPanel.svelte')
-  },
-
-  // === WORK BAR — Viabilidad ===
-  'viabilidad-panel': {
-    id: 'viabilidad-panel',
-    title: 'Viabilidad',
-    icon: '💰',
-    size: 'lg',
-    position: 'top',
-    zone: 'work-bar',
-    order: 8,
-    loader: () => import('$lib/modules/viabilidad/ViabilidadPanel.svelte')
-  },
-
   // === WORK BAR — Facturas ===
   'facturas-panel': {
     id: 'facturas-panel',
