@@ -50,6 +50,10 @@ export interface ItemCocina {
   ingredientes_base?: string[];
   preparando_at?: string;
   preparado_at?: string;
+  // Multi-dispositivo
+  device_id?: string;
+  device_color?: string;
+  device_nombre?: string;
 }
 
 export interface GlovoMetadata {
@@ -80,7 +84,15 @@ export interface CocinaMetrics {
   items_preparando: number;
   historial_count: number;
   tiempo_promedio_preparacion: number;
-  clientes_sse: number;
+}
+
+export interface CocinaDevice {
+  device_id: string;
+  nombre: string;
+  color: string;
+  filtros: { familias: string[] };
+  connected_at: string;
+  last_seen: string;
 }
 
 export interface CocinaState {
@@ -88,6 +100,12 @@ export interface CocinaState {
   loading: boolean;
   error: string | null;
   metrics: CocinaMetrics | null;
+  // Multi-dispositivo
+  myDeviceId: string | null;
+  myColor: string | null;
+  myNombre: string | null;
+  filtrosActivos: string[]; // familias/categorías activas (vacío = todo)
+  devices: CocinaDevice[];
 }
 
 // =============================================================================
@@ -112,11 +130,27 @@ export const CANAL_LABELS: Record<string, string> = {
 // STORE
 // =============================================================================
 
+// Genera un device ID persistente en localStorage
+function getOrCreateDeviceId(): string {
+  const KEY = 'cocina_device_id';
+  let id = localStorage.getItem(KEY);
+  if (!id) {
+    id = `dev_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    localStorage.setItem(KEY, id);
+  }
+  return id;
+}
+
 export const cocinaStore = writable<CocinaState>({
   pedidos: [],
   loading: false,
   error: null,
-  metrics: null
+  metrics: null,
+  myDeviceId: null,
+  myColor: null,
+  myNombre: null,
+  filtrosActivos: [],
+  devices: []
 });
 
 // Glovo: Set de cuenta_ids ya confirmados (aceptados en Glovo API)
@@ -128,6 +162,10 @@ export const cocinaLoading = derived(cocinaStore, $s => $s.loading);
 export const cocinaError = derived(cocinaStore, $s => $s.error);
 export const cocinaMetrics = derived(cocinaStore, $s => $s.metrics);
 export const pedidosCount = derived(cocinaStore, $s => $s.pedidos.length);
+export const myDeviceColor = derived(cocinaStore, $s => $s.myColor);
+export const myDeviceNombre = derived(cocinaStore, $s => $s.myNombre);
+export const filtrosActivos = derived(cocinaStore, $s => $s.filtrosActivos);
+export const cocinaDevices = derived(cocinaStore, $s => $s.devices);
 
 export const itemsPendientes = derived(cocinaStore, $s =>
   $s.pedidos.reduce((sum, p) => sum + p.items.filter(i => i.estado === 'pendiente').length, 0)
@@ -153,10 +191,12 @@ export async function loadPedidosActivos(): Promise<void> {
     const res = await mqttRequest<any>('cocina', 'list-active', {});
     const data = res?.data?.pedidos ? res.data : res?.data?.data;
     const pedidos = data?.pedidos || [];
+    const devices = data?.devices || [];
 
     cocinaStore.update(s => ({
       ...s,
       pedidos,
+      devices,
       loading: false
     }));
   } catch (err: any) {
@@ -217,7 +257,10 @@ export async function prepararItem(itemId: string): Promise<boolean> {
   });
 
   try {
-    await mqttRequest<any>('cocina', 'prepare-item', { item_id: itemId });
+    const state2 = get(cocinaStore);
+    const payload: any = { item_id: itemId };
+    if (state2.myDeviceId) payload.device_id = state2.myDeviceId;
+    await mqttRequest<any>('cocina', 'prepare-item', payload);
     return true;
   } catch {
     // Revert optimistic update
@@ -256,6 +299,92 @@ export async function marcarListo(pedidoId: string): Promise<boolean> {
     await loadPedidosActivos();
     return false;
   }
+}
+
+// =============================================================================
+// DEVICE REGISTRATION & FILTERS
+// =============================================================================
+
+/**
+ * Registra este dispositivo en el backend de cocina.
+ * Asigna color único, persiste device_id en localStorage.
+ */
+export async function registerDevice(nombre?: string): Promise<boolean> {
+  const deviceId = getOrCreateDeviceId();
+
+  try {
+    const state = get(cocinaStore);
+    const res = await mqttRequest<any>('cocina', 'register-device', {
+      device_id: deviceId,
+      nombre: nombre || undefined,
+      filtros: state.filtrosActivos.length > 0 ? { familias: state.filtrosActivos } : undefined
+    });
+
+    const data = res?.data?.color ? res.data : res?.data?.data;
+    if (data) {
+      cocinaStore.update(s => ({
+        ...s,
+        myDeviceId: deviceId,
+        myColor: data.color,
+        myNombre: data.nombre,
+        devices: data.devices || s.devices
+      }));
+    }
+    return true;
+  } catch {
+    // Registro falló, seguir sin color
+    cocinaStore.update(s => ({ ...s, myDeviceId: deviceId }));
+    return false;
+  }
+}
+
+/**
+ * Toggle de filtro por familia/categoría.
+ * Vacío = ver todo. Con filtros = solo items de esas familias.
+ * El filtrado es client-side, todos los pedidos llegan completos.
+ */
+export function toggleFiltro(familia: string): void {
+  cocinaStore.update(s => {
+    const activos = s.filtrosActivos.includes(familia)
+      ? s.filtrosActivos.filter(f => f !== familia)
+      : [...s.filtrosActivos, familia];
+    return { ...s, filtrosActivos: activos };
+  });
+
+  // Sincronizar filtros con backend (para que otros dispositivos vean la config)
+  const state = get(cocinaStore);
+  if (state.myDeviceId) {
+    mqttRequest('cocina', 'register-device', {
+      device_id: state.myDeviceId,
+      filtros: { familias: state.filtrosActivos }
+    }).catch(() => {});
+  }
+}
+
+/** Limpia todos los filtros (ver todo) */
+export function clearFiltros(): void {
+  cocinaStore.update(s => ({ ...s, filtrosActivos: [] }));
+
+  const state = get(cocinaStore);
+  if (state.myDeviceId) {
+    mqttRequest('cocina', 'register-device', {
+      device_id: state.myDeviceId,
+      filtros: { familias: [] }
+    }).catch(() => {});
+  }
+}
+
+/**
+ * Comprueba si un item pasa el filtro activo del dispositivo.
+ * Si no hay filtros activos, pasa todo.
+ * Usa el campo `categoria` del item si existe, o intenta inferir de la metadata.
+ */
+export function itemPassesFilter(item: ItemCocina, filtros: string[]): boolean {
+  if (filtros.length === 0) return true;
+  // El item puede tener categoria directa (añadida por el comandero)
+  const cat = (item as any).categoria || (item as any).familia || '';
+  if (!cat) return true; // Sin categoría = siempre visible (no filtrable)
+  return filtros.includes(cat);
 }
 
 // =============================================================================
@@ -540,7 +669,38 @@ export function initCocinaSubscriptions(): () => void {
     })
   );
 
-  // cocina.item_preparado → item marcado listo (sync multi-pantalla)
+  // cocina.item_preparando → item empieza a prepararse (sync multi-pantalla + device color)
+  cleanups.push(
+    mqttSubscribe('cocina.item_preparando', (event: any) => {
+      const data = event?.data || event?.payload || event;
+      if (!data?.item_id) return;
+
+      cocinaStore.update(s => ({
+        ...s,
+        pedidos: s.pedidos.map(p =>
+          p.pedido_id === data.pedido_id
+            ? {
+              ...p,
+              items: p.items.map(i =>
+                i.item_id === data.item_id
+                  ? {
+                    ...i,
+                    estado: 'preparando' as EstadoItem,
+                    preparando_at: data.preparando_at,
+                    device_id: data.device_id || i.device_id,
+                    device_color: data.device_color || i.device_color,
+                    device_nombre: data.device_nombre || i.device_nombre
+                  }
+                  : i
+              )
+            }
+            : p
+        )
+      }));
+    })
+  );
+
+  // cocina.item_preparado → item marcado listo (sync multi-pantalla + device color)
   cleanups.push(
     mqttSubscribe('cocina.item_preparado', (event: any) => {
       const data = event?.data || event?.payload || event;
@@ -554,7 +714,14 @@ export function initCocinaSubscriptions(): () => void {
               ...p,
               items: p.items.map(i =>
                 i.item_id === data.item_id
-                  ? { ...i, estado: 'listo' as EstadoItem, preparado_at: data.preparado_at }
+                  ? {
+                    ...i,
+                    estado: 'listo' as EstadoItem,
+                    preparado_at: data.preparado_at,
+                    device_id: data.device_id || i.device_id,
+                    device_color: data.device_color || i.device_color,
+                    device_nombre: data.device_nombre || i.device_nombre
+                  }
                   : i
               )
             }
@@ -626,11 +793,32 @@ export function initCocinaSubscriptions(): () => void {
     })
   );
 
+  // cocina.device_registered / cocina.device_updated → sync device list
+  cleanups.push(
+    mqttSubscribe('cocina.device_registered', (event: any) => {
+      const data = event?.data || event?.payload || event;
+      if (!data?.device_id) return;
+      // Reload devices list
+      loadPedidosActivos();
+    })
+  );
+  cleanups.push(
+    mqttSubscribe('cocina.device_unregistered', (event: any) => {
+      const data = event?.data || event?.payload || event;
+      if (!data?.device_id) return;
+      cocinaStore.update(s => ({
+        ...s,
+        devices: s.devices.filter(d => d.device_id !== data.device_id)
+      }));
+    })
+  );
+
   // Recargar datos completos cuando MQTT reconecta (tras pérdida de conexión)
   const unsubReconnect = onReconnect(() => {
     console.log('[Cocina] MQTT reconnected — reloading pedidos and metrics');
     loadPedidosActivos();
     loadMetrics();
+    registerDevice(); // Re-register device
   });
   cleanups.push(unsubReconnect);
 
@@ -644,9 +832,10 @@ export function initCocinaSubscriptions(): () => void {
   }
   document.addEventListener('visibilitychange', onVisibilityChange);
 
-  // Carga inicial
+  // Carga inicial + register device
   loadPedidosActivos();
   loadMetrics();
+  registerDevice();
 
   // Refrescar métricas cada 30s
   const metricsInterval = setInterval(loadMetrics, 30000);

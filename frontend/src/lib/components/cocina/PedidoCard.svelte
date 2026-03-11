@@ -16,12 +16,14 @@
   import type { PedidoCocina } from '$lib/stores/cocina';
   import {
     extractRef, elapsed, prepararItem, marcarListo,
-    confirmarGlovo, rechazarGlovo, isGlovoConfirmado
+    confirmarGlovo, rechazarGlovo, isGlovoConfirmado,
+    itemPassesFilter
   } from '$lib/stores/cocina';
 
   import ItemLine from './ItemLine.svelte';
 
   export let pedido: PedidoCocina;
+  export let filtros: string[] = [];
 
   const dispatch = createEventDispatcher();
 
@@ -182,7 +184,9 @@
     <!-- Flujo normal: items interactivos -->
     <div class="card-items">
       {#each pedido.items as item (item.item_id)}
-        <ItemLine {item} on:tap={handleItemTap} />
+        <div class="item-filter-wrap" class:filtered-out={filtros.length > 0 && !itemPassesFilter(item, filtros)}>
+          <ItemLine {item} on:tap={handleItemTap} />
+        </div>
       {/each}
     </div>
   {/if}
@@ -302,6 +306,15 @@
   .card-items {
     display: flex;
     flex-direction: column;
+  }
+
+  .item-filter-wrap {
+    transition: opacity 0.2s;
+  }
+
+  .item-filter-wrap.filtered-out {
+    opacity: 0.25;
+    pointer-events: none;
   }
 
   /* Notas generales del pedido */
