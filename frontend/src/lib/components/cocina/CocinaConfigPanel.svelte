@@ -4,13 +4,18 @@
    *
    * Permite a cada dispositivo de cocina:
    * - Ver/cambiar su nombre de estación
-   * - Seleccionar familias/categorías a filtrar
+   * - Seleccionar familias/categorías del catálogo completo
    * - Ver su color asignado y los peers conectados
+   *
+   * Las categorías se cargan del catálogo (módulo categorias) para que
+   * estén disponibles ANTES de que lleguen pedidos. El filtrado se aplica
+   * client-side cuando llegan pedidos a cocina.
    *
    * Se abre desde el botón engranaje del CocinaHeader.
    * Overlay oscuro con panel lateral derecho.
    */
   import { createEventDispatcher, onMount } from 'svelte';
+  import { page } from '$app/stores';
   import {
     cocinaStore,
     myDeviceColor, myDeviceNombre, filtrosActivos, cocinaDevices,
@@ -18,6 +23,7 @@
     setFiltros, updateDeviceName
   } from '$lib/stores/cocina';
   import type { ItemCocina } from '$lib/stores/cocina';
+  import { mqttRequest } from '$lib/ui-core/mqtt-request';
 
   const dispatch = createEventDispatcher();
 
@@ -26,21 +32,71 @@
   let selectedFamilias: Set<string> = new Set();
   let saving = false;
 
-  // Extract all known families from active items
+  // Categorías cargadas del catálogo
+  let catalogCategorias: { id: string; nombre: string; emoji?: string }[] = [];
+  let loadingCategorias = false;
+
+  // Cargar todas las categorías del catálogo
+  async function loadCategorias() {
+    const projectId = $page.params.project_id;
+    if (!projectId) return;
+
+    loadingCategorias = true;
+    try {
+      const res = await mqttRequest<any>('categorias', 'list', { project_id: projectId });
+      const data = res?.data?.categorias || res?.data?.data?.categorias || [];
+      catalogCategorias = data;
+    } catch {
+      // Fallback: usar las que aparecen en pedidos activos
+      catalogCategorias = [];
+    }
+    loadingCategorias = false;
+  }
+
+  // Nombres de categorías del catálogo (por id)
+  $: catalogFamilias = catalogCategorias.map(c => ({
+    id: c.id,
+    nombre: c.nombre,
+    emoji: c.emoji || ''
+  }));
+
+  // También incluir familias de pedidos activos que no estén en el catálogo
   $: allItems = $pedidosCocina.flatMap(p => p.items) as (ItemCocina & { categoria?: string; familia?: string })[];
-  $: availableFamilias = [...new Set(
+  $: orderFamilias = [...new Set(
     allItems
       .map(i => (i as any).categoria || (i as any).familia || '')
       .filter(Boolean)
-  )].sort();
+  )];
 
-  // Also include currently active filters (may include families not in current orders)
-  $: allFamilias = [...new Set([...availableFamilias, ...$filtrosActivos])].sort();
+  // Merge: catálogo + familias de pedidos + filtros activos (para no perder selecciones)
+  $: allFamilias = (() => {
+    const catalogIds = new Set(catalogFamilias.map(c => c.id));
+    const merged = [...catalogFamilias];
+
+    // Añadir familias de pedidos activos no presentes en catálogo
+    for (const f of orderFamilias) {
+      if (!catalogIds.has(f)) {
+        merged.push({ id: f, nombre: f, emoji: '' });
+        catalogIds.add(f);
+      }
+    }
+
+    // Añadir filtros activos no presentes (para no perder selecciones previas)
+    for (const f of $filtrosActivos) {
+      if (!catalogIds.has(f)) {
+        merged.push({ id: f, nombre: f, emoji: '' });
+        catalogIds.add(f);
+      }
+    }
+
+    return merged.sort((a, b) => a.nombre.localeCompare(b.nombre));
+  })();
 
   // Init local state from store
   onMount(() => {
     editNombre = $myDeviceNombre || '';
     selectedFamilias = new Set($filtrosActivos);
+    loadCategorias();
   });
 
   function toggleFamilia(f: string) {
@@ -124,29 +180,34 @@
         <h3>Familias</h3>
         <p class="section-hint">Selecciona las familias que prepara esta estación. Sin selección = ver todo.</p>
 
-        <div class="familia-grid">
-          <button
-            class="familia-chip"
-            class:active={isAllSelected}
-            on:click={selectAll}
-          >
-            TODO
-          </button>
-
-          {#each allFamilias as familia}
+        {#if loadingCategorias}
+          <p class="loading-hint">Cargando categorías...</p>
+        {:else}
+          <div class="familia-grid">
             <button
               class="familia-chip"
-              class:active={selectedFamilias.has(familia)}
-              on:click={() => toggleFamilia(familia)}
+              class:active={isAllSelected}
+              on:click={selectAll}
             >
-              {familia.toUpperCase()}
+              TODO
             </button>
-          {/each}
 
-          {#if allFamilias.length === 0}
-            <p class="no-familias">No hay familias disponibles. Aparecen cuando llegan pedidos.</p>
-          {/if}
-        </div>
+            {#each allFamilias as familia}
+              <button
+                class="familia-chip"
+                class:active={selectedFamilias.has(familia.id)}
+                on:click={() => toggleFamilia(familia.id)}
+              >
+                {#if familia.emoji}<span class="familia-emoji">{familia.emoji}</span>{/if}
+                {familia.nombre.toUpperCase()}
+              </button>
+            {/each}
+
+            {#if allFamilias.length === 0}
+              <p class="no-familias">No hay familias disponibles en el catálogo.</p>
+            {/if}
+          </div>
+        {/if}
       </section>
 
       <!-- Connected devices -->
@@ -356,6 +417,16 @@
     color: #475569;
     font-size: 0.8rem;
     font-style: italic;
+  }
+
+  .loading-hint {
+    color: #64748b;
+    font-size: 0.8rem;
+    font-style: italic;
+  }
+
+  .familia-emoji {
+    margin-right: 4px;
   }
 
   /* Connected devices list */
