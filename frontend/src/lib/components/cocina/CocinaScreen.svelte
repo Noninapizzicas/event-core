@@ -18,9 +18,7 @@
    * └─────────────────────────────────────┘
    */
   import { onMount, onDestroy } from 'svelte';
-  import { page } from '$app/stores';
   import { connect, disconnect, setupVisibilityHandler, removeVisibilityHandler } from '$lib/ui-core';
-  import { activateProject } from '$lib/stores/projects';
   import {
     pedidosCocina,
     cocinaLoading,
@@ -76,15 +74,6 @@
 
   onMount(() => {
     connect().then(async () => {
-      // Activar el proyecto para que el backend cargue carta/categorías desde disco
-      const projectId = $page.params.project_id;
-      if (projectId) {
-        try {
-          await activateProject(projectId);
-        } catch (err) {
-          console.warn('[CocinaScreen] Project activation failed (may already be active):', err);
-        }
-      }
       cleanupSubs = initCocinaSubscriptions();
     }).catch((err) => {
       console.error('[CocinaScreen] MQTT connection failed', err);
