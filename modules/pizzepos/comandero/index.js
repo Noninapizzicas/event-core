@@ -282,7 +282,7 @@ class ComanderoModule {
     const invalid = this.validateInput('comandero.add-item', data);
     if (invalid) return invalid;
 
-    const { cuenta_id, producto_id, nombre, precio, cantidad, variaciones, notas,
+    const { cuenta_id, producto_id, nombre, precio, cantidad, categoria, variaciones, notas,
             tipo, pizza_izquierda, pizza_derecha, ingredientes: metaIngredientes,
             ingredientes_base } = data;
 
@@ -310,7 +310,7 @@ class ComanderoModule {
       nombre: itemNombre,
       precio: itemPrecio,
       cantidad: itemCantidad,
-      categoria: cached?.categoria || null,
+      categoria: categoria || cached?.categoria || null,
       variaciones: variaciones || [],
       notas: notas || '',
       subtotal: itemPrecio * itemCantidad,
