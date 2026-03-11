@@ -91,12 +91,6 @@
     },
     {
       "method": "GET",
-      "path": "/cocina/stream",
-      "handler": "handleSSEStream",
-      "description": "SSE stream para actualizaciones en tiempo real"
-    },
-    {
-      "method": "GET",
       "path": "/health",
       "handler": "handleHealthCheck",
       "description": "Health check"

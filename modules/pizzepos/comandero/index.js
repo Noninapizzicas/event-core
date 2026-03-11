@@ -20,6 +20,7 @@ class ComanderoModule {
     this.logger = null;
     this.metrics = null;
     this.uiHandler = null;
+    this.validator = null;
 
     // Buffer de pedidos por cuenta: cuenta_id -> { items: [], notas: '', total: 0 }
     this.pedidos = new Map();
@@ -41,8 +42,12 @@ class ComanderoModule {
     this.metrics = core.metrics;
     this.eventBus = core.eventBus;
     this.uiHandler = core.uiHandler;
+    this.validator = core.validationManager || null;
 
     this.logger.info('module.loading', { module: this.name, version: this.version });
+
+    // Registrar schemas de validación para los handlers
+    this.registerSchemas();
 
     // Event subscriptions are auto-wired from module.json by the loader.
     this.registerUIHandlers();
@@ -67,6 +72,73 @@ class ComanderoModule {
     this.productosCache.clear();
 
     this.logger.info('module.unloaded', { module: this.name });
+  }
+
+  // ==========================================
+  // Validation Schemas
+  // ==========================================
+
+  registerSchemas() {
+    if (!this.validator) return;
+
+    this.validator.registerSchema('comandero.add-item', {
+      type: 'object',
+      required: ['cuenta_id', 'producto_id'],
+      properties: {
+        cuenta_id: { type: 'string', minLength: 1 },
+        producto_id: { type: 'string', minLength: 1 },
+        nombre: { type: 'string' },
+        precio: { type: 'number', minimum: 0 },
+        cantidad: { type: 'integer', minimum: 1 },
+        notas: { type: 'string' },
+        tipo: { type: 'string', enum: ['mitad_mitad', 'al_gusto'] },
+        variaciones: { type: 'array' }
+      }
+    });
+
+    this.validator.registerSchema('comandero.update-item', {
+      type: 'object',
+      required: ['cuenta_id', 'item_id'],
+      properties: {
+        cuenta_id: { type: 'string', minLength: 1 },
+        item_id: { type: 'string', minLength: 1 },
+        cantidad: { type: 'integer' },
+        notas: { type: 'string' }
+      }
+    });
+
+    this.validator.registerSchema('comandero.remove-item', {
+      type: 'object',
+      required: ['cuenta_id', 'item_id'],
+      properties: {
+        cuenta_id: { type: 'string', minLength: 1 },
+        item_id: { type: 'string', minLength: 1 }
+      }
+    });
+
+    this.validator.registerSchema('comandero.send-kitchen', {
+      type: 'object',
+      required: ['cuenta_id'],
+      properties: {
+        cuenta_id: { type: 'string', minLength: 1 },
+        project_id: { type: 'string' }
+      }
+    });
+
+    this.logger.info('comandero.schemas.registered', { count: 4 });
+  }
+
+  // ==========================================
+  // Validation Helper
+  // ==========================================
+
+  validateInput(schemaId, data) {
+    if (!this.validator) return null;
+    const result = this.validator.validate(schemaId, data);
+    if (!result.valid) {
+      return { status: 400, error: 'Validación fallida', validation_errors: result.errors };
+    }
+    return null;
   }
 
   // ==========================================
@@ -207,16 +279,12 @@ class ComanderoModule {
   }
 
   async handleAddItem(data) {
+    const invalid = this.validateInput('comandero.add-item', data);
+    if (invalid) return invalid;
+
     const { cuenta_id, producto_id, nombre, precio, cantidad, variaciones, notas,
             tipo, pizza_izquierda, pizza_derecha, ingredientes: metaIngredientes,
             ingredientes_base } = data;
-
-    if (!cuenta_id) {
-      return { status: 400, error: 'cuenta_id es requerido' };
-    }
-    if (!producto_id) {
-      return { status: 400, error: 'producto_id es requerido' };
-    }
 
     // Obtener o crear buffer de pedido
     let pedido = this.pedidos.get(cuenta_id);
@@ -308,6 +376,9 @@ class ComanderoModule {
   }
 
   async handleRemoveItem(data) {
+    const invalid = this.validateInput('comandero.remove-item', data);
+    if (invalid) return invalid;
+
     const { cuenta_id, item_id } = data;
 
     const pedido = this.pedidos.get(cuenta_id);
@@ -349,6 +420,9 @@ class ComanderoModule {
   }
 
   async handleUpdateItem(data) {
+    const invalid = this.validateInput('comandero.update-item', data);
+    if (invalid) return invalid;
+
     const { cuenta_id, item_id, cantidad, notas } = data;
 
     const pedido = this.pedidos.get(cuenta_id);
@@ -435,6 +509,9 @@ class ComanderoModule {
   }
 
   async handleEnviarCocina(data) {
+    const invalid = this.validateInput('comandero.send-kitchen', data);
+    if (invalid) return invalid;
+
     const { cuenta_id, project_id } = data;
 
     const pedido = this.pedidos.get(cuenta_id);
