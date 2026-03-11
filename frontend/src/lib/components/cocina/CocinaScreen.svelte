@@ -73,7 +73,7 @@
   }
 
   onMount(() => {
-    connect().then(() => {
+    connect().then(async () => {
       cleanupSubs = initCocinaSubscriptions();
     }).catch((err) => {
       console.error('[CocinaScreen] MQTT connection failed', err);

@@ -36,26 +36,51 @@
   let catalogCategorias: { id: string; nombre: string; emoji?: string }[] = [];
   let loadingCategorias = false;
 
-  // Cargar todas las categorías del catálogo
-  // Usa productos/carta_completa (auto-carga desde archivo) con fallback a categorias/list
+  const CACHE_KEY = 'cocina_categorias_cache';
+
+  function loadFromCache(): typeof catalogCategorias {
+    try {
+      const raw = localStorage.getItem(CACHE_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch {}
+    return [];
+  }
+
+  function saveToCache(data: typeof catalogCategorias) {
+    try {
+      if (data.length > 0) localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+    } catch {}
+  }
+
+  // Cargar categorías: cache inmediato + MQTT async
   async function loadCategorias() {
     const projectId = $page.params.project_id;
     if (!projectId) return;
 
-    loadingCategorias = true;
+    // Inmediato: cargar desde cache localStorage
+    const cached = loadFromCache();
+    if (cached.length > 0) {
+      catalogCategorias = cached;
+    }
+
+    loadingCategorias = catalogCategorias.length === 0;
     try {
-      // productos/carta_completa auto-carga desde archivo si la memoria está vacía
-      const res = await mqttRequest<any>('productos', 'carta_completa', { project_id: projectId });
+      // productos/categorias auto-carga desde archivo si no hay categorías en memoria
+      const res = await mqttRequest<any>('productos', 'categorias', { project_id: projectId }, { timeout: 6000 });
       const data = res?.data?.categorias || [];
-      catalogCategorias = data;
+      if (data.length > 0) {
+        catalogCategorias = data;
+        saveToCache(data);
+      }
     } catch {
       try {
-        // Fallback: módulo categorías directo
-        const res2 = await mqttRequest<any>('categorias', 'list', { project_id: projectId });
-        catalogCategorias = res2?.data?.categorias || [];
-      } catch {
-        catalogCategorias = [];
-      }
+        const res2 = await mqttRequest<any>('productos', 'carta_completa', { project_id: projectId }, { timeout: 6000 });
+        const data = res2?.data?.categorias || [];
+        if (data.length > 0) {
+          catalogCategorias = data;
+          saveToCache(data);
+        }
+      } catch {}
     }
     loadingCategorias = false;
   }
@@ -76,6 +101,8 @@
   )];
 
   // Merge: catálogo + familias de pedidos + filtros activos (para no perder selecciones)
+  // Cachear resultado para que esté disponible sin pedidos ni backend
+  const FAMILIAS_CACHE_KEY = 'cocina_familias_cache';
   $: allFamilias = (() => {
     const catalogIds = new Set(catalogFamilias.map(c => c.id));
     const merged = [...catalogFamilias];
@@ -88,6 +115,17 @@
       }
     }
 
+    // Añadir familias cacheadas de sesiones anteriores
+    try {
+      const cachedFamilias: string[] = JSON.parse(localStorage.getItem(FAMILIAS_CACHE_KEY) || '[]');
+      for (const f of cachedFamilias) {
+        if (!catalogIds.has(f)) {
+          merged.push({ id: f, nombre: f, emoji: '' });
+          catalogIds.add(f);
+        }
+      }
+    } catch {}
+
     // Añadir filtros activos no presentes (para no perder selecciones previas)
     for (const f of $filtrosActivos) {
       if (!catalogIds.has(f)) {
@@ -96,7 +134,14 @@
       }
     }
 
-    return merged.sort((a, b) => a.nombre.localeCompare(b.nombre));
+    const sorted = merged.sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+    // Cachear IDs para futuras sesiones
+    if (sorted.length > 0) {
+      try { localStorage.setItem(FAMILIAS_CACHE_KEY, JSON.stringify(sorted.map(f => f.id))); } catch {}
+    }
+
+    return sorted;
   })();
 
   // Init local state from store
