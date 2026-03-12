@@ -259,14 +259,150 @@ log_success "Dependencias instaladas"
 # =============================================================================
 log_info "[6/6] Configurando entorno..."
 
-# Crear .env si no existe
-if [ ! -f ".env" ]; then
-    cp .env.example .env
-    log_success "Archivo .env creado"
-    log_warn "Edita .env para agregar tus credenciales"
-else
-    log_info "Archivo .env ya existe"
-fi
+# --- Preguntar puertos ---
+ask_port() {
+    local prompt="$1"
+    local default="$2"
+    local varname="$3"
+    local value
+
+    echo -ne "  ${CYAN}${prompt}${NC} [${GREEN}${default}${NC}]: "
+    read -r value
+    value="${value:-$default}"
+
+    if ! [[ "$value" =~ ^[0-9]+$ ]] || [ "$value" -lt 1 ] || [ "$value" -gt 65535 ]; then
+        log_error "Puerto invalido: $value. Usando default: $default"
+        value="$default"
+    fi
+
+    eval "$varname=$value"
+}
+
+ask_value() {
+    local prompt="$1"
+    local default="$2"
+    local varname="$3"
+    local value
+
+    echo -ne "  ${CYAN}${prompt}${NC} [${GREEN}${default}${NC}]: "
+    read -r value
+    value="${value:-$default}"
+
+    eval "$varname=$value"
+}
+
+configure_env() {
+    # Defaults
+    local backend_port=3000
+    local mqtt_port=1883
+    local mqtt_ws_port=9001
+    local frontend_port=5173
+    local core_id="core-a"
+    local log_level="info"
+
+    echo ""
+    echo -e "${BLUE}═══════════════════════════════════════════════════════════${NC}"
+    echo -e "${BLUE}              Configuracion de Puertos                      ${NC}"
+    echo -e "${BLUE}═══════════════════════════════════════════════════════════${NC}"
+    echo ""
+    echo -e "  Pulsa ${YELLOW}Enter${NC} para aceptar el valor por defecto"
+    echo ""
+
+    echo -e "  ${YELLOW}── Backend ──${NC}"
+    ask_port "Puerto API (HTTP)" "3000" backend_port
+    echo ""
+
+    echo -e "  ${YELLOW}── MQTT Broker ──${NC}"
+    ask_port "Puerto MQTT (TCP)" "1883" mqtt_port
+    ask_port "Puerto MQTT (WebSocket)" "9001" mqtt_ws_port
+    echo ""
+
+    echo -e "  ${YELLOW}── Frontend ──${NC}"
+    ask_port "Puerto Frontend (Vite)" "5173" frontend_port
+    echo ""
+
+    echo -e "  ${YELLOW}── General ──${NC}"
+    ask_value "ID de instancia" "core-a" core_id
+    ask_value "Nivel de log (debug/info/warn/error)" "info" log_level
+    echo ""
+
+    # Si ya existe .env, preguntar antes de sobreescribir
+    if [ -f ".env" ]; then
+        log_warn "Ya existe un archivo .env"
+        echo -ne "  ${CYAN}Sobreescribir? (s/N):${NC} "
+        read -r overwrite
+        if [[ ! "$overwrite" =~ ^[sS]$ ]]; then
+            log_info "Manteniendo .env existente"
+            return 0
+        fi
+        cp .env .env.backup
+        log_info "Backup guardado en .env.backup"
+    fi
+
+    # Generar .env
+    cat > .env << ENVEOF
+# Event Core - Configuracion
+# Generado por install-linux.sh el $(date '+%Y-%m-%d %H:%M:%S')
+# Editar y reiniciar con: ./restart.sh
+
+# =============================================================================
+# CORE
+# =============================================================================
+EVENT_CORE_ID=$core_id
+EVENT_CORE_ENV=production
+
+# =============================================================================
+# PUERTOS
+# =============================================================================
+
+# Backend API
+EVENT_CORE_PORT=$backend_port
+EVENT_CORE_HTTP_HOST=0.0.0.0
+
+# MQTT Broker (TCP)
+EVENT_CORE_BROKER_PORT=$mqtt_port
+
+# MQTT Broker (WebSocket - usado por el frontend)
+EVENT_CORE_BROKER_WS_PORT=$mqtt_ws_port
+
+# MQTT Broker host
+EVENT_CORE_BROKER_HOST=0.0.0.0
+
+# Frontend dev server
+FRONTEND_PORT=$frontend_port
+
+# =============================================================================
+# OBSERVABILITY
+# =============================================================================
+EVENT_CORE_LOG_LEVEL=$log_level
+EVENT_CORE_TRACING_ENABLED=true
+EVENT_CORE_METRICS_ENABLED=true
+
+# =============================================================================
+# SECURITY
+# =============================================================================
+EVENT_CORE_ENCRYPTION_ENABLED=true
+
+# =============================================================================
+# SERVICIOS EXTERNOS (descomentar segun necesites)
+# =============================================================================
+# DOMAIN=tudominio.com
+# WEATHER_API_KEY=
+# OPENAI_API_KEY=
+# DATABASE_URL=
+# REDIS_URL=
+ENVEOF
+
+    log_success "Archivo .env creado con puertos personalizados"
+
+    # Exportar para el resumen final
+    export EVENT_CORE_PORT=$backend_port
+    export EVENT_CORE_BROKER_PORT=$mqtt_port
+    export EVENT_CORE_BROKER_WS_PORT=$mqtt_ws_port
+    export FRONTEND_PORT=$frontend_port
+}
+
+configure_env
 
 # Crear directorios
 mkdir -p data logs
@@ -352,11 +488,12 @@ echo ""
 echo -e "${YELLOW}Configuracion:${NC}"
 echo "  nano .env"
 echo ""
-echo -e "${YELLOW}Puertos:${NC}"
-echo "  HTTP:      3000"
-echo "  MQTT:      1883"
-echo "  Frontend:  ${FRONTEND_PORT:-5173}"
+echo -e "${YELLOW}Puertos configurados:${NC}"
+echo "  Backend API:      ${EVENT_CORE_PORT:-3000}"
+echo "  MQTT TCP:         ${EVENT_CORE_BROKER_PORT:-1883}"
+echo "  MQTT WebSocket:   ${EVENT_CORE_BROKER_WS_PORT:-9001}"
+echo "  Frontend:         ${FRONTEND_PORT:-5173}"
 echo ""
 echo -e "${BLUE}Para iniciar ahora:${NC}"
-echo "  cd $EVENT_CORE_DIR && npm start"
+echo "  cd $EVENT_CORE_DIR && ./start.sh"
 echo ""
