@@ -65,6 +65,7 @@ function loadFromEnv() {
     'EVENT_CORE_PORT': 'http.port',
     'EVENT_CORE_HTTP_HOST': 'http.host',
     'EVENT_CORE_BROKER_PORT': 'mqtt.broker.port',
+    'EVENT_CORE_BROKER_WS_PORT': 'mqtt.broker.wsPort',
     'EVENT_CORE_BROKER_HOST': 'mqtt.broker.host',
     'EVENT_CORE_BROKER_URL': 'mqtt.broker.url',
     'EVENT_CORE_MODULES_PATH': 'modules.path',

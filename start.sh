@@ -33,11 +33,19 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PID_DIR="$SCRIPT_DIR/.pids"
 LOG_DIR="$SCRIPT_DIR/logs"
 
-# Puertos por defecto
-DEFAULT_BACKEND_PORT=3000
-DEFAULT_FRONTEND_PORT=5173
-DEFAULT_MQTT_PORT=1883
-DEFAULT_MQTT_WS_PORT=9001
+# Cargar .env si existe (sin sobreescribir variables ya definidas)
+if [ -f "$SCRIPT_DIR/.env" ]; then
+    set -a
+    source "$SCRIPT_DIR/.env"
+    set +a
+    log_info "Variables cargadas desde .env" 2>/dev/null || true
+fi
+
+# Puertos: prioridad ENV > defaults
+DEFAULT_BACKEND_PORT=${EVENT_CORE_PORT:-3000}
+DEFAULT_FRONTEND_PORT=${FRONTEND_PORT:-5173}
+DEFAULT_MQTT_PORT=${EVENT_CORE_BROKER_PORT:-1883}
+DEFAULT_MQTT_WS_PORT=${EVENT_CORE_BROKER_WS_PORT:-9001}
 
 # Crear directorios necesarios
 mkdir -p "$PID_DIR" "$LOG_DIR"
@@ -215,8 +223,13 @@ start_frontend() {
     fi
 
     # Configurar variables de entorno para el frontend
+    local mqtt_ws_port=$DEFAULT_MQTT_WS_PORT
     export PUBLIC_API_URL="http://localhost:$backend_port"
-    export PUBLIC_MQTT_URL="ws://localhost:${MQTT_WS_PORT:-$DEFAULT_MQTT_WS_PORT}"
+    export PUBLIC_MQTT_URL="ws://localhost:$mqtt_ws_port"
+
+    # Variables que vite.config.js y mqtt.ts usan
+    export VITE_BACKEND_PORT=$backend_port
+    export VITE_MQTT_WS_PORT=$mqtt_ws_port
 
     # Iniciar frontend
     cd "$SCRIPT_DIR/frontend"

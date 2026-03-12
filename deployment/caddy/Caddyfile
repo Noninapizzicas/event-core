@@ -7,9 +7,9 @@
 #   1. Reemplazar {$DOMAIN} con tu dominio o setear variable de entorno
 #   2. caddy run --config Caddyfile
 #
-# Puertos internos (event-core):
-#   - 3000: HTTP Gateway (API REST)
-#   - 9001: MQTT WebSocket (broker Aedes)
+# Puertos internos (configurables via .env):
+#   - EVENT_CORE_PORT: HTTP Gateway (default 3000)
+#   - EVENT_CORE_BROKER_WS_PORT: MQTT WebSocket (default 9001)
 
 {$DOMAIN:localhost} {
 	# Frontend - archivos estáticos del build de SvelteKit
@@ -18,17 +18,17 @@
 
 	# API REST → event-core HTTP gateway
 	handle /modules/* {
-		reverse_proxy localhost:3000
+		reverse_proxy localhost:{$EVENT_CORE_PORT:3000}
 	}
 
 	handle /health {
-		reverse_proxy localhost:3000
+		reverse_proxy localhost:{$EVENT_CORE_PORT:3000}
 	}
 
 	# MQTT WebSocket → broker Aedes
 	# El frontend conecta a wss://domain/mqtt automáticamente
 	handle /mqtt {
-		reverse_proxy localhost:9001
+		reverse_proxy localhost:{$EVENT_CORE_BROKER_WS_PORT:9001}
 	}
 
 	# SPA fallback: rutas que no matchean archivos → index.html

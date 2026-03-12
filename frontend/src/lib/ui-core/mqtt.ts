@@ -56,14 +56,17 @@ type MessageHandler = (topic: string, payload: unknown) => void;
  * Detecta la URL de MQTT automáticamente basada en el entorno
  *
  * Estrategia por entorno:
- * - Vite dev (5173): ws://127.0.0.1:5173/mqtt (proxy de Vite)
+ * - Vite dev (cualquier puerto): ws://host:port/mqtt (proxy de Vite)
  * - HTTPS (VPS + Caddy): wss://domain.com/mqtt (reverse proxy)
- * - HTTP directo (Termux, LAN): ws://host:9001 (conexión directa al broker)
+ * - HTTP directo (Termux, LAN): ws://host:MQTT_WS_PORT (conexión directa al broker)
+ *
+ * Los puertos se configuran en .env y se propagan via start.sh → vite.config.js
  *
  * NOTA: Usamos 127.0.0.1 en lugar de localhost para evitar
  * problemas de resolución IPv6 (::1) en algunos sistemas
  */
 function getMqttUrl(): string {
+  // SSR / server-side: fallback directo al broker WS
   if (typeof window === 'undefined') {
     return 'ws://127.0.0.1:9001';
   }
@@ -73,21 +76,36 @@ function getMqttUrl(): string {
   // Normalizar hostname: localhost → 127.0.0.1 (evita IPv6)
   const normalizedHost = hostname === 'localhost' ? '127.0.0.1' : hostname;
 
-  // En desarrollo con Vite (puerto 5173), usar el proxy
-  if (port === '5173') {
-    const wsProtocol = protocol === 'https:' ? 'wss:' : 'ws:';
-    return `${wsProtocol}//${normalizedHost}:${port}/mqtt`;
-  }
-
   // HTTPS = estamos detrás de un reverse proxy (Caddy/nginx)
-  // El proxy redirige /mqtt → ws://localhost:9001
+  // El proxy redirige /mqtt → ws://broker:wsPort
   if (protocol === 'https:') {
     return `wss://${hostname}/mqtt`;
   }
 
-  // HTTP directo (Termux, LAN, desarrollo sin proxy)
+  // Detectar si estamos en Vite dev server:
+  // Vite dev siempre tiene proxy /mqtt configurado, así que usarlo
+  // Comprobamos si /mqtt responde via el proxy (Vite inyecta __vite_plugin__)
+  // Forma simple: si hay un puerto en la URL (dev), usar el proxy de Vite
+  if (import.meta.env?.DEV) {
+    const wsProtocol = 'ws:';
+    return `${wsProtocol}//${normalizedHost}:${port}/mqtt`;
+  }
+
+  // HTTP directo (Termux, LAN, producción sin HTTPS)
   // Conectar directamente al puerto WebSocket del broker
-  return `ws://${normalizedHost}:9001`;
+  // El puerto se lee del meta tag inyectado o usa default 9001
+  const mqttWsPort = getMqttWsPortFromMeta() || '9001';
+  return `ws://${normalizedHost}:${mqttWsPort}`;
+}
+
+/**
+ * Lee el puerto MQTT WS de un meta tag (para producción HTTP sin proxy)
+ * El backend puede inyectar: <meta name="mqtt-ws-port" content="9001">
+ */
+function getMqttWsPortFromMeta(): string | null {
+  if (typeof document === 'undefined') return null;
+  const meta = document.querySelector('meta[name="mqtt-ws-port"]');
+  return meta?.getAttribute('content') || null;
 }
 
 const DEFAULT_CONFIG: MqttConfig = {
