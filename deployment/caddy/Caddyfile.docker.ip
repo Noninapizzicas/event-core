@@ -1,0 +1,31 @@
+# Event Core - Caddyfile para Docker Compose con IP fija (sin dominio)
+#
+# HTTP en puerto 80. Sin HTTPS porque Let's Encrypt no emite
+# certificados para IPs.
+#
+# Diferencia con Caddyfile.ip: usa nombres de servicio Docker
+# en vez de localhost (core:3000 en vez de localhost:3000)
+
+:80 {
+	# Frontend - archivos estáticos
+	root * /srv/frontend
+	file_server
+
+	# API REST → event-core container
+	handle /modules/* {
+		reverse_proxy core:{$EVENT_CORE_PORT:3000}
+	}
+
+	handle /health {
+		reverse_proxy core:{$EVENT_CORE_PORT:3000}
+	}
+
+	# MQTT WebSocket → broker en container
+	# El frontend conecta a ws://IP/mqtt
+	handle /mqtt {
+		reverse_proxy core:{$EVENT_CORE_BROKER_WS_PORT:9001}
+	}
+
+	# SPA fallback
+	try_files {path} /index.html
+}

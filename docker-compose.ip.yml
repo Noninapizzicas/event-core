@@ -1,0 +1,61 @@
+# Event Core - Docker Compose para VPS con IP fija (sin dominio)
+#
+# HTTP en puerto 80. Sin HTTPS.
+#
+# Uso:
+#   docker compose -f docker-compose.ip.yml up -d
+#
+# Requisitos:
+#   - Puerto 80 abierto
+#   - Frontend buildeado en frontend/build/
+
+version: '3.8'
+
+services:
+  # Event Core - HTTP + MQTT (solo red interna, no expone puertos al host)
+  core:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: event-core
+    environment:
+      - NODE_ENV=production
+      - EVENT_CORE_ID=core-a
+      - EVENT_CORE_PORT=3000
+      - EVENT_CORE_BROKER_PORT=1883
+      - EVENT_CORE_LOG_LEVEL=info
+      - EVENT_CORE_MODULES_PATH=./modules
+    volumes:
+      - core-data:/app/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (r) => { process.exit(r.statusCode === 200 ? 0 : 1); }).on('error', () => process.exit(1));"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  # Caddy - HTTP reverse proxy (sin HTTPS, IP fija)
+  caddy:
+    image: caddy:2-alpine
+    container_name: event-core-caddy
+    ports:
+      - "80:80"
+    volumes:
+      - ./deployment/caddy/Caddyfile.docker.ip:/etc/caddy/Caddyfile
+      - ./frontend/build:/srv/frontend:ro
+    networks:
+      - internal
+    depends_on:
+      core:
+        condition: service_healthy
+    restart: unless-stopped
+
+networks:
+  internal:
+    driver: bridge
+
+volumes:
+  core-data:
