@@ -13,16 +13,16 @@
 
 	# API REST
 	handle /modules/* {
-		reverse_proxy localhost:3000
+		reverse_proxy localhost:{$EVENT_CORE_PORT:3000}
 	}
 
 	handle /health {
-		reverse_proxy localhost:3000
+		reverse_proxy localhost:{$EVENT_CORE_PORT:3000}
 	}
 
 	# MQTT WebSocket
 	handle /mqtt {
-		reverse_proxy localhost:9001
+		reverse_proxy localhost:{$EVENT_CORE_BROKER_WS_PORT:9001}
 	}
 
 	# SPA fallback

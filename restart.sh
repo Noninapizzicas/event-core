@@ -21,6 +21,13 @@ NC='\033[0m'
 # Directorio del script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# Cargar .env si existe (los puertos se propagan a start.sh/stop.sh)
+if [ -f "$SCRIPT_DIR/.env" ]; then
+    set -a
+    source "$SCRIPT_DIR/.env"
+    set +a
+fi
+
 show_help() {
     cat << EOF
 ${BLUE}Event-Core - Script de Reinicio${NC}
