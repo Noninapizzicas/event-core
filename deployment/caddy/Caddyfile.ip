@@ -1,0 +1,42 @@
+# Event Core - Caddyfile para VPS con IP fija (sin dominio)
+#
+# HTTP en puerto 80. Sin HTTPS porque Let's Encrypt no emite
+# certificados para IPs.
+#
+# Uso:
+#   1. Setear EVENT_CORE_IP o usar 0.0.0.0 (todas las interfaces)
+#   2. caddy run --config Caddyfile.ip
+#
+# Puertos internos (configurables via .env):
+#   - EVENT_CORE_PORT: HTTP Gateway (default 3000)
+#   - EVENT_CORE_BROKER_WS_PORT: MQTT WebSocket (default 9001)
+
+:80 {
+	# Frontend - archivos estáticos del build de SvelteKit
+	root * /srv/event-core/frontend/build
+	file_server
+
+	# API REST → event-core HTTP gateway
+	handle /modules/* {
+		reverse_proxy localhost:{$EVENT_CORE_PORT:3000}
+	}
+
+	handle /health {
+		reverse_proxy localhost:{$EVENT_CORE_PORT:3000}
+	}
+
+	# MQTT WebSocket → broker Aedes
+	# El frontend conecta a ws://IP/mqtt
+	handle /mqtt {
+		reverse_proxy localhost:{$EVENT_CORE_BROKER_WS_PORT:9001}
+	}
+
+	# SPA fallback: rutas que no matchean archivos → index.html
+	try_files {path} /index.html
+
+	# Logs
+	log {
+		output file /var/log/caddy/event-core.log
+		format json
+	}
+}
