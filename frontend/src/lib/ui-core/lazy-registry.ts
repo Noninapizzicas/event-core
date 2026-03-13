@@ -409,14 +409,21 @@ export function setCurrentRoute(route: string): void {
 
   // Auto page context: find modules that match this route
   const defs = get(definitionsStore);
+
+  // Guard: if no modules defined yet, skip — don't clear page context prematurely.
+  // LazyShell will call again after defineModule() populates the store.
+  if (defs.size === 0) {
+    console.log('[LazyRegistry] setCurrentRoute: skipping (no definitions yet)', { route });
+    return;
+  }
+
   const matchingModules = [...defs.values()]
     .filter(d => d.routes && routeMatches(route, d.routes));
 
   console.log('[LazyRegistry] setCurrentRoute:', {
     route,
     totalDefs: defs.size,
-    matchingModules: matchingModules.map(d => ({ id: d.id, routes: d.routes })),
-    allRoutes: [...defs.values()].filter(d => d.routes).map(d => ({ id: d.id, routes: d.routes }))
+    matchingModules: matchingModules.map(d => ({ id: d.id, routes: d.routes }))
   });
 
   if (matchingModules.length > 0) {
