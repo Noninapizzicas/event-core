@@ -161,10 +161,8 @@ fi
 # Frontend
 if [ -d "frontend" ]; then
     cd frontend
-    if [ ! -d "node_modules" ]; then
-        log_info "Instalando dependencias del frontend..."
-        npm install
-    fi
+    log_info "Instalando dependencias del frontend..."
+    npm install
     log_info "Construyendo frontend (SvelteKit)..."
     npm run build
     cd "$SCRIPT_DIR"
