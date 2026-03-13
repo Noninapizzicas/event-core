@@ -1214,8 +1214,10 @@ class ModuleLoader {
   }
 
   /**
-   * Get tools filtered by route — only tools from modules that declare matching routes.
-   * Falls back to all tools if no modules match the route.
+   * Get tools filtered by route — workspace tools + general-purpose tools.
+   * Modules that declare routes[] are workspace-specific.
+   * Modules WITHOUT routes[] are general-purpose and always included.
+   * Falls back to all tools if no workspace modules match.
    *
    * @param {string} route - The workspace route (e.g., '/menu-generator')
    * @returns {Array} Array of tool definitions
@@ -1223,26 +1225,34 @@ class ModuleLoader {
   getToolsByRoute(route) {
     if (!route) return this.getToolsForAI();
 
-    // Find module names whose manifest declares a matching route
-    const matchingModuleNames = new Set();
+    // Classify modules: workspace-specific (has routes) vs general-purpose (no routes)
+    const matchingWorkspaceModules = new Set();
+    const generalModules = new Set();
+
     for (const [moduleName, moduleData] of this.loadedModules) {
       const routes = moduleData.manifest?.routes || [];
-      for (const r of routes) {
-        if (route === r || route.startsWith(r + '/')) {
-          matchingModuleNames.add(moduleName);
-          break;
+      if (routes.length === 0) {
+        // No routes declared = general-purpose, always available
+        generalModules.add(moduleName);
+      } else {
+        for (const r of routes) {
+          if (route === r || route.startsWith(r + '/')) {
+            matchingWorkspaceModules.add(moduleName);
+            break;
+          }
         }
       }
     }
 
-    if (matchingModuleNames.size === 0) {
+    if (matchingWorkspaceModules.size === 0) {
       return this.getToolsForAI();
     }
 
-    // Filter tools to only those belonging to matching modules
+    // Include workspace tools + general-purpose tools
+    const allowedModules = new Set([...matchingWorkspaceModules, ...generalModules]);
     const filtered = [];
     for (const tool of this.toolsRegistry.values()) {
-      if (matchingModuleNames.has(tool.module)) {
+      if (allowedModules.has(tool.module)) {
         filtered.push({
           name: tool.name,
           description: tool.description,
@@ -1255,13 +1265,14 @@ class ModuleLoader {
     if (this.logger) {
       this.logger.info('tools.filtered.by.route', {
         route,
-        matchingModules: [...matchingModuleNames],
+        workspaceModules: [...matchingWorkspaceModules],
+        generalModulesCount: generalModules.size,
         filteredCount: filtered.length,
         totalCount: this.toolsRegistry.size
       });
     }
 
-    // Fallback to all tools if no tools found for matching modules
+    // Fallback to all tools if filtering produced nothing
     return filtered.length > 0 ? filtered : this.getToolsForAI();
   }
 
