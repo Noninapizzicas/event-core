@@ -244,7 +244,9 @@ $DOMAIN {
 
 	# MQTT WebSocket → broker Aedes
 	handle /mqtt {
-		reverse_proxy localhost:9001
+		reverse_proxy localhost:9001 {
+			header_up X-Forwarded-Proto {scheme}
+		}
 	}
 
 	# SPA fallback: rutas que no matchean archivos → index.html
