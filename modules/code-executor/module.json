@@ -4,6 +4,7 @@
   "description": "Shell command and script execution for AI with security controls",
   "author": "Event Core Team",
   "main": "index.js",
+  "globalTools": true,
 
   "provides": {
     "events": [

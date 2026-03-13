@@ -1214,10 +1214,9 @@ class ModuleLoader {
   }
 
   /**
-   * Get tools filtered by route — workspace tools + general-purpose tools.
-   * Modules that declare routes[] are workspace-specific.
-   * Modules WITHOUT routes[] are general-purpose and always included.
-   * Falls back to all tools if no workspace modules match.
+   * Get tools filtered by route — only tools from modules that declare matching routes.
+   * Modules can also declare globalTools: true in module.json to be included in all workspaces.
+   * Falls back to all tools if no modules match the route.
    *
    * @param {string} route - The workspace route (e.g., '/menu-generator')
    * @returns {Array} Array of tool definitions
@@ -1225,34 +1224,34 @@ class ModuleLoader {
   getToolsByRoute(route) {
     if (!route) return this.getToolsForAI();
 
-    // Classify modules: workspace-specific (has routes) vs general-purpose (no routes)
-    const matchingWorkspaceModules = new Set();
-    const generalModules = new Set();
-
+    // Find module names whose manifest declares a matching route
+    const matchingModuleNames = new Set();
     for (const [moduleName, moduleData] of this.loadedModules) {
-      const routes = moduleData.manifest?.routes || [];
-      if (routes.length === 0) {
-        // No routes declared = general-purpose, always available
-        generalModules.add(moduleName);
-      } else {
-        for (const r of routes) {
-          if (route === r || route.startsWith(r + '/')) {
-            matchingWorkspaceModules.add(moduleName);
-            break;
-          }
+      const manifest = moduleData.manifest || {};
+      const routes = manifest.routes || [];
+
+      // Modules with globalTools: true are always included in any workspace
+      if (manifest.globalTools === true) {
+        matchingModuleNames.add(moduleName);
+        continue;
+      }
+
+      for (const r of routes) {
+        if (route === r || route.startsWith(r + '/')) {
+          matchingModuleNames.add(moduleName);
+          break;
         }
       }
     }
 
-    if (matchingWorkspaceModules.size === 0) {
+    if (matchingModuleNames.size === 0) {
       return this.getToolsForAI();
     }
 
-    // Include workspace tools + general-purpose tools
-    const allowedModules = new Set([...matchingWorkspaceModules, ...generalModules]);
+    // Filter tools to only those belonging to matching modules
     const filtered = [];
     for (const tool of this.toolsRegistry.values()) {
-      if (allowedModules.has(tool.module)) {
+      if (matchingModuleNames.has(tool.module)) {
         filtered.push({
           name: tool.name,
           description: tool.description,
@@ -1265,14 +1264,13 @@ class ModuleLoader {
     if (this.logger) {
       this.logger.info('tools.filtered.by.route', {
         route,
-        workspaceModules: [...matchingWorkspaceModules],
-        generalModulesCount: generalModules.size,
+        matchingModules: [...matchingModuleNames],
         filteredCount: filtered.length,
         totalCount: this.toolsRegistry.size
       });
     }
 
-    // Fallback to all tools if filtering produced nothing
+    // Fallback to all tools if no tools found for matching modules
     return filtered.length > 0 ? filtered : this.getToolsForAI();
   }
 

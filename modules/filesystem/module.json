@@ -4,6 +4,7 @@
   "description": "Core filesystem operations for the entire system",
   "author": "Aichat Team",
   "main": "index.js",
+  "globalTools": true,
 
   "handlers": [
     { "domain": "fs", "action": "list", "method": "handleList" },
