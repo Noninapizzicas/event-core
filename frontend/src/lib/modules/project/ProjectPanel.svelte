@@ -233,7 +233,7 @@
         <div class="color-options">
           {#each PROJECT_COLORS as color (color.id)}
             <button type="button" class="color-btn" class:selected={createForm.color === color.id}
-              style="background-color: {color.hex}" on:click={() => createForm.color = color.id} title={color.id} />
+              style="background-color: {color.hex}" on:click={() => createForm.color = color.id} title={color.id}></button>
           {/each}
         </div>
       </div>
