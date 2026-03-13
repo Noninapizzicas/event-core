@@ -354,12 +354,12 @@ async function initMqttConnection(config: MqttConfig): Promise<void> {
 
     client.on('connect', () => {
       clearTimeout(connectionTimeout);
-      statusStore.set('connected');
       errorStore.set(null);
       perfEnd('MQTT.totalConnection');
       logMsg('✅ MQTT connected', { url: config.url });
 
-      // Registrar cliente para mqtt-request
+      // Registrar cliente para mqtt-request ANTES de notificar status,
+      // para que los subscribers de 'connected' puedan publicar inmediatamente
       _setMqttClient({
         publish: (topic: string, message: string, options?: { qos?: number }) => {
           client?.publish(topic, message, { qos: options?.qos ?? 1 });
@@ -373,6 +373,9 @@ async function initMqttConnection(config: MqttConfig): Promise<void> {
 
       // Enviar mensajes que estaban encolados esperando conexión
       flushPendingMessages();
+
+      // Notificar status DESPUÉS de que el cliente esté listo
+      statusStore.set('connected');
 
       // Notificar a los stores que deben recargar datos (solo en reconexión, no en primera conexión)
       if (hasConnectedOnce) {

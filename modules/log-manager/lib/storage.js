@@ -247,7 +247,7 @@ class LogStorage {
           // Aplicar filtros
           if (levels && !levels.includes(entry.level)) continue;
           if (source && entry.source !== source) continue;
-          if (search && !entry.msg.includes(search) && !JSON.stringify(entry.ctx).includes(search)) continue;
+          if (search && !(entry.msg || '').includes(search) && !JSON.stringify(entry.ctx || {}).includes(search)) continue;
 
           results.push(entry);
         } catch (parseErr) {
@@ -356,7 +356,7 @@ class LogStorage {
             if (levels && !levels.includes(entry.level)) continue;
             if (modules && !modules.includes(entry.module)) continue;
             if (source && entry.source !== source) continue;
-            if (search && !entry.msg.includes(search) && !JSON.stringify(entry.ctx).includes(search)) continue;
+            if (search && !(entry.msg || '').includes(search) && !JSON.stringify(entry.ctx || {}).includes(search)) continue;
 
             results.push(entry);
           } catch (parseErr) {
