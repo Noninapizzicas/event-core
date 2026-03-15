@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================
-# Event-Core → Repo Limpio — Script de Migración
+# Event-Core → ENKI — Script de Migración
 # Generado: 2026-03-15
 # ==============================================================
 # USO: ./migrate-to-clean-repo.sh /ruta/destino
@@ -16,7 +16,7 @@ if [ -d "$DEST" ] && [ "$(ls -A "$DEST" 2>/dev/null)" ]; then
   exit 1
 fi
 
-echo "=== Migrando Event-Core limpio ==="
+echo "=== Migrando Event-Core → ENKI ==="
 echo "  Origen:  $SRC"
 echo "  Destino: $DEST"
 echo ""
@@ -146,16 +146,15 @@ echo "[5/5] Inicializando git..."
 cd "$DEST"
 git init
 git add -A
-git commit -m "Initial commit — event-core limpio (32 módulos activos)
+git commit -m "ENKI — Initial commit (32 módulos activos)
 
-Migrado desde event-core original.
+Migrado desde event-core.
 Excluidos: conversation-manager, metricas, dashboard, admin-panel,
 scratch-designer, ui-designer, notas, facturacion.
-Excluido: directorio contexto/ completo.
-Excluida: documentación suelta (*.md análisis, imágenes, archives)."
+Excluidos: contexto/, documentación suelta, imágenes, archives."
 
 echo ""
-echo "=== Migración completada ==="
+echo "=== ENKI — Migración completada ==="
 echo "  Destino: $DEST"
 echo "  Módulos: $MOD_COUNT"
 echo "  Git: inicializado con commit inicial"

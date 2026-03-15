@@ -2,7 +2,7 @@
 
 > Generado: 2026-03-15
 > Repo origen: `event-core` (se conserva intacto para referencia histórica)
-> Repo destino: nuevo repo limpio
+> Repo destino: **ENKI**
 
 ---
 
@@ -208,7 +208,7 @@ Se regenerará desde cero basado en el código real cuando se necesite.
 ## 6. ESTRUCTURA PROPUESTA DEL REPO LIMPIO
 
 ```
-event-core-v2/
+ENKI/
 ├── README.md                    # Nuevo — descripción real del sistema
 ├── INSTALL.md                   # Guía de instalación actualizada
 ├── package.json
