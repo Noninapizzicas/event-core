@@ -1,0 +1,53 @@
+{
+  "_VERSION": "1.0.0",
+  "_DESCRIPTION": "Mapeo de capabilities abstractas a providers concretos. El Flow Engine usa esto para resolver qué provider ejecutar sin acoplarse a ninguno.",
+
+  "image.prepare": {
+    "provider": "local.sharp",
+    "action": "prepare-ocr",
+    "defaults": {
+      "options": { "grayscale": true, "normalize": true, "sharpen": true }
+    },
+    "alternatives": []
+  },
+
+  "ocr.extract": {
+    "provider": "local.tesseract",
+    "action": "extract",
+    "defaults": {
+      "language": "spa"
+    },
+    "alternatives": []
+  },
+
+  "llm.structure": {
+    "provider": "local.deepseek",
+    "action": "chat",
+    "defaults": {
+      "temperature": 0.1,
+      "max_tokens": 4000
+    },
+    "alternatives": ["local.openai"]
+  },
+
+  "db.save": {
+    "provider": "local.facturas-db",
+    "action": "insert",
+    "defaults": {},
+    "alternatives": []
+  },
+
+  "email.send": {
+    "provider": "local.gmail",
+    "action": "send",
+    "defaults": {},
+    "alternatives": []
+  },
+
+  "pdf.create": {
+    "provider": "local.pdf",
+    "action": "create",
+    "defaults": {},
+    "alternatives": []
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "$schema": "provider-manifest-v1",
+  "name": "local.stripe",
+  "version": "1.0.0",
+  "description": "Integración Stripe API — pagos, clientes, reembolsos, facturas",
+  "type": "local",
+  "requires": {
+    "npm": [],
+    "credentials": ["STRIPE_SECRET_KEY"]
+  },
+  "functions": {
+    "create-payment": {
+      "event": "local.stripe.create-payment.request",
+      "description": "Crea un PaymentIntent en Stripe",
+      "input": {
+        "amount": { "type": "number", "required": true, "description": "Monto en céntimos (1000 = 10.00€)" },
+        "currency": { "type": "string", "required": true, "description": "Moneda ISO (eur, usd, etc.)" },
+        "description": { "type": "string", "required": false, "description": "Descripción del pago" },
+        "customer": { "type": "string", "required": false, "description": "ID del cliente Stripe (opcional)" },
+        "metadata": { "type": "object", "required": false, "description": "Metadatos adicionales" }
+      },
+      "output": {
+        "paymentId": { "type": "string", "description": "ID del PaymentIntent" },
+        "client_secret": { "type": "string", "description": "Client secret para frontend" },
+        "status": { "type": "string", "description": "Estado del pago" }
+      }
+    },
+    "list-payments": {
+      "event": "local.stripe.list-payments.request",
+      "description": "Lista pagos recientes de Stripe",
+      "input": {
+        "limit": { "type": "number", "required": false, "description": "Máximo resultados (default: 10)" },
+        "customer": { "type": "string", "required": false, "description": "Filtrar por cliente" }
+      },
+      "output": {
+        "payments": { "type": "array", "description": "Lista de pagos" },
+        "total": { "type": "number", "description": "Total devuelto" }
+      }
+    },
+    "refund": {
+      "event": "local.stripe.refund.request",
+      "description": "Crea un reembolso de un pago",
+      "input": {
+        "payment_intent": { "type": "string", "required": true, "description": "ID del PaymentIntent a reembolsar" },
+        "amount": { "type": "number", "required": false, "description": "Monto parcial en céntimos (omitir = total)" },
+        "reason": { "type": "string", "required": false, "description": "Razón: duplicate, fraudulent, requested_by_customer" }
+      },
+      "output": {
+        "refundId": { "type": "string", "description": "ID del reembolso" },
+        "status": { "type": "string", "description": "Estado del reembolso" }
+      }
+    },
+    "customers": {
+      "event": "local.stripe.customers.request",
+      "description": "Lista o busca clientes en Stripe",
+      "input": {
+        "email": { "type": "string", "required": false, "description": "Filtrar por email" },
+        "limit": { "type": "number", "required": false, "description": "Máximo resultados (default: 10)" }
+      },
+      "output": {
+        "customers": { "type": "array", "description": "Lista de clientes" },
+        "total": { "type": "number", "description": "Total devuelto" }
+      }
+    },
+    "invoices": {
+      "event": "local.stripe.invoices.request",
+      "description": "Lista facturas de Stripe",
+      "input": {
+        "customer": { "type": "string", "required": false, "description": "Filtrar por cliente" },
+        "status": { "type": "string", "required": false, "description": "Filtrar por estado: draft, open, paid, void" },
+        "limit": { "type": "number", "required": false, "description": "Máximo resultados (default: 10)" }
+      },
+      "output": {
+        "invoices": { "type": "array", "description": "Lista de facturas" },
+        "total": { "type": "number", "description": "Total devuelto" }
+      }
+    }
+  }
+}

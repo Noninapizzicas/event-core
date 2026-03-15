@@ -1,0 +1,159 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://pizzepos.com/schemas/glovo.json",
+  "title": "Glovo Schema",
+  "description": "Esquemas de datos para pedidos Glovo",
+
+  "definitions": {
+    "estado_pedido_glovo": {
+      "type": "string",
+      "enum": ["recibido", "aceptado", "preparando", "listo", "recogido", "rechazado"],
+      "description": "Estado del pedido Glovo"
+    },
+
+    "glovo_item": {
+      "type": "object",
+      "required": ["nombre", "cantidad", "precio"],
+      "properties": {
+        "nombre": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "cantidad": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        },
+        "precio": {
+          "type": "number",
+          "minimum": 0,
+          "multipleOf": 0.01
+        },
+        "notas": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "glovo_product_id": {
+          "type": "string",
+          "description": "ID del producto en el catálogo de Glovo"
+        }
+      }
+    },
+
+    "pedido_glovo": {
+      "type": "object",
+      "required": ["cuenta_id", "glovo_order_id", "estado", "total", "hora_recibido"],
+      "properties": {
+        "cuenta_id": {
+          "type": "string",
+          "pattern": "^glovo_\\d{8}_\\d{3}$",
+          "description": "ID interno: glovo_{YYYYMMDD}_{secuencial}"
+        },
+        "glovo_order_id": {
+          "type": "string",
+          "description": "ID del pedido en la plataforma Glovo"
+        },
+        "numero_pedido": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "plataforma": {
+          "const": "glovo"
+        },
+        "estado": {
+          "$ref": "#/definitions/estado_pedido_glovo"
+        },
+        "items": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/glovo_item" }
+        },
+        "total": {
+          "type": "number",
+          "minimum": 0,
+          "multipleOf": 0.01
+        },
+        "cliente_nombre": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "direccion_entrega": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "notas": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "tiempo_estimado_entrega": {
+          "type": "integer",
+          "minimum": 5,
+          "maximum": 120,
+          "description": "Minutos estimados de entrega total"
+        },
+        "hora_recibido": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "hora_aceptado": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "hora_listo": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "hora_recogido": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "rider_info": {
+          "type": "object",
+          "properties": {
+            "nombre": { "type": "string" },
+            "telefono": { "type": "string" },
+            "eta_minutos": { "type": "integer" }
+          }
+        }
+      }
+    },
+
+    "recibir_pedido_request": {
+      "type": "object",
+      "required": ["glovo_order_id", "total"],
+      "properties": {
+        "glovo_order_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "items": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/glovo_item" }
+        },
+        "total": {
+          "type": "number",
+          "minimum": 0
+        },
+        "cliente_nombre": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "direccion_entrega": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "notas": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "tiempo_estimado_entrega": {
+          "type": "integer",
+          "minimum": 5,
+          "maximum": 120,
+          "default": 45
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,108 @@
+{
+  "name": "chat-ai-bridge",
+  "version": "1.0.0",
+  "description": "Puente entre chat y ai-gateway que coordina el flujo de mensajes con composición de prompts",
+  "author": "Event Core Team",
+
+  "events": {
+    "publishes": [
+      "chat.send.response",
+      "ai.chat.request",
+      "session.save.request",
+      "prompt.compose.request",
+      "session.context.load.request"
+    ],
+    "subscribes": [
+      { "event": "chat.send.request", "handler": "onChatSendRequest" },
+      { "event": "ai.chat.response", "handler": "onAIChatResponse" },
+      { "event": "session.save.response", "handler": "onSessionSaveResponse" },
+      { "event": "prompt.compose.response", "handler": "onPromptComposeResponse" },
+      { "event": "session.context.load.response", "handler": "onSessionContextResponse" },
+      { "event": "project.activated", "handler": "onProjectActivated" },
+      { "event": "project.deactivated", "handler": "onProjectDeactivated" }
+    ]
+  },
+
+  "ui_handlers": [
+    { "domain": "conversation", "action": "send", "handler": "handleConversationSend" },
+    { "domain": "chat-bridge", "action": "send", "handler": "handleUISend" },
+    { "domain": "chat-bridge", "action": "status", "handler": "handleUIStatus" }
+  ],
+
+  "apis": [
+    {
+      "method": "POST",
+      "path": "/send",
+      "handler": "handleSendMessage",
+      "description": "Enviar mensaje y obtener respuesta AI"
+    },
+    {
+      "method": "GET",
+      "path": "/status",
+      "handler": "handleGetStatus",
+      "description": "Estado de requests pendientes"
+    },
+    {
+      "method": "GET",
+      "path": "/health",
+      "handler": "handleHealthCheck",
+      "description": "Health check del módulo"
+    }
+  ],
+
+  "tools": [
+    {
+      "name": "chat.send_message",
+      "description": "Enviar un mensaje en una conversación y obtener respuesta AI",
+      "handler": "toolSendMessage",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "conversation_id": {
+            "type": "string",
+            "description": "ID de la conversación"
+          },
+          "content": {
+            "type": "string",
+            "description": "Contenido del mensaje"
+          },
+          "use_tools": {
+            "type": "boolean",
+            "description": "Permitir que AI use tools",
+            "default": true
+          }
+        },
+        "required": ["conversation_id", "content"]
+      }
+    }
+  ],
+
+  "ui": {
+    "zone": "chat-config",
+    "icon": "🔗",
+    "handlers": {
+      "conversation": {
+        "actions": ["send"],
+        "note": "Primary frontend entry point for sending messages"
+      },
+      "chat-bridge": {
+        "actions": ["send", "status"],
+        "note": "Internal direct access"
+      }
+    }
+  },
+
+  "dependencies": [
+    "chat-session",
+    "prompt-composer",
+    "ai-gateway"
+  ],
+
+  "config": {
+    "maxToolIterations": 10,
+    "maxContextTokens": 24000,
+    "aiTimeout": 60000,
+    "aiTimeoutWithTools": 180000,
+    "requestTimeout": 10000
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "$schema": "../../../schemas/provider-manifest.schema.json",
+  "name": "local.handler-generator",
+  "version": "1.0.0",
+  "description": "Generador de handlers JavaScript con patrones del sistema",
+  "type": "provider",
+  "requires": {
+    "credentials": [],
+    "npm": []
+  },
+  "functions": {
+    "generate": {
+      "event": "local.handler-generator.generate.request",
+      "description": "Genera un handler JavaScript completo",
+      "input": {
+        "name": { "type": "string", "required": true, "description": "Nombre kebab-case" },
+        "description": { "type": "string", "required": true, "description": "Descripción" },
+        "trigger": { "type": "string", "required": true, "description": "Evento trigger" },
+        "projectId": { "type": "string", "description": "Proyecto (omitir para global)" },
+        "filter": { "type": "object", "description": "{ field, operator, value }" },
+        "extraTriggers": { "type": "array", "description": "Eventos adicionales" },
+        "services": { "type": "array", "description": "[{ service, action, description }]" },
+        "emits": { "type": "array", "description": "[{ event, description }]" },
+        "usesConfig": { "type": "boolean", "default": false },
+        "usesStore": { "type": "boolean", "default": false },
+        "enabled": { "type": "boolean", "default": true }
+      },
+      "output": {
+        "created": { "type": "boolean" },
+        "path": { "type": "string" },
+        "trigger": { "type": "string" }
+      }
+    },
+    "list": {
+      "event": "local.handler-generator.list.request",
+      "description": "Lista handlers con estado activo/archivado",
+      "input": {
+        "projectId": { "type": "string", "description": "Proyecto (omitir para global)" }
+      },
+      "output": {
+        "handlers": { "type": "array" },
+        "count": { "type": "number" }
+      }
+    },
+    "archive": {
+      "event": "local.handler-generator.archive.request",
+      "description": "Mueve handler a archived/",
+      "input": {
+        "name": { "type": "string", "required": true },
+        "projectId": { "type": "string" }
+      },
+      "output": {
+        "archived": { "type": "boolean" },
+        "from": { "type": "string" },
+        "to": { "type": "string" }
+      }
+    },
+    "restore": {
+      "event": "local.handler-generator.restore.request",
+      "description": "Restaura handler desde archived/",
+      "input": {
+        "name": { "type": "string", "required": true },
+        "projectId": { "type": "string" }
+      },
+      "output": {
+        "restored": { "type": "boolean" },
+        "from": { "type": "string" },
+        "to": { "type": "string" }
+      }
+    }
+  }
+}

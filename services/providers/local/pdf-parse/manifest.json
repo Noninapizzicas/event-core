@@ -1,0 +1,59 @@
+{
+  "$schema": "../../../schemas/provider-manifest.schema.json",
+  "name": "local.pdf-parse",
+  "version": "1.0.0",
+  "description": "Servicio local para extraer texto de PDFs usando pdf-parse",
+  "type": "provider",
+  "requires": {
+    "credentials": [],
+    "npm": [
+      "pdf-parse"
+    ]
+  },
+  "functions": {
+    "extract": {
+      "event": "local.pdf-parse.extract.request",
+      "description": "Extraer texto de un archivo PDF",
+      "input": {
+        "pdf": {
+          "type": "string",
+          "description": "PDF en base64 o path al archivo",
+          "required": true
+        },
+        "maxPages": {
+          "type": "number",
+          "description": "Maximo de paginas a procesar (0 = todas)",
+          "default": 0
+        }
+      },
+      "output": {
+        "success": {
+          "type": "boolean",
+          "description": "Si la extraccion fue exitosa"
+        },
+        "data": {
+          "type": "object",
+          "description": "Datos extraidos (NOTA: acceder via steps.ID.data.text)",
+          "properties": {
+            "text": {
+              "type": "string",
+              "description": "Texto completo extraido"
+            },
+            "pages": {
+              "type": "number",
+              "description": "Numero de paginas"
+            },
+            "info": {
+              "type": "object",
+              "description": "Metadata del PDF (titulo, autor, etc.)"
+            }
+          }
+        },
+        "error": {
+          "type": "string",
+          "description": "Mensaje de error si success=false"
+        }
+      }
+    }
+  }
+}

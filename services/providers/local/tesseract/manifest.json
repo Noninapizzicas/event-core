@@ -1,0 +1,46 @@
+{
+  "$schema": "../../../schemas/provider-manifest.schema.json",
+  "name": "local.tesseract",
+  "version": "1.0.0",
+  "description": "Servicio local de OCR usando Tesseract.js",
+  "type": "provider",
+  "requires": {
+    "credentials": [],
+    "npm": [
+      "tesseract.js"
+    ]
+  },
+  "functions": {
+    "extract": {
+      "event": "local.tesseract.extract.request",
+      "description": "Extraer texto de imagen usando Tesseract OCR",
+      "input": {
+        "image": {
+          "type": "string",
+          "description": "Imagen en base64 o path al archivo",
+          "required": true
+        },
+        "mimeType": {
+          "type": "string",
+          "description": "Tipo MIME de la imagen (image/jpeg, image/png, etc.)",
+          "default": "auto"
+        },
+        "language": {
+          "type": "string",
+          "description": "Codigo de idioma (eng, spa, deu, fra, etc.)",
+          "default": "eng"
+        }
+      },
+      "output": {
+        "text": {
+          "type": "string",
+          "description": "Texto extraido"
+        },
+        "confidence": {
+          "type": "number",
+          "description": "Confianza 0-100"
+        }
+      }
+    }
+  }
+}

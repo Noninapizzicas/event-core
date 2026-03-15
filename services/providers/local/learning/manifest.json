@@ -1,0 +1,144 @@
+{
+  "$schema": "../../../schemas/provider-manifest.schema.json",
+  "name": "local.learning",
+  "version": "1.0.0",
+  "description": "Sistema de aprendizaje genérico - almacena y consulta experiencias para cualquier dominio",
+  "type": "provider",
+  "requires": {
+    "credentials": [],
+    "npm": []
+  },
+  "functions": {
+    "save": {
+      "event": "local.learning.save.request",
+      "description": "Guardar una experiencia/feedback",
+      "input": {
+        "dominio": {
+          "type": "string",
+          "description": "Dominio del aprendizaje (ej: 'ocr', 'facturas', 'agente-x')",
+          "required": true
+        },
+        "contexto": {
+          "type": "object",
+          "description": "Datos de entrada/situación (para matching posterior)"
+        },
+        "accion": {
+          "type": "object",
+          "description": "Qué se hizo (parámetros, decisiones)"
+        },
+        "resultado": {
+          "type": "object",
+          "description": "Resultado obtenido"
+        },
+        "feedback": {
+          "type": "object",
+          "description": "Evaluación: { exito: bool, score: 0-1, comentario: string }"
+        },
+        "tags": {
+          "type": "array",
+          "description": "Etiquetas para búsqueda"
+        }
+      },
+      "output": {
+        "success": { "type": "boolean" },
+        "id": { "type": "string" },
+        "dominio": { "type": "string" }
+      }
+    },
+    "query": {
+      "event": "local.learning.query.request",
+      "description": "Buscar experiencias similares",
+      "input": {
+        "dominio": {
+          "type": "string",
+          "required": true
+        },
+        "contexto": {
+          "type": "object",
+          "description": "Contexto para buscar similares"
+        },
+        "camposSimilitud": {
+          "type": "array",
+          "description": "Campos específicos para comparar"
+        },
+        "limite": {
+          "type": "number",
+          "default": 10
+        },
+        "minSimilitud": {
+          "type": "number",
+          "default": 0.3
+        },
+        "tags": {
+          "type": "array",
+          "description": "Filtrar por tags"
+        },
+        "soloExitosos": {
+          "type": "boolean",
+          "description": "Solo devolver experiencias exitosas"
+        }
+      },
+      "output": {
+        "success": { "type": "boolean" },
+        "total": { "type": "number" },
+        "resultados": { "type": "array" }
+      }
+    },
+    "stats": {
+      "event": "local.learning.stats.request",
+      "description": "Obtener estadísticas de un dominio",
+      "input": {
+        "dominio": {
+          "type": "string",
+          "required": true
+        },
+        "regenerar": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "output": {
+        "success": { "type": "boolean" },
+        "total": { "type": "number" },
+        "exitosos": { "type": "number" },
+        "tasaExito": { "type": "string" },
+        "promedioScore": { "type": "number" }
+      }
+    },
+    "domains": {
+      "event": "local.learning.domains.request",
+      "description": "Listar todos los dominios con datos de aprendizaje",
+      "input": {},
+      "output": {
+        "success": { "type": "boolean" },
+        "dominios": { "type": "array" },
+        "total": { "type": "number" }
+      }
+    },
+    "best-action": {
+      "event": "local.learning.best-action.request",
+      "description": "Obtener la mejor acción recomendada para un contexto",
+      "input": {
+        "dominio": {
+          "type": "string",
+          "required": true
+        },
+        "contexto": {
+          "type": "object",
+          "required": true,
+          "description": "Contexto actual para buscar recomendación"
+        },
+        "camposSimilitud": {
+          "type": "array",
+          "description": "Campos específicos para comparar"
+        }
+      },
+      "output": {
+        "success": { "type": "boolean" },
+        "encontrado": { "type": "boolean" },
+        "similitud": { "type": "number" },
+        "accionRecomendada": { "type": "object" }
+      }
+    }
+  }
+}

@@ -1,0 +1,107 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://pizzepos.com/schemas/llevar-events.json",
+  "title": "Llevar Events Schema",
+  "description": "Esquemas de eventos de para llevar",
+
+  "definitions": {
+    "llevar_ticket_creado": {
+      "type": "object",
+      "required": ["event_type", "payload"],
+      "properties": {
+        "event_type": {"const": "llevar.ticket_creado"},
+        "payload": {
+          "type": "object",
+          "required": ["cuenta_id", "numero_ticket", "hora_creacion"],
+          "properties": {
+            "cuenta_id": {"type": "string"},
+            "numero_ticket": {"type": "integer"},
+            "cliente_nombre": {"type": "string"},
+            "hora_creacion": {"type": "string", "format": "date-time"}
+          }
+        },
+        "correlation_id": {"type": "string"}
+      }
+    },
+
+    "llevar_ticket_listo": {
+      "type": "object",
+      "required": ["event_type", "payload"],
+      "properties": {
+        "event_type": {"const": "llevar.ticket_listo"},
+        "payload": {
+          "type": "object",
+          "required": ["cuenta_id", "numero_ticket", "hora_listo"],
+          "properties": {
+            "cuenta_id": {"type": "string"},
+            "numero_ticket": {"type": "integer"},
+            "cliente_nombre": {"type": "string"},
+            "hora_listo": {"type": "string", "format": "date-time"},
+            "tiempo_preparacion": {"type": "integer"}
+          }
+        },
+        "correlation_id": {"type": "string"}
+      }
+    },
+
+    "llevar_ticket_entregado": {
+      "type": "object",
+      "required": ["event_type", "payload"],
+      "properties": {
+        "event_type": {"const": "llevar.ticket_entregado"},
+        "payload": {
+          "type": "object",
+          "required": ["cuenta_id", "numero_ticket", "total"],
+          "properties": {
+            "cuenta_id": {"type": "string"},
+            "numero_ticket": {"type": "integer"},
+            "total": {"type": "number"},
+            "tiempo_espera": {"type": "integer"},
+            "hora_entrega": {"type": "string", "format": "date-time"}
+          }
+        },
+        "correlation_id": {"type": "string"}
+      }
+    },
+
+    "cuenta_creada": {
+      "type": "object",
+      "required": ["event_type", "payload"],
+      "properties": {
+        "event_type": {"const": "cuenta.creada"},
+        "payload": {
+          "type": "object",
+          "required": ["cuenta_id", "tipo", "origen"],
+          "properties": {
+            "cuenta_id": {"type": "string"},
+            "tipo": {"const": "llevar"},
+            "origen": {"const": "cuentas-llevar"},
+            "numero_ticket": {"type": "integer"},
+            "total": {"type": "number"},
+            "metadata": {"type": "object"}
+          }
+        },
+        "correlation_id": {"type": "string"}
+      }
+    },
+
+    "cuenta_cerrada": {
+      "type": "object",
+      "required": ["event_type", "payload"],
+      "properties": {
+        "event_type": {"const": "cuenta.cerrada"},
+        "payload": {
+          "type": "object",
+          "required": ["cuenta_id", "tipo", "total"],
+          "properties": {
+            "cuenta_id": {"type": "string"},
+            "tipo": {"const": "llevar"},
+            "total": {"type": "number"},
+            "metadata": {"type": "object"}
+          }
+        },
+        "correlation_id": {"type": "string"}
+      }
+    }
+  }
+}

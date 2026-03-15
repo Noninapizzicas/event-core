@@ -1,0 +1,77 @@
+{
+  "$schema": "provider-manifest-v1",
+  "name": "local.backup-manager",
+  "version": "1.0.0",
+  "description": "Gestión de backups — respalda providers, handlers, contexto y datos del sistema",
+  "type": "local",
+  "requires": {
+    "npm": [],
+    "credentials": []
+  },
+  "functions": {
+    "create": {
+      "event": "local.backup-manager.create.request",
+      "description": "Crea un backup completo o selectivo del sistema",
+      "input": {
+        "scope": { "type": "string", "required": false, "description": "Alcance: full | providers | handlers | contexto | config | project" },
+        "projectId": { "type": "string", "required": false, "description": "ID del proyecto (solo si scope=project)" },
+        "nota": { "type": "string", "required": false, "description": "Nota descriptiva del backup" }
+      },
+      "output": {
+        "backupId": { "type": "string", "description": "ID del backup creado" },
+        "path": { "type": "string", "description": "Ruta del backup" },
+        "files": { "type": "number", "description": "Archivos respaldados" },
+        "size": { "type": "string", "description": "Tamaño total" }
+      }
+    },
+    "list": {
+      "event": "local.backup-manager.list.request",
+      "description": "Lista backups disponibles con tamaño y fecha",
+      "input": {
+        "scope": { "type": "string", "required": false, "description": "Filtrar por scope" }
+      },
+      "output": {
+        "backups": { "type": "array", "description": "Lista de backups" },
+        "total": { "type": "number", "description": "Total de backups" },
+        "totalSize": { "type": "string", "description": "Tamaño total" }
+      }
+    },
+    "restore": {
+      "event": "local.backup-manager.restore.request",
+      "description": "Restaura un backup específico (dryRun por defecto)",
+      "input": {
+        "backupId": { "type": "string", "required": true, "description": "ID del backup a restaurar" },
+        "dryRun": { "type": "boolean", "required": false, "description": "Solo simular (default: true)" }
+      },
+      "output": {
+        "restored": { "type": "boolean", "description": "Si se restauró" },
+        "files": { "type": "number", "description": "Archivos restaurados" },
+        "warnings": { "type": "array", "description": "Advertencias" }
+      }
+    },
+    "cleanup": {
+      "event": "local.backup-manager.cleanup.request",
+      "description": "Elimina backups antiguos según política de retención",
+      "input": {
+        "keepDays": { "type": "number", "required": false, "description": "Mantener últimos N días (default: 30)" },
+        "keepMin": { "type": "number", "required": false, "description": "Mínimo a mantener (default: 3)" }
+      },
+      "output": {
+        "removed": { "type": "number", "description": "Backups eliminados" },
+        "kept": { "type": "number", "description": "Backups conservados" },
+        "freedSize": { "type": "string", "description": "Espacio liberado" }
+      }
+    },
+    "status": {
+      "event": "local.backup-manager.status.request",
+      "description": "Estado del sistema de backups",
+      "input": {},
+      "output": {
+        "totalBackups": { "type": "number", "description": "Total de backups" },
+        "totalSize": { "type": "string", "description": "Espacio usado" },
+        "lastBackup": { "type": "object", "description": "Último backup" },
+        "scopes": { "type": "object", "description": "Backups por scope" }
+      }
+    }
+  }
+}

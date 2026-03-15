@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{nombre_carta}}</title>
+  <style>
+    /* =====================================================
+       PLANTILLA: A4 Clásica
+       Uso: Carta completa, muchas categorías y productos
+       Imprimir: Ctrl+P → Sin márgenes → Guardar como PDF
+       ===================================================== */
+
+    @page {
+      size: A4 portrait;
+      margin: 1.2cm 1.5cm;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      font-size: 10pt;
+      color: #1a1a1a;
+      background: #fff;
+      line-height: 1.4;
+    }
+
+    /* Cabecera */
+    .cabecera {
+      text-align: center;
+      padding-bottom: 0.6cm;
+      margin-bottom: 0.5cm;
+      border-bottom: 2px solid #1a1a1a;
+    }
+
+    .cabecera h1 {
+      font-size: 22pt;
+      font-weight: bold;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .cabecera .meta {
+      font-size: 8pt;
+      color: #666;
+      margin-top: 0.15cm;
+    }
+
+    /* Categorías */
+    .categoria {
+      margin-bottom: 0.5cm;
+      break-inside: avoid;
+    }
+
+    .categoria-nombre {
+      font-size: 12pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 0.2cm 0;
+      border-bottom: 1px solid #aaa;
+      margin-bottom: 0.25cm;
+      color: #222;
+    }
+
+    /* Productos */
+    .producto {
+      display: flex;
+      flex-direction: column;
+      padding: 0.18cm 0;
+      border-bottom: 1px dotted #ddd;
+    }
+
+    .producto:last-child {
+      border-bottom: none;
+    }
+
+    .producto-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 0.3cm;
+    }
+
+    .producto-nombre {
+      font-size: 10pt;
+      font-weight: bold;
+      flex: 1;
+    }
+
+    .precio {
+      font-size: 10pt;
+      font-weight: bold;
+      white-space: nowrap;
+      color: #333;
+    }
+
+    .producto-ingredientes {
+      font-size: 8pt;
+      color: #666;
+      margin-top: 0.05cm;
+      font-style: italic;
+    }
+
+    /* Pie */
+    .pie {
+      margin-top: 0.6cm;
+      padding-top: 0.3cm;
+      border-top: 1px solid #ccc;
+      text-align: center;
+      font-size: 7.5pt;
+      color: #999;
+    }
+
+    /* Columnas solo en pantalla para facilitar diseño */
+    @media screen {
+      body {
+        max-width: 21cm;
+        margin: 1cm auto;
+        padding: 1.5cm;
+        box-shadow: 0 0 12px rgba(0,0,0,0.15);
+        background: #fff;
+        font-size: 11pt;
+      }
+      .cabecera h1 { font-size: 26pt; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="cabecera">
+    <h1>{{nombre_carta}}</h1>
+    <div class="meta">{{total_categorias}} categorías · {{total_productos}} productos</div>
+  </div>
+
+  <div class="carta-contenido">
+    {{categorias_html}}
+  </div>
+
+  <div class="pie">
+    {{fecha}}
+  </div>
+
+</body>
+</html>

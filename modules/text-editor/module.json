@@ -1,0 +1,110 @@
+{
+  "name": "text-editor",
+  "version": "1.0.0",
+  "description": "Text editor for MD and JSON files with syntax highlighting and validation",
+  "author": "Aichat Team",
+  "main": "index.js",
+
+  "ui": {
+    "enabled": true,
+    "title": "Editor de Texto",
+    "icon": "📝",
+    "description": "Editor para archivos MD y JSON",
+    "views": {
+      "editor": {
+        "title": "Editor",
+        "description": "Editor de texto con resaltado de sintaxis",
+        "layout": "fullscreen"
+      }
+    }
+  },
+
+  "apis": [
+    {
+      "method": "GET",
+      "path": "/editor/open",
+      "handler": "openFile",
+      "description": "Open file for editing",
+      "query_params": {
+        "project_id": {
+          "type": "string",
+          "required": true
+        },
+        "file_path": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/editor/save",
+      "handler": "saveFile",
+      "description": "Save file content",
+      "request_schema": "schemas/save-file.json"
+    },
+    {
+      "method": "POST",
+      "path": "/editor/validate",
+      "handler": "validateContent",
+      "description": "Validate JSON content",
+      "request_schema": "schemas/validate-content.json"
+    },
+    {
+      "method": "POST",
+      "path": "/editor/format",
+      "handler": "formatContent",
+      "description": "Format JSON content",
+      "request_schema": "schemas/format-content.json"
+    }
+  ],
+
+  "events": {
+    "subscribes": [
+      { "event": "editor.open.request", "handler": "handleOpenRequest" },
+      { "event": "editor.save.request", "handler": "handleSaveRequest" },
+      { "event": "editor.validate.request", "handler": "handleValidateRequest" },
+      { "event": "editor.format.request", "handler": "handleFormatRequest" }
+    ],
+    "publishes": [
+      "editor.open.response",
+      "editor.saved",
+      "editor.validate.response",
+      "editor.format.response",
+      "editor.error"
+    ]
+  },
+
+  "ui_handlers": [
+    { "domain": "editor", "action": "open", "handler": "handleUIOpen" },
+    { "domain": "editor", "action": "save", "handler": "handleUISave" },
+    { "domain": "editor", "action": "validate", "handler": "handleUIValidate" },
+    { "domain": "editor", "action": "format", "handler": "handleUIFormat" }
+  ],
+
+  "dependencies": {
+    "modules": ["file-browser", "project-manager"]
+  },
+
+  "config": {
+    "supported_formats": ["md", "json", "txt", "html", "css", "js", "yaml", "yml", "xml"],
+    "max_file_size": 5242880,
+    "auto_save_interval": 30000,
+    "tab_size": 2
+  },
+
+  "observability": {
+    "logging": {
+      "level": "info",
+      "structured": true
+    },
+    "metrics": {
+      "enabled": true,
+      "custom": [
+        "files_opened_total",
+        "files_saved_total",
+        "validation_errors_total"
+      ]
+    }
+  }
+}

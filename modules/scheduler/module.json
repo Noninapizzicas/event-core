@@ -1,0 +1,322 @@
+{
+  "name": "scheduler",
+  "version": "1.0.0",
+  "description": "Advanced job scheduling module with multiple trigger types (cron, interval, datetime, event-based, condition, composite)",
+  "author": "Event-Core",
+  "icon": "⏰",
+  "enabled": true,
+
+  "config": {
+    "jobsPath": "./data/scheduler/jobs.json",
+    "autoSave": true,
+    "saveInterval": 30000,
+    "defaultTimezone": "Europe/Madrid",
+    "maxConcurrentJobs": 100,
+    "defaultTimeout": 300000,
+    "defaultRetries": 3,
+    "defaultRetryDelay": 5000
+  },
+
+  "provides": {
+    "events": [
+      "scheduler.job.created",
+      "scheduler.job.updated",
+      "scheduler.job.deleted",
+      "scheduler.job.enabled",
+      "scheduler.job.disabled",
+      "scheduler.job.triggered",
+      "scheduler.job.completed",
+      "scheduler.job.failed"
+    ],
+    "queries": [
+      "scheduler.jobs.list",
+      "scheduler.job.get",
+      "scheduler.triggers.types"
+    ]
+  },
+
+  "events": {
+    "publishes": [
+      {
+        "event": "scheduler.job.created",
+        "description": "Job created successfully"
+      },
+      {
+        "event": "scheduler.job.updated",
+        "description": "Job updated"
+      },
+      {
+        "event": "scheduler.job.deleted",
+        "description": "Job deleted"
+      },
+      {
+        "event": "scheduler.job.enabled",
+        "description": "Job enabled"
+      },
+      {
+        "event": "scheduler.job.disabled",
+        "description": "Job disabled"
+      },
+      {
+        "event": "scheduler.job.triggered",
+        "description": "Job triggered (manually or by schedule)"
+      },
+      {
+        "event": "scheduler.job.completed",
+        "description": "Job execution completed successfully"
+      },
+      {
+        "event": "scheduler.job.failed",
+        "description": "Job execution failed"
+      }
+    ],
+    "subscribes": [
+      {
+        "event": "scheduler.trigger.check",
+        "description": "Internal trigger check events",
+        "handler": "onTriggerCheck"
+      },
+      {
+        "event": "project.activated",
+        "description": "Reload jobs when project activates",
+        "handler": "onProjectActivated"
+      }
+    ]
+  },
+
+  "apis": [
+    {
+      "method": "GET",
+      "path": "/health",
+      "handler": "handleHealthCheck",
+      "description": "Health check endpoint"
+    },
+    {
+      "method": "GET",
+      "path": "/jobs",
+      "handler": "handleListJobs",
+      "description": "List all jobs"
+    },
+    {
+      "method": "GET",
+      "path": "/jobs/:jobId",
+      "handler": "handleGetJob",
+      "description": "Get job by ID"
+    },
+    {
+      "method": "POST",
+      "path": "/jobs",
+      "handler": "handleCreateJob",
+      "description": "Create new job"
+    },
+    {
+      "method": "PUT",
+      "path": "/jobs/:jobId",
+      "handler": "handleUpdateJob",
+      "description": "Update job"
+    },
+    {
+      "method": "DELETE",
+      "path": "/jobs/:jobId",
+      "handler": "handleDeleteJob",
+      "description": "Delete job"
+    },
+    {
+      "method": "POST",
+      "path": "/jobs/:jobId/enable",
+      "handler": "handleEnableJob",
+      "description": "Enable job"
+    },
+    {
+      "method": "POST",
+      "path": "/jobs/:jobId/disable",
+      "handler": "handleDisableJob",
+      "description": "Disable job"
+    },
+    {
+      "method": "POST",
+      "path": "/jobs/:jobId/trigger",
+      "handler": "handleTriggerJob",
+      "description": "Manually trigger job execution"
+    },
+    {
+      "method": "GET",
+      "path": "/triggers/types",
+      "handler": "handleGetTriggerTypes",
+      "description": "List available trigger types"
+    },
+    {
+      "method": "GET",
+      "path": "/executions",
+      "handler": "handleListExecutions",
+      "description": "List recent job executions"
+    },
+    {
+      "method": "GET",
+      "path": "/stats",
+      "handler": "handleGetStats",
+      "description": "Get scheduler statistics"
+    }
+  ],
+
+  "uiActions": [
+    {
+      "domain": "scheduler",
+      "action": "list",
+      "handler": "handleUIListJobs"
+    },
+    {
+      "domain": "scheduler",
+      "action": "get",
+      "handler": "handleUIGetJob"
+    },
+    {
+      "domain": "scheduler",
+      "action": "create",
+      "handler": "handleUICreateJob"
+    },
+    {
+      "domain": "scheduler",
+      "action": "update",
+      "handler": "handleUIUpdateJob"
+    },
+    {
+      "domain": "scheduler",
+      "action": "delete",
+      "handler": "handleUIDeleteJob"
+    },
+    {
+      "domain": "scheduler",
+      "action": "enable",
+      "handler": "handleUIEnableJob"
+    },
+    {
+      "domain": "scheduler",
+      "action": "disable",
+      "handler": "handleUIDisableJob"
+    },
+    {
+      "domain": "scheduler",
+      "action": "trigger",
+      "handler": "handleUITriggerJob"
+    },
+    {
+      "domain": "scheduler",
+      "action": "triggers",
+      "handler": "handleUIGetTriggerTypes"
+    },
+    {
+      "domain": "scheduler",
+      "action": "stats",
+      "handler": "handleUIGetStats"
+    },
+    {
+      "domain": "scheduler",
+      "action": "executions",
+      "handler": "handleUIListExecutions"
+    }
+  ],
+
+  "observability": {
+    "logging": {
+      "level": "info",
+      "structured": true,
+      "correlation_id": true
+    },
+    "metrics": {
+      "enabled": true,
+      "counters": [
+        "scheduler.jobs.created",
+        "scheduler.jobs.deleted",
+        "scheduler.jobs.triggered",
+        "scheduler.jobs.completed",
+        "scheduler.jobs.failed"
+      ],
+      "gauges": [
+        "scheduler.jobs.total",
+        "scheduler.jobs.active",
+        "scheduler.jobs.disabled"
+      ],
+      "histograms": [
+        "scheduler.execution.duration"
+      ]
+    }
+  },
+
+  "tools": [
+    {
+      "name": "scheduler.list_jobs",
+      "description": "List all scheduled jobs with their status and next execution time",
+      "handler": "toolListJobs",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "description": "Filter by enabled/disabled status"
+          },
+          "triggerType": {
+            "type": "string",
+            "description": "Filter by trigger type (cron, interval, datetime, event, condition, composite)"
+          }
+        }
+      }
+    },
+    {
+      "name": "scheduler.create_job",
+      "description": "Create a new scheduled job",
+      "handler": "toolCreateJob",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Job name"
+          },
+          "description": {
+            "type": "string",
+            "description": "Job description"
+          },
+          "trigger": {
+            "type": "object",
+            "description": "Trigger configuration",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["cron", "interval", "datetime", "event", "condition", "composite"]
+              }
+            },
+            "required": ["type"]
+          },
+          "action": {
+            "type": "object",
+            "description": "Action to execute",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["mqtt", "http", "module"]
+              }
+            },
+            "required": ["type"]
+          }
+        },
+        "required": ["name", "trigger", "action"]
+      }
+    },
+    {
+      "name": "scheduler.trigger_job",
+      "description": "Manually trigger a job execution",
+      "handler": "toolTriggerJob",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "description": "ID of the job to trigger"
+          }
+        },
+        "required": ["jobId"]
+      }
+    }
+  ]
+}

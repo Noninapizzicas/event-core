@@ -1,0 +1,107 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://pizzepos.com/schemas/mesa-events.json",
+  "title": "Mesa Events Schema v4.0",
+  "description": "Esquemas de eventos de mesas dinámicas",
+
+  "definitions": {
+    "mesa_abierta": {
+      "type": "object",
+      "required": ["event_type", "payload"],
+      "properties": {
+        "event_type": {"const": "mesa.abierta"},
+        "payload": {
+          "type": "object",
+          "required": ["cuenta_id", "nombre", "numero", "hora_apertura"],
+          "properties": {
+            "cuenta_id": {"type": "string"},
+            "nombre": {"type": "string"},
+            "numero": {"type": "integer", "minimum": 1},
+            "comensales": {"type": "integer"},
+            "camarero": {"type": "string"},
+            "hora_apertura": {"type": "string", "format": "date-time"}
+          }
+        },
+        "correlation_id": {"type": "string"}
+      }
+    },
+
+    "mesa_camarero_asignado": {
+      "type": "object",
+      "required": ["event_type", "payload"],
+      "properties": {
+        "event_type": {"const": "mesa.camarero_asignado"},
+        "payload": {
+          "type": "object",
+          "required": ["cuenta_id", "nombre", "camarero"],
+          "properties": {
+            "cuenta_id": {"type": "string"},
+            "nombre": {"type": "string"},
+            "camarero": {"type": "string"},
+            "camarero_anterior": {"type": "string"}
+          }
+        },
+        "correlation_id": {"type": "string"}
+      }
+    },
+
+    "mesa_cerrada": {
+      "type": "object",
+      "required": ["event_type", "payload"],
+      "properties": {
+        "event_type": {"const": "mesa.cerrada"},
+        "payload": {
+          "type": "object",
+          "required": ["cuenta_id", "nombre", "total", "tiempo_ocupada"],
+          "properties": {
+            "cuenta_id": {"type": "string"},
+            "nombre": {"type": "string"},
+            "total": {"type": "number"},
+            "tiempo_ocupada": {"type": "integer"},
+            "pedidos_count": {"type": "integer"},
+            "hora_cierre": {"type": "string", "format": "date-time"}
+          }
+        },
+        "correlation_id": {"type": "string"}
+      }
+    },
+
+    "cuenta_creada": {
+      "type": "object",
+      "required": ["event_type", "payload"],
+      "properties": {
+        "event_type": {"const": "cuenta.creada"},
+        "payload": {
+          "type": "object",
+          "required": ["cuenta_id", "tipo"],
+          "properties": {
+            "cuenta_id": {"type": "string"},
+            "tipo": {"const": "mesa"},
+            "total": {"type": "number"},
+            "metadata": {"type": "object"}
+          }
+        },
+        "correlation_id": {"type": "string"}
+      }
+    },
+
+    "cuenta_cerrada": {
+      "type": "object",
+      "required": ["event_type", "payload"],
+      "properties": {
+        "event_type": {"const": "cuenta.cerrada"},
+        "payload": {
+          "type": "object",
+          "required": ["cuenta_id", "tipo", "total"],
+          "properties": {
+            "cuenta_id": {"type": "string"},
+            "tipo": {"const": "mesa"},
+            "total": {"type": "number"},
+            "metadata": {"type": "object"}
+          }
+        },
+        "correlation_id": {"type": "string"}
+      }
+    }
+  }
+}

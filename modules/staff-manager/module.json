@@ -1,0 +1,143 @@
+{
+  "name": "staff-manager",
+  "version": "1.0.0",
+  "description": "Control de personal con tarjetas NFC (NTAG215) — jornada y distribución de llaves",
+  "author": "Event Core Team",
+
+  "provides": {
+    "apis": [
+      {
+        "name": "status",
+        "method": "GET",
+        "path": "/status",
+        "description": "Estado del módulo: empleados activos y sesiones abiertas"
+      },
+      {
+        "name": "employeeCreate",
+        "method": "POST",
+        "path": "/employee",
+        "description": "Crear empleado. Body: { name, role, pin? }"
+      },
+      {
+        "name": "employeeList",
+        "method": "GET",
+        "path": "/employee",
+        "description": "Listar empleados. Query: active_only=true|false"
+      },
+      {
+        "name": "employeeGet",
+        "method": "GET",
+        "path": "/employee/:id",
+        "description": "Obtener empleado por ID"
+      },
+      {
+        "name": "employeeUpdate",
+        "method": "PUT",
+        "path": "/employee/:id",
+        "description": "Actualizar empleado (patch parcial). Body: { name?, role?, pin?, active? }"
+      },
+      {
+        "name": "employeeDelete",
+        "method": "DELETE",
+        "path": "/employee/:id",
+        "description": "Baja lógica de empleado (active = false)"
+      },
+      {
+        "name": "sessionTapIn",
+        "method": "POST",
+        "path": "/session/tap-in",
+        "description": "Empleado inicia jornada. Body: { employee_id, device_id? }"
+      },
+      {
+        "name": "sessionTapOut",
+        "method": "POST",
+        "path": "/session/tap-out",
+        "description": "Empleado finaliza jornada. Body: { employee_id }"
+      },
+      {
+        "name": "sessionActive",
+        "method": "GET",
+        "path": "/session/active",
+        "description": "Sesiones de jornada actualmente abiertas (con datos del empleado)"
+      },
+      {
+        "name": "sessionHistory",
+        "method": "GET",
+        "path": "/session/history",
+        "description": "Histórico de jornadas. Query: employee_id | date (YYYY-MM-DD, default hoy)"
+      },
+      {
+        "name": "sessionStale",
+        "method": "GET",
+        "path": "/session/stale",
+        "description": "Sesiones abiertas más de maxShiftHours horas (candidatas a revisión)"
+      },
+      {
+        "name": "sessionManagerClose",
+        "method": "POST",
+        "path": "/session/manager-close",
+        "description": "Manager cierra jornada de un empleado. Body: { employee_id }"
+      },
+      {
+        "name": "nfcEmployeeCard",
+        "method": "POST",
+        "path": "/nfc/employee-card",
+        "description": "Genera payload JSON para escribir en NTAG215 del empleado. Body: { employee_id }"
+      },
+      {
+        "name": "nfcCoreTag",
+        "method": "GET",
+        "path": "/nfc/core-tag",
+        "description": "Genera payload JSON del core (Opción A: onboarding de tablets). Requiere security-p2p."
+      },
+      {
+        "name": "nfcParse",
+        "method": "POST",
+        "path": "/nfc/parse",
+        "description": "Parsea y valida un payload leído de una NTAG215. Body: { raw }"
+      }
+    ]
+  },
+
+  "events": {
+    "publishes": [
+      {
+        "event": "staff.session.tap_in",
+        "description": "Empleado inicia jornada (tap in)"
+      },
+      {
+        "event": "staff.session.tap_out",
+        "description": "Empleado finaliza jornada (tap out)"
+      },
+      {
+        "event": "staff.session.auto_timeout",
+        "description": "Jornada cerrada por superar maxShiftHours sin tap_out (válido para turnos nocturnos y rotativos)"
+      },
+      {
+        "event": "staff.session.manager_close",
+        "description": "Jornada cerrada manualmente por el manager"
+      }
+    ],
+    "subscribes": []
+  },
+
+  "config": {
+    "dataPath": "./data/staff",
+    "maxShiftHours": 16
+  },
+
+  "observability": {
+    "logging": {
+      "level": "info",
+      "structured": true
+    },
+    "metrics": {
+      "enabled": true,
+      "counters": [
+        "staff.tap_in.count",
+        "staff.tap_out.count",
+        "staff.auto_close.count"
+      ]
+    }
+  }
+}

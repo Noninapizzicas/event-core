@@ -1,0 +1,57 @@
+{
+  "name": "google-vision",
+  "type": "ocr-engine",
+  "version": "1.0.0",
+  "description": "Google Cloud Vision OCR API",
+
+  "local": false,
+
+  "provider": "GOOGLE",
+  "credentialKey": "GOOGLE_API_KEY",
+
+  "capabilities": ["image", "handwriting", "document", "labels"],
+  "supportedFormats": ["jpg", "png", "gif", "bmp", "webp", "pdf"],
+  "maxFileSize": 20971520,
+
+  "priority": 2,
+
+  "request": {
+    "method": "POST",
+    "url": "https://vision.googleapis.com/v1/images:annotate?key={{credential}}",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "requests": [
+        {
+          "image": {
+            "content": "{{input_base64}}"
+          },
+          "features": [
+            {
+              "type": "TEXT_DETECTION",
+              "maxResults": 1
+            }
+          ]
+        }
+      ]
+    }
+  },
+
+  "response": {
+    "textPath": "responses[0].textAnnotations[0].description",
+    "confidencePath": "responses[0].fullTextAnnotation.pages[0].confidence",
+    "languagePath": "responses[0].textAnnotations[0].locale"
+  },
+
+  "config": {
+    "timeout": 30000,
+    "retries": 2
+  },
+
+  "pricing": {
+    "currency": "USD",
+    "per1000": 1.50,
+    "freeQuota": 1000
+  }
+}

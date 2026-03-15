@@ -1,0 +1,125 @@
+{
+  "name": "impresion",
+  "version": "1.1.0",
+  "description": "Comandas de cocina via impresora termica Bluetooth (58mm NETUM / 80mm). Sin precios.",
+  "author": "Pizzepos Team",
+
+  "provides": {
+    "events": [
+      "impresion.comanda_generada",
+      "impresion.error",
+      "impresion.raw"
+    ]
+  },
+
+  "events": {
+    "publishes": [
+      {
+        "event": "impresion.comanda_generada",
+        "description": "Comanda formateada y enviada a impresora",
+        "schema": {
+          "$ref": "./schemas/events.json#/definitions/impresion_comanda_generada"
+        }
+      },
+      {
+        "event": "impresion.error",
+        "description": "Error al generar o enviar comanda",
+        "schema": {
+          "$ref": "./schemas/events.json#/definitions/impresion_error"
+        }
+      },
+      {
+        "event": "impresion.raw",
+        "description": "Datos ESC/POS raw enviados a impresora (para monitoreo)"
+      }
+    ],
+    "subscribes": [
+      {
+        "event": "pedido.enviado_cocina",
+        "description": "Generar e imprimir comanda cuando pedido se envia a cocina",
+        "handler": "onPedidoEnviadoCocina"
+      }
+    ]
+  },
+
+  "ui_handlers": [
+    { "domain": "impresion", "action": "ticket", "handler": "handleImprimirComanda" },
+    { "domain": "impresion", "action": "conectar", "handler": "handleConectar" },
+    { "domain": "impresion", "action": "estado", "handler": "handleGetEstado" },
+    { "domain": "impresion", "action": "historial", "handler": "handleGetHistorial" },
+    { "domain": "impresion", "action": "health", "handler": "handleHealthCheck" },
+    { "domain": "impresion", "action": "metrics", "handler": "handleGetMetrics" }
+  ],
+
+  "apis": [
+    {
+      "method": "POST",
+      "path": "/ticket",
+      "handler": "handleImprimirComanda",
+      "description": "Reimprimir comanda manualmente"
+    },
+    {
+      "method": "POST",
+      "path": "/conectar",
+      "handler": "handleConectar",
+      "description": "(Re)conectar impresora Bluetooth. Body: { mac?, modo?, dispositivo? }"
+    },
+    {
+      "method": "GET",
+      "path": "/estado",
+      "handler": "handleGetEstado",
+      "description": "Estado actual de impresora y transporte"
+    },
+    {
+      "method": "GET",
+      "path": "/historial",
+      "handler": "handleGetHistorial",
+      "description": "Historial de comandas impresas"
+    },
+    {
+      "method": "GET",
+      "path": "/health",
+      "handler": "handleHealthCheck",
+      "description": "Health check"
+    },
+    {
+      "method": "GET",
+      "path": "/metrics",
+      "handler": "handleGetMetrics",
+      "description": "Metricas del modulo"
+    }
+  ],
+
+  "config": {
+    "ancho": "58mm",
+    "transporte": {
+      "modo": "dispositivo",
+      "mac": null,
+      "dispositivo": "/dev/rfcomm0",
+      "rfcomm_canal": 1,
+      "comando": null,
+      "tcp_host": "127.0.0.1",
+      "tcp_puerto": 9100
+    }
+  },
+
+  "observability": {
+    "logging": {
+      "level": "info",
+      "structured": true,
+      "correlation_id": true
+    },
+    "metrics": {
+      "enabled": true,
+      "counters": [
+        "impresion.comanda.total",
+        "impresion.reimpresion.total",
+        "impresion.error.total",
+        "impresion.transporte.error.total"
+      ],
+      "gauges": [
+        "impresion.cola.count"
+      ]
+    }
+  }
+}

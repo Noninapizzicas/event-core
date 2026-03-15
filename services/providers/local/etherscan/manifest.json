@@ -1,0 +1,52 @@
+{
+  "$schema": "provider-manifest-v1",
+  "name": "local.etherscan",
+  "version": "1.0.0",
+  "description": "Consultas blockchain Ethereum via Etherscan — balances, transacciones, gas",
+  "type": "local",
+  "requires": {
+    "npm": [],
+    "credentials": ["ETHERSCAN_API_KEY"]
+  },
+  "functions": {
+    "balance": {
+      "event": "local.etherscan.balance.request",
+      "description": "Consulta el balance de una dirección Ethereum",
+      "input": {
+        "address": { "type": "string", "required": true, "description": "Dirección Ethereum a consultar" },
+        "tag": { "type": "string", "required": false, "description": "Tag del bloque: latest, earliest, pending" }
+      },
+      "output": {
+        "address": { "type": "string", "description": "Dirección consultada" },
+        "balance_wei": { "type": "string", "description": "Balance en Wei" },
+        "balance_eth": { "type": "string", "description": "Balance en ETH" }
+      }
+    },
+    "transactions": {
+      "event": "local.etherscan.transactions.request",
+      "description": "Lista transacciones de una dirección Ethereum",
+      "input": {
+        "address": { "type": "string", "required": true, "description": "Dirección Ethereum" },
+        "page": { "type": "number", "required": false, "description": "Número de página" },
+        "offset": { "type": "number", "required": false, "description": "Cantidad de resultados por página" },
+        "sort": { "type": "string", "required": false, "description": "Orden: asc o desc" },
+        "startblock": { "type": "number", "required": false, "description": "Bloque inicial del rango" },
+        "endblock": { "type": "number", "required": false, "description": "Bloque final del rango" }
+      },
+      "output": {
+        "transactions": { "type": "array", "description": "Lista de transacciones" },
+        "total": { "type": "number", "description": "Total de transacciones" }
+      }
+    },
+    "gas": {
+      "event": "local.etherscan.gas.request",
+      "description": "Consulta los precios actuales de gas en la red",
+      "input": {},
+      "output": {
+        "low": { "type": "string", "description": "Precio de gas bajo (Gwei)" },
+        "average": { "type": "string", "description": "Precio de gas promedio (Gwei)" },
+        "high": { "type": "string", "description": "Precio de gas alto (Gwei)" }
+      }
+    }
+  }
+}

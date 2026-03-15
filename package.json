@@ -1,0 +1,59 @@
+{
+  "name": "event-core",
+  "version": "0.2.0",
+  "description": "Meta-core fractal event-driven architecture with discovery system",
+  "main": "index.js",
+  "bin": {
+    "event-core": "./cli/index.js"
+  },
+  "scripts": {
+    "test": "node tests/unit/hooks.test.js && node tests/unit/observability.test.js && node tests/unit/http-gateway.test.js && node tests/unit/conversation-manager.test.js",
+    "test:conversation": "node tests/unit/conversation-manager.test.js",
+    "test:all": "npm run test:hooks && npm run test:observability && npm run test:gateway && npm run test:cli && npm run test:integration",
+    "test:hooks": "node tests/unit/hooks.test.js",
+    "test:observability": "node tests/unit/observability.test.js",
+    "test:gateway": "node tests/unit/http-gateway.test.js",
+    "test:cli": "node tests/unit/cli.test.js",
+    "test:security": "node tests/unit/security-p2p.test.js",
+    "test:integration": "node tests/integration/full-stack.test.js",
+    "start": "node index.js",
+    "dev": "node index.js --log-level debug",
+    "plop": "plop",
+    "create-module": "node scripts/create-module.js",
+    "create-module:interactive": "node scripts/create-module.js --interactive",
+    "generate:constants": "node scripts/generate-constants.js"
+  },
+  "keywords": [
+    "event-driven",
+    "mqtt",
+    "modular",
+    "fractal",
+    "distributed"
+  ],
+  "author": "Event Core Team",
+  "license": "MIT",
+  "dependencies": {
+    "aedes": "^0.51.3",
+    "ajv": "^8.12.0",
+    "ajv-formats": "^3.0.1",
+    "dotenv": "^17.2.3",
+    "mqtt": "^5.3.5",
+    "node-cron": "^4.2.1",
+    "pdf-parse": "^1.1.1",
+    "pdf-to-png-converter": "^3.11.0",
+    "pdfjs-dist": "^5.4.530",
+    "pdfkit": "^0.17.2",
+    "scribe.js-ocr": "^0.9.3",
+    "sharp": "^0.34.5",
+    "sql.js": "^1.13.0",
+    "tesseract.js": "^6.0.1",
+    "ws": "^8.18.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "plop": "^4.0.4",
+    "yaml": "^2.8.2"
+  }
+}

@@ -1,0 +1,150 @@
+{
+  "name": "ingredientes",
+  "version": "4.0.0",
+  "description": "Catálogo de ingredientes - Actualizado desde menús generados por IA",
+  "author": "Pizzepos Team",
+
+  "provides": {
+    "events": ["ingrediente.creado", "ingrediente.actualizado"],
+    "queries": ["ingrediente.obtener", "ingrediente.listar", "ingrediente.buscar"]
+  },
+
+  "events": {
+    "publishes": [
+      {
+        "event": "ingrediente.creado",
+        "description": "Nuevo ingrediente creado desde menú generado",
+        "schema": {
+          "$ref": "./schemas/events.json#/definitions/ingrediente_creado"
+        }
+      },
+      {
+        "event": "ingrediente.actualizado",
+        "description": "Ingrediente actualizado",
+        "schema": {
+          "$ref": "./schemas/events.json#/definitions/ingrediente_actualizado"
+        }
+      }
+    ],
+    "subscribes": [
+      {
+        "event": "menu.generado",
+        "description": "Menú generado - extraer ingredientes del catálogo",
+        "handler": "onMenuGenerado"
+      },
+      {
+        "event": "producto.creado",
+        "description": "Producto creado - registrar ingredientes",
+        "handler": "onProductoCreado"
+      },
+      {
+        "event": "project.activated",
+        "description": "Proyecto activado - cargar ingredientes desde disco",
+        "handler": "onProjectActivated"
+      },
+      {
+        "event": "ingrediente.actualizado",
+        "description": "Ingrediente actualizado externamente (menu-generator) - sincronizar en memoria",
+        "handler": "onIngredienteActualizadoExterno"
+      }
+    ]
+  },
+
+  "apis": [
+    {
+      "method": "GET",
+      "path": "/ingredientes",
+      "handler": "handleListIngredientes",
+      "description": "Listar ingredientes (filtros: tipo, alergeno)"
+    },
+    {
+      "method": "GET",
+      "path": "/ingredientes/:id",
+      "handler": "handleGetIngrediente",
+      "description": "Obtener ingrediente por ID"
+    },
+    {
+      "method": "GET",
+      "path": "/ingredientes/search",
+      "handler": "handleSearchIngredientes",
+      "description": "Buscar ingredientes por nombre"
+    },
+    {
+      "method": "GET",
+      "path": "/alergenos",
+      "handler": "handleListAlergenos",
+      "description": "Listar ingredientes alérgenos"
+    },
+    {
+      "method": "PATCH",
+      "path": "/ingredientes/:id",
+      "handler": "handleUpdateIngrediente",
+      "description": "Actualizar ingrediente"
+    },
+    {
+      "method": "GET",
+      "path": "/health",
+      "handler": "handleHealthCheck",
+      "description": "Health check"
+    },
+    {
+      "method": "GET",
+      "path": "/metrics",
+      "handler": "handleGetMetrics",
+      "description": "Métricas del módulo"
+    }
+  ],
+
+  "ui": {
+    "enabled": true,
+    "title": "Ingredientes",
+    "icon": "🥬",
+    "description": "Catálogo de ingredientes y alérgenos",
+    "access_level": "gerente",
+    "components": ["ingrediente-list", "ingrediente-form"],
+    "views": {
+      "main": {
+        "type": "dashboard",
+        "layout": "fullwidth",
+        "component": "ingrediente-list",
+        "config": {
+          "endpoint": "/modules/ingredientes/ingredientes",
+          "mqtt_topics": ["ingrediente.creado", "ingrediente.actualizado"],
+          "searchable": true
+        }
+      }
+    },
+    "mqtt": {
+      "enabled": true,
+      "topics": ["ingrediente.creado", "ingrediente.actualizado"],
+      "auto_refresh": true
+    },
+    "permissions": {
+      "view": ["admin", "gerente"],
+      "edit": ["admin", "gerente"]
+    },
+    "features": { "search": true, "filters": true }
+  },
+
+  "observability": {
+    "logging": {
+      "level": "info",
+      "structured": true,
+      "correlation_id": true
+    },
+    "metrics": {
+      "enabled": true,
+      "counters": [
+        "ingrediente.creado.total",
+        "ingrediente.actualizado.total"
+      ],
+      "gauges": [
+        "ingrediente.total.count",
+        "ingrediente.alergenos.count"
+      ],
+      "timings": [
+        "ingrediente.sync.duration"
+      ]
+    }
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "$schema": "provider-manifest-v1",
+  "name": "local.notion",
+  "version": "1.0.0",
+  "description": "Integración Notion API — páginas, bases de datos, búsqueda",
+  "type": "local",
+  "requires": {
+    "npm": [],
+    "credentials": ["NOTION_API_KEY"]
+  },
+  "functions": {
+    "query": {
+      "event": "local.notion.query.request",
+      "description": "Consulta una base de datos de Notion con filtros y sorts",
+      "input": {
+        "database_id": { "type": "string", "required": true, "description": "ID de la base de datos" },
+        "filter": { "type": "object", "required": false, "description": "Filtro Notion (opcional)" },
+        "sorts": { "type": "array", "required": false, "description": "Array de sorts (opcional)" },
+        "page_size": { "type": "number", "required": false, "description": "Resultados por página (max 100)" }
+      },
+      "output": {
+        "results": { "type": "array", "description": "Páginas encontradas" },
+        "has_more": { "type": "boolean", "description": "Si hay más resultados" }
+      }
+    },
+    "create-page": {
+      "event": "local.notion.create-page.request",
+      "description": "Crea una página en Notion (en una DB o como subpágina)",
+      "input": {
+        "parent_id": { "type": "string", "required": true, "description": "ID de la DB o página padre" },
+        "parent_type": { "type": "string", "required": false, "description": "database_id | page_id (default: database_id)" },
+        "properties": { "type": "object", "required": true, "description": "Propiedades de la página" },
+        "children": { "type": "array", "required": false, "description": "Bloques de contenido (opcional)" }
+      },
+      "output": {
+        "id": { "type": "string", "description": "ID de la página creada" },
+        "url": { "type": "string", "description": "URL de la página" }
+      }
+    },
+    "update-page": {
+      "event": "local.notion.update-page.request",
+      "description": "Actualiza propiedades de una página existente",
+      "input": {
+        "page_id": { "type": "string", "required": true, "description": "ID de la página" },
+        "properties": { "type": "object", "required": true, "description": "Propiedades a actualizar" }
+      },
+      "output": {
+        "id": { "type": "string", "description": "ID de la página" },
+        "url": { "type": "string", "description": "URL actualizada" }
+      }
+    },
+    "create-db": {
+      "event": "local.notion.create-db.request",
+      "description": "Crea una base de datos en Notion",
+      "input": {
+        "parent_id": { "type": "string", "required": true, "description": "ID de la página padre" },
+        "title": { "type": "string", "required": true, "description": "Título de la DB" },
+        "properties": { "type": "object", "required": true, "description": "Schema de propiedades" }
+      },
+      "output": {
+        "id": { "type": "string", "description": "ID de la DB creada" },
+        "url": { "type": "string", "description": "URL de la DB" }
+      }
+    },
+    "search": {
+      "event": "local.notion.search.request",
+      "description": "Busca páginas y bases de datos en Notion",
+      "input": {
+        "query": { "type": "string", "required": false, "description": "Texto a buscar" },
+        "filter_type": { "type": "string", "required": false, "description": "page | database (opcional)" },
+        "page_size": { "type": "number", "required": false, "description": "Máximo resultados (default: 20)" }
+      },
+      "output": {
+        "results": { "type": "array", "description": "Resultados encontrados" },
+        "total": { "type": "number", "description": "Total de resultados" }
+      }
+    }
+  }
+}

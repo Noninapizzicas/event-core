@@ -1,0 +1,65 @@
+{
+  "metadata": {
+    "name": "http",
+    "version": "1.0.0",
+    "description": "Generic HTTP utilities for making custom API calls",
+    "base_url": "",
+    "auth_type": "none",
+    "documentation": "Built-in HTTP utilities"
+  },
+  "functions": {
+    "get_request": {
+      "method": "GET",
+      "endpoint": "{url}",
+      "description": "Make a GET HTTP request to any URL",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "Full URL to request (must include http:// or https://)"
+          }
+        },
+        "required": ["url"]
+      }
+    },
+    "post_request": {
+      "method": "POST",
+      "endpoint": "{url}",
+      "description": "Make a POST HTTP request to any URL",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "Full URL to request"
+          },
+          "body": {
+            "type": "object",
+            "description": "Request body as JSON object"
+          }
+        },
+        "required": ["url"]
+      }
+    },
+    "webhook_call": {
+      "method": "POST",
+      "endpoint": "{webhook_url}",
+      "description": "Call a webhook with JSON payload",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "webhook_url": {
+            "type": "string",
+            "description": "Webhook URL"
+          },
+          "payload": {
+            "type": "object",
+            "description": "Webhook payload"
+          }
+        },
+        "required": ["webhook_url", "payload"]
+      }
+    }
+  }
+}

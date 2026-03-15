@@ -1,0 +1,70 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://pizzepos.com/schemas/variacion-events.json",
+  "title": "Variacion Events Schema",
+  "description": "Esquemas de eventos del módulo variaciones",
+
+  "definitions": {
+    "event_envelope": {
+      "type": "object",
+      "required": ["event_id", "event_type", "correlation_id", "occurred_at", "producer", "schema_version", "payload"],
+      "properties": {
+        "event_id": {"type": "string", "format": "uuid"},
+        "event_type": {"type": "string", "pattern": "^[a-z]+\\.[a-z_]+$"},
+        "correlation_id": {"type": "string", "format": "uuid"},
+        "occurred_at": {"type": "string", "format": "date-time"},
+        "producer": {"type": "string", "minLength": 1},
+        "schema_version": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$"},
+        "payload": {"type": "object"}
+      },
+      "additionalProperties": false
+    },
+
+    "variacion_validada": {
+      "allOf": [
+        {"$ref": "#/definitions/event_envelope"},
+        {
+          "properties": {
+            "event_type": {"const": "variacion.validada"},
+            "payload": {
+              "type": "object",
+              "required": ["producto_id", "precio_total"],
+              "properties": {
+                "producto_id": {"type": "string"},
+                "ingredientes_quitar": {"type": "array"},
+                "ingredientes_anadir": {"type": "array"},
+                "precio_base": {"type": "number"},
+                "precio_extras": {"type": "number"},
+                "precio_total": {"type": "number"},
+                "ingredientes_finales": {"type": "array"}
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+
+    "variacion_rechazada": {
+      "allOf": [
+        {"$ref": "#/definitions/event_envelope"},
+        {
+          "properties": {
+            "event_type": {"const": "variacion.rechazada"},
+            "payload": {
+              "type": "object",
+              "required": ["producto_id", "motivo"],
+              "properties": {
+                "producto_id": {"type": "string"},
+                "ingredientes_quitar": {"type": "array"},
+                "ingredientes_anadir": {"type": "array"},
+                "motivo": {"type": "string"}
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    }
+  }
+}

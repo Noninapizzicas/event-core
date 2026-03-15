@@ -1,0 +1,53 @@
+{
+  "$schema": "../../../schemas/provider-manifest.schema.json",
+  "name": "local.google-documentai",
+  "version": "1.0.0",
+  "description": "Google Document AI - Extracción estructurada de documentos (facturas, formularios, etc.)",
+  "type": "provider",
+  "requires": {
+    "credentials": [
+      "GMAIL_CREDENTIALS"
+    ],
+    "npm": []
+  },
+  "functions": {
+    "parse": {
+      "event": "local.google-documentai.parse.request",
+      "description": "Procesar documento con Document AI",
+      "input": {
+        "document": {
+          "type": "string",
+          "description": "Documento (path, base64, data URI)",
+          "required": true
+        },
+        "processor": {
+          "type": "string",
+          "description": "Tipo de procesador (invoice, form, ocr)",
+          "required": true
+        },
+        "account": {
+          "type": "string",
+          "description": "Cuenta OAuth (opcional)"
+        }
+      },
+      "output": {
+        "text": {
+          "type": "string",
+          "description": "Texto completo extraído"
+        },
+        "entities": {
+          "type": "object",
+          "description": "Entidades extraídas (vendor, total, etc.)"
+        },
+        "tables": {
+          "type": "array",
+          "description": "Tablas detectadas"
+        },
+        "pages": {
+          "type": "number",
+          "description": "Número de páginas"
+        }
+      }
+    }
+  }
+}

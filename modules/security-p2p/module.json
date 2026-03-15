@@ -1,0 +1,87 @@
+{
+  "name": "security-p2p",
+  "version": "1.0.0",
+  "description": "P2P Zero Trust Security with E2E Encryption",
+  "author": "Event Core Team",
+
+  "provides": {
+    "hooks": ["beforeEventPublish", "afterEventReceive"],
+    "apis": [
+      {
+        "name": "status",
+        "method": "GET",
+        "path": "/status",
+        "description": "Get security status and trusted peers"
+      },
+      {
+        "name": "getPublicKey",
+        "method": "GET",
+        "path": "/public-key",
+        "description": "Get this core's public key and fingerprint"
+      },
+      {
+        "name": "trustPeer",
+        "method": "POST",
+        "path": "/trust-peer",
+        "description": "Add a peer as trusted"
+      },
+      {
+        "name": "revokePeer",
+        "method": "DELETE",
+        "path": "/trust-peer",
+        "description": "Revoke trust for a peer"
+      },
+      {
+        "name": "listTrustedPeers",
+        "method": "GET",
+        "path": "/trusted-peers",
+        "description": "List all trusted peers"
+      }
+    ]
+  },
+
+  "events": {
+    "publishes": [
+      {
+        "event": "security.peer.trusted",
+        "description": "Peer trusted after successful handshake"
+      },
+      {
+        "event": "security.peer.revoked",
+        "description": "Trust revoked for a peer"
+      },
+      {
+        "event": "security.handshake.timeout",
+        "description": "Handshake timed out"
+      },
+      {
+        "event": "security.handshake.failed",
+        "description": "Handshake failed (HMAC mismatch)"
+      }
+    ],
+    "subscribes": []
+  },
+
+  "config": {
+    "handshake_timeout_ms": 30000,
+    "auto_trust_enabled": false
+  },
+
+  "observability": {
+    "logging": {
+      "level": "info",
+      "structured": true
+    },
+    "metrics": {
+      "enabled": true,
+      "counters": [
+        "security.events_encrypted",
+        "security.events_decrypted",
+        "security.encryption_errors",
+        "security.decryption_errors",
+        "security.handshakes.successful",
+        "security.handshakes.failed"
+      ]
+    }
+  }
+}

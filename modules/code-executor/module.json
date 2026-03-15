@@ -1,0 +1,205 @@
+{
+  "name": "code-executor",
+  "version": "1.0.0",
+  "description": "Shell command and script execution for AI with security controls",
+  "author": "Event Core Team",
+  "main": "index.js",
+
+  "provides": {
+    "events": [
+      "shell.executed",
+      "shell.error",
+      "shell.process.started",
+      "shell.process.stopped"
+    ]
+  },
+
+  "events": {
+    "publishes": [
+      {
+        "event": "shell.executed",
+        "description": "Command executed successfully"
+      },
+      {
+        "event": "shell.error",
+        "description": "Command execution failed"
+      },
+      {
+        "event": "shell.process.started",
+        "description": "Background process started"
+      },
+      {
+        "event": "shell.process.stopped",
+        "description": "Background process stopped"
+      }
+    ],
+    "subscribes": [
+      {
+        "event": "shell.exec.request",
+        "handler": "onExecRequest"
+      }
+    ]
+  },
+
+  "tools": [
+    {
+      "name": "shell.exec",
+      "description": "Ejecuta un comando shell. Retorna stdout, stderr y exitCode. Timeout por defecto: 30s.",
+      "handler": "handleToolExec",
+      "requires_confirmation": true,
+      "permissions": ["execute"],
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "command": {
+            "type": "string",
+            "description": "Comando a ejecutar"
+          },
+          "cwd": {
+            "type": "string",
+            "description": "Directorio de trabajo (opcional)"
+          },
+          "timeout": {
+            "type": "number",
+            "description": "Timeout en ms (default: 30000)"
+          },
+          "env": {
+            "type": "object",
+            "description": "Variables de entorno adicionales"
+          }
+        },
+        "required": ["command"]
+      }
+    },
+    {
+      "name": "shell.script",
+      "description": "Ejecuta un archivo de script (bash, python, node). Detecta intérprete automáticamente.",
+      "handler": "handleToolScript",
+      "requires_confirmation": true,
+      "permissions": ["execute"],
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "description": "ID del proyecto"
+          },
+          "scriptPath": {
+            "type": "string",
+            "description": "Ruta al script dentro del proyecto"
+          },
+          "args": {
+            "type": "array",
+            "description": "Argumentos para el script",
+            "items": { "type": "string" }
+          },
+          "timeout": {
+            "type": "number",
+            "description": "Timeout en ms (default: 60000)"
+          }
+        },
+        "required": ["projectId", "scriptPath"]
+      }
+    },
+    {
+      "name": "shell.background",
+      "description": "Inicia un proceso en segundo plano (ej: servidor dev). Retorna PID para control.",
+      "handler": "handleToolBackground",
+      "requires_confirmation": true,
+      "permissions": ["execute"],
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "command": {
+            "type": "string",
+            "description": "Comando a ejecutar"
+          },
+          "cwd": {
+            "type": "string",
+            "description": "Directorio de trabajo"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nombre para identificar el proceso"
+          }
+        },
+        "required": ["command"]
+      }
+    },
+    {
+      "name": "shell.kill",
+      "description": "Detiene un proceso en segundo plano por PID o nombre.",
+      "handler": "handleToolKill",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "pid": {
+            "type": "number",
+            "description": "PID del proceso"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nombre del proceso (si se usó en shell.background)"
+          }
+        }
+      }
+    },
+    {
+      "name": "shell.list",
+      "description": "Lista procesos en segundo plano activos.",
+      "handler": "handleToolList",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  ],
+
+  "config": {
+    "defaultTimeout": 30000,
+    "maxTimeout": 300000,
+    "maxProcesses": 10,
+    "allowedCommands": [],
+    "blockedCommands": [
+      "rm -rf /",
+      "rm -rf /*",
+      "mkfs",
+      "dd if=/dev/zero",
+      ":(){:|:&};:",
+      "chmod -R 777 /",
+      "chown -R",
+      "sudo rm",
+      "sudo dd",
+      "sudo mkfs",
+      "> /dev/sda",
+      "mv /* /dev/null"
+    ],
+    "blockedPatterns": [
+      "rm\\s+-rf\\s+/[^a-zA-Z]",
+      ">(\\s+)?/dev/[hs]d",
+      "\\|\\s*sh\\s*$",
+      "\\|\\s*bash\\s*$",
+      "curl.*\\|.*sh",
+      "wget.*\\|.*sh"
+    ],
+    "shell": "/bin/sh",
+    "projectsPath": "./data/projects"
+  },
+
+  "observability": {
+    "logging": {
+      "level": "info",
+      "structured": true
+    },
+    "metrics": {
+      "enabled": true,
+      "counters": [
+        "shell.exec.total",
+        "shell.exec.success",
+        "shell.exec.error",
+        "shell.exec.timeout",
+        "shell.exec.blocked"
+      ]
+    }
+  }
+}

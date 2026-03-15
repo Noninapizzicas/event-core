@@ -1,0 +1,142 @@
+{
+  "name": "categorias",
+  "version": "2.1.0",
+  "description": "Catálogo de categorías de productos - Actualizado desde menús generados",
+  "author": "Pizzepos Team",
+
+  "provides": {
+    "events": ["categoria.creada", "categoria.actualizada"],
+    "queries": ["categoria.obtener", "categoria.listar"]
+  },
+
+  "events": {
+    "publishes": [
+      {
+        "event": "categoria.creada",
+        "description": "Nueva categoría creada",
+        "schema": {
+          "$ref": "./schemas/events.json#/definitions/categoria_creada"
+        }
+      },
+      {
+        "event": "categoria.actualizada",
+        "description": "Categoría actualizada",
+        "schema": {
+          "$ref": "./schemas/events.json#/definitions/categoria_actualizada"
+        }
+      },
+      {
+        "event": "categoria.orden_actualizado",
+        "description": "Orden de categorías actualizado",
+        "schema": {
+          "$ref": "./schemas/events.json#/definitions/categoria_orden_actualizado"
+        }
+      }
+    ],
+    "subscribes": [
+      {
+        "event": "menu.generado",
+        "description": "Menú generado - sincronizar categorías",
+        "handler": "onMenuGenerado"
+      }
+    ]
+  },
+
+  "apis": [
+    {
+      "method": "GET",
+      "path": "/categorias",
+      "handler": "handleListCategorias",
+      "description": "Listar categorías ordenadas"
+    },
+    {
+      "method": "GET",
+      "path": "/categorias/:id",
+      "handler": "handleGetCategoria",
+      "description": "Obtener categoría por ID"
+    },
+    {
+      "method": "POST",
+      "path": "/categorias",
+      "handler": "handleCreateCategoria",
+      "description": "Crear categoría manualmente"
+    },
+    {
+      "method": "PATCH",
+      "path": "/categorias/:id",
+      "handler": "handleUpdateCategoria",
+      "description": "Actualizar categoría"
+    },
+    {
+      "method": "POST",
+      "path": "/categorias/reorder",
+      "handler": "handleReorderCategorias",
+      "description": "Reordenar categorías"
+    },
+    {
+      "method": "GET",
+      "path": "/health",
+      "handler": "handleHealthCheck",
+      "description": "Health check"
+    },
+    {
+      "method": "GET",
+      "path": "/metrics",
+      "handler": "handleGetMetrics",
+      "description": "Métricas del módulo"
+    }
+  ],
+
+  "ui": {
+    "enabled": true,
+    "title": "Categorías",
+    "icon": "📁",
+    "description": "Gestión de categorías del menú",
+    "access_level": "gerente",
+    "components": ["categoria-list", "categoria-form"],
+    "views": {
+      "main": {
+        "type": "dashboard",
+        "layout": "fullwidth",
+        "component": "categoria-list",
+        "config": {
+          "endpoint": "/modules/categorias/categorias",
+          "mqtt_topics": ["categoria.creada", "categoria.actualizada", "categoria.orden_actualizado"],
+          "sortable": true
+        }
+      }
+    },
+    "mqtt": {
+      "enabled": true,
+      "topics": ["categoria.creada", "categoria.actualizada", "categoria.orden_actualizado"],
+      "auto_refresh": true
+    },
+    "permissions": {
+      "view": ["admin", "gerente"],
+      "create": ["admin", "gerente"],
+      "edit": ["admin", "gerente"],
+      "delete": ["admin"],
+      "reorder": ["admin", "gerente"]
+    },
+    "features": { "drag_drop": true, "reorder": true }
+  },
+
+  "observability": {
+    "logging": {
+      "level": "info",
+      "structured": true,
+      "correlation_id": true
+    },
+    "metrics": {
+      "enabled": true,
+      "counters": [
+        "categoria.creada.total",
+        "categoria.actualizada.total"
+      ],
+      "gauges": [
+        "categoria.total.count",
+        "categoria.activas.count"
+      ]
+    }
+  }
+}

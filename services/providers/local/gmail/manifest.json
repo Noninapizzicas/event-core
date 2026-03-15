@@ -1,0 +1,232 @@
+{
+  "$schema": "../../../schemas/provider-manifest.schema.json",
+  "name": "local.gmail",
+  "version": "1.0.0",
+  "description": "Gmail API - Envío y lectura de correos con OAuth2 (Multi-cuenta)",
+  "type": "provider",
+  "requires": {
+    "credentials": [
+      "GMAIL_CREDENTIALS"
+    ],
+    "npm": []
+  },
+  "functions": {
+    "send": {
+      "event": "gmail.send.request",
+      "description": "Enviar correo electrónico",
+      "input": {
+        "account": {
+          "type": "string",
+          "description": "Identificador de cuenta (opcional)"
+        },
+        "to": {
+          "type": "string|array",
+          "description": "Destinatario(s)",
+          "required": true
+        },
+        "subject": {
+          "type": "string",
+          "description": "Asunto",
+          "required": true
+        },
+        "body": {
+          "type": "string",
+          "description": "Contenido (texto o HTML)",
+          "required": true
+        },
+        "html": {
+          "type": "boolean",
+          "description": "Si body es HTML",
+          "default": false
+        },
+        "cc": {
+          "type": "array",
+          "description": "Copia"
+        },
+        "bcc": {
+          "type": "array",
+          "description": "Copia oculta"
+        },
+        "attachments": {
+          "type": "array",
+          "description": "Adjuntos [{filename, content (base64), mimeType}]"
+        }
+      },
+      "output": {
+        "messageId": {
+          "type": "string",
+          "description": "ID del mensaje enviado"
+        },
+        "threadId": {
+          "type": "string",
+          "description": "ID del hilo"
+        },
+        "account": {
+          "type": "string",
+          "description": "Cuenta usada"
+        }
+      }
+    },
+    "list": {
+      "event": "gmail.list.request",
+      "description": "Listar correos",
+      "input": {
+        "account": {
+          "type": "string",
+          "description": "Identificador de cuenta (opcional)"
+        },
+        "maxResults": {
+          "type": "number",
+          "description": "Máximo de resultados",
+          "default": 10
+        },
+        "labelIds": {
+          "type": "array",
+          "description": "Labels (INBOX, SENT, etc.)"
+        },
+        "pageToken": {
+          "type": "string",
+          "description": "Token de paginación"
+        }
+      },
+      "output": {
+        "messages": {
+          "type": "array",
+          "description": "Lista de {id, threadId}"
+        },
+        "nextPageToken": {
+          "type": "string",
+          "description": "Token siguiente página"
+        },
+        "resultSizeEstimate": {
+          "type": "number",
+          "description": "Estimado de resultados"
+        },
+        "account": {
+          "type": "string",
+          "description": "Cuenta usada"
+        }
+      }
+    },
+    "read": {
+      "event": "gmail.read.request",
+      "description": "Leer un correo específico",
+      "input": {
+        "account": {
+          "type": "string",
+          "description": "Identificador de cuenta (opcional)"
+        },
+        "messageId": {
+          "type": "string",
+          "description": "ID del mensaje",
+          "required": true
+        },
+        "format": {
+          "type": "string",
+          "enum": [
+            "full",
+            "metadata",
+            "minimal"
+          ],
+          "default": "full"
+        }
+      },
+      "output": {
+        "id": {
+          "type": "string"
+        },
+        "threadId": {
+          "type": "string"
+        },
+        "from": {
+          "type": "string"
+        },
+        "to": {
+          "type": "array"
+        },
+        "subject": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string"
+        },
+        "body": {
+          "type": "string"
+        },
+        "attachments": {
+          "type": "array"
+        },
+        "account": {
+          "type": "string",
+          "description": "Cuenta usada"
+        }
+      }
+    },
+    "search": {
+      "event": "gmail.search.request",
+      "description": "Buscar correos con query estilo Gmail",
+      "input": {
+        "account": {
+          "type": "string",
+          "description": "Identificador de cuenta (opcional)"
+        },
+        "query": {
+          "type": "string",
+          "description": "Query (from:x subject:y)",
+          "required": true
+        },
+        "maxResults": {
+          "type": "number",
+          "default": 10
+        },
+        "pageToken": {
+          "type": "string"
+        }
+      },
+      "output": {
+        "messages": {
+          "type": "array",
+          "description": "Lista de {id, threadId, snippet}"
+        },
+        "nextPageToken": {
+          "type": "string"
+        },
+        "account": {
+          "type": "string",
+          "description": "Cuenta usada"
+        }
+      }
+    },
+    "attachments.download": {
+      "event": "gmail.attachments.download.request",
+      "description": "Descargar adjunto de un correo",
+      "input": {
+        "account": {
+          "type": "string",
+          "description": "Identificador de cuenta (opcional)"
+        },
+        "messageId": {
+          "type": "string",
+          "required": true
+        },
+        "attachmentId": {
+          "type": "string",
+          "required": true
+        }
+      },
+      "output": {
+        "content": {
+          "type": "string",
+          "description": "Contenido en base64"
+        },
+        "size": {
+          "type": "number"
+        },
+        "account": {
+          "type": "string",
+          "description": "Cuenta usada"
+        }
+      }
+    }
+  }
+}

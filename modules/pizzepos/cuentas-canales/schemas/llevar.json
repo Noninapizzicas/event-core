@@ -1,0 +1,98 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://pizzepos.com/schemas/llevar.json",
+  "title": "Llevar Schema",
+  "description": "Esquemas de datos para cuentas para llevar",
+
+  "definitions": {
+    "estado_ticket": {
+      "type": "string",
+      "enum": ["pendiente", "preparando", "listo", "entregado", "cancelado"],
+      "description": "Estado del ticket"
+    },
+
+    "ticket": {
+      "type": "object",
+      "required": ["cuenta_id", "numero_ticket", "estado", "total", "hora_creacion"],
+      "properties": {
+        "cuenta_id": {
+          "type": "string",
+          "pattern": "^llevar_\\d{8}_\\d{3}$",
+          "description": "ID único: llevar_{YYYYMMDD}_{secuencial}"
+        },
+        "numero_ticket": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Número de ticket del día (para mostrar al cliente)"
+        },
+        "cliente_nombre": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "description": "Nombre opcional del cliente"
+        },
+        "estado": {
+          "$ref": "#/definitions/estado_ticket"
+        },
+        "total": {
+          "type": "number",
+          "minimum": 0,
+          "multipleOf": 0.01
+        },
+        "hora_creacion": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "hora_listo": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Cuándo se marcó como listo"
+        },
+        "hora_entrega": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Cuándo se entregó al cliente"
+        },
+        "tiempo_preparacion": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Minutos de preparación"
+        },
+        "tiempo_espera": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Minutos esperando después de estar listo"
+        },
+        "pedidos": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "IDs de pedidos asociados"
+        },
+        "notas": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "mostrado_en_display": {
+          "type": "boolean",
+          "default": false,
+          "description": "Si se mostró en el display de números listos"
+        }
+      }
+    },
+
+    "crear_ticket_request": {
+      "type": "object",
+      "properties": {
+        "cliente_nombre": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "notas": {
+          "type": "string",
+          "maxLength": 500
+        }
+      }
+    }
+  }
+}

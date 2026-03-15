@@ -1,0 +1,56 @@
+{
+  "$schema": "provider-manifest-v1",
+  "name": "local.url-data",
+  "version": "1.0.0",
+  "description": "Estación de datos de URL — extrae contenido, metadata y datos estructurados de páginas web",
+  "type": "local",
+  "requires": {
+    "npm": ["cheerio"],
+    "credentials": []
+  },
+  "functions": {
+    "extract": {
+      "event": "local.url-data.extract.request",
+      "description": "Descarga y extrae contenido de una URL (texto limpio o HTML)",
+      "input": {
+        "url": { "type": "string", "required": true, "description": "URL a extraer" },
+        "format": { "type": "string", "required": false, "description": "Formato: text | html | raw (default: text)" }
+      },
+      "output": {
+        "content": { "type": "string", "description": "Contenido extraído" },
+        "format": { "type": "string", "description": "Formato del contenido" },
+        "size": { "type": "number", "description": "Tamaño en bytes" },
+        "url": { "type": "string", "description": "URL final (después de redirects)" }
+      }
+    },
+    "metadata": {
+      "event": "local.url-data.metadata.request",
+      "description": "Extrae metadata de la página (title, description, Open Graph, links, headings)",
+      "input": {
+        "url": { "type": "string", "required": true, "description": "URL a analizar" }
+      },
+      "output": {
+        "title": { "type": "string", "description": "Título de la página" },
+        "description": { "type": "string", "description": "Meta description" },
+        "og": { "type": "object", "description": "Open Graph tags" },
+        "headings": { "type": "array", "description": "Estructura de headings (h1-h3)" },
+        "links": { "type": "object", "description": "Links internos y externos" },
+        "images": { "type": "number", "description": "Número de imágenes" },
+        "language": { "type": "string", "description": "Idioma detectado" }
+      }
+    },
+    "search": {
+      "event": "local.url-data.search.request",
+      "description": "Busca texto o extrae datos con selectores CSS dentro del contenido de una URL",
+      "input": {
+        "url": { "type": "string", "required": true, "description": "URL donde buscar" },
+        "query": { "type": "string", "required": false, "description": "Texto a buscar (case-insensitive)" },
+        "selector": { "type": "string", "required": false, "description": "Selector CSS (ej: table, .price, h2)" }
+      },
+      "output": {
+        "matches": { "type": "array", "description": "Resultados encontrados" },
+        "count": { "type": "number", "description": "Total de coincidencias" }
+      }
+    }
+  }
+}

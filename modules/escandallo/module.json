@@ -1,0 +1,179 @@
+{
+  "name": "escandallo",
+  "version": "1.0.0",
+  "description": "Análisis de costes y escandallo de recetas. Calcula costes, márgenes, food cost, comparativas de precios y alertas.",
+  "author": "Event Core Team",
+  "main": "index.js",
+
+  "provides": {
+    "events": ["escandallo.calculado", "escandallo.alerta", "escandallo.comparativa"]
+  },
+
+  "events": {
+    "publishes": [
+      {
+        "event": "escandallo.calculado",
+        "description": "Escandallo calculado para una receta"
+      },
+      {
+        "event": "escandallo.alerta",
+        "description": "Alerta: coste supera umbral o margen bajo"
+      },
+      {
+        "event": "escandallo.comparativa",
+        "description": "Comparativa de precios generada"
+      }
+    ],
+    "subscribes": [
+      { "event": "project.activated", "handler": "onProjectActivated" },
+      { "event": "project.deactivated", "handler": "onProjectDeactivated" },
+      { "event": "receta.creada", "handler": "onRecetaCreada" },
+      { "event": "receta.actualizada", "handler": "onRecetaActualizada" },
+      { "event": "ingrediente.precio.actualizado", "handler": "onIngredientePrecioActualizado" }
+    ]
+  },
+
+  "ui_handlers": [
+    { "domain": "escandallo", "action": "receta", "handler": "handleEscandalloReceta" },
+    { "domain": "escandallo", "action": "global", "handler": "handleEscandalloGlobal" },
+    { "domain": "escandallo", "action": "comparativa", "handler": "handleComparativa" },
+    { "domain": "escandallo", "action": "stats", "handler": "handleStats" }
+  ],
+
+  "tools": [
+    {
+      "name": "escandallo.receta",
+      "description": "Calcula el escandallo completo de una receta: desglose de costes por ingrediente, coste total, coste por porción, porcentaje de cada ingrediente, food cost si se indica precio de venta. Puede usar precios de mercado o de compra.",
+      "handler": "toolEscandalloReceta",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "receta_id": {
+            "type": "string",
+            "description": "ID de la receta"
+          },
+          "precio_venta": {
+            "type": "number",
+            "description": "Precio de venta por porción (€). Si se indica, calcula margen y food cost."
+          },
+          "usar_precio_compra": {
+            "type": "boolean",
+            "description": "Si true, usa precios de compra reales donde estén disponibles (default: false)"
+          }
+        },
+        "required": ["receta_id"]
+      }
+    },
+    {
+      "name": "escandallo.global",
+      "description": "Escandallo global de todas las recetas del proyecto: coste medio, ranking por coste, ingredientes más caros, resumen por categoría. Visión completa de costes.",
+      "handler": "toolEscandalloGlobal",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "precios_venta": {
+            "type": "object",
+            "description": "Objeto {receta_id: precio_venta} para calcular márgenes por receta (opcional)"
+          }
+        }
+      }
+    },
+    {
+      "name": "escandallo.comparar_precios",
+      "description": "Compara precios de mercado vs precios de compra reales para todos los ingredientes. Muestra diferencias, ahorro potencial, y ingredientes sin precio de compra.",
+      "handler": "toolCompararPrecios",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "escandallo.simular_precio",
+      "description": "Simula diferentes precios de venta para una receta y muestra el impacto en margen, food cost y beneficio por porción. Útil para decidir precio de carta.",
+      "handler": "toolSimularPrecio",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "receta_id": {
+            "type": "string",
+            "description": "ID de la receta"
+          },
+          "precios": {
+            "type": "array",
+            "items": { "type": "number" },
+            "description": "Lista de precios de venta a simular (ej: [8, 10, 12, 15])"
+          },
+          "food_cost_objetivo": {
+            "type": "number",
+            "description": "Food cost objetivo en % (ej: 30 = 30%). Si se indica, calcula el precio necesario."
+          }
+        },
+        "required": ["receta_id"]
+      }
+    },
+    {
+      "name": "escandallo.ingrediente_impacto",
+      "description": "Analiza el impacto de un ingrediente: en cuántas recetas aparece, coste total que representa, qué pasaría si sube de precio X%.",
+      "handler": "toolIngredienteImpacto",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "ingrediente_nombre": {
+            "type": "string",
+            "description": "Nombre del ingrediente a analizar"
+          },
+          "subida_porcentaje": {
+            "type": "number",
+            "description": "Simular subida de precio en % (ej: 20 = +20%)"
+          }
+        },
+        "required": ["ingrediente_nombre"]
+      }
+    },
+    {
+      "name": "escandallo.optimizar",
+      "description": "Sugiere optimizaciones de coste: ingredientes más caros que podrían sustituirse, recetas con food cost alto, ingredientes con poco uso que encarecen stock.",
+      "handler": "toolOptimizar",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "food_cost_maximo": {
+            "type": "number",
+            "description": "Food cost máximo objetivo en % (default: 33)"
+          }
+        }
+      }
+    },
+    {
+      "name": "escandallo.ficha_tecnica",
+      "description": "Genera la ficha técnica completa de una receta: escandallo detallado, elaboración, alérgenos, food cost, formato profesional listo para imprimir o archivar.",
+      "handler": "toolFichaTecnica",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "receta_id": {
+            "type": "string",
+            "description": "ID de la receta"
+          },
+          "precio_venta": {
+            "type": "number",
+            "description": "Precio de venta por porción (€)"
+          }
+        },
+        "required": ["receta_id"]
+      }
+    }
+  ],
+
+  "observability": {
+    "metrics": {
+      "counters": [
+        "escandallo.receta.calculated",
+        "escandallo.global.calculated",
+        "escandallo.comparativa.generated",
+        "escandallo.simulacion.run",
+        "escandallo.ficha.generated"
+      ]
+    }
+  }
+}

@@ -1,0 +1,402 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Stack Decision Tool",
+  "description": "Herramienta para elegir el stack tecnológico óptimo por módulo",
+  "version": "1.0.0",
+
+  "decision_tree": {
+    "root": {
+      "question": "¿Cuál es el tipo principal de trabajo del módulo?",
+      "options": [
+        {
+          "answer": "Procesamiento de eventos de alta carga (>1K eventos/seg)",
+          "next": "high_performance"
+        },
+        {
+          "answer": "CRUD / Lógica de negocio",
+          "next": "business_logic"
+        },
+        {
+          "answer": "Machine Learning / Data Science",
+          "next": "ml_datascience"
+        },
+        {
+          "answer": "Frontend / UI",
+          "next": "frontend"
+        },
+        {
+          "answer": "Procesamiento batch / ETL",
+          "next": "batch_etl"
+        },
+        {
+          "answer": "Integraciones con APIs externas",
+          "next": "integrations"
+        },
+        {
+          "answer": "Tiempo real / WebSockets",
+          "next": "realtime"
+        }
+      ]
+    },
+
+    "high_performance": {
+      "question": "¿Qué nivel de latencia necesitas?",
+      "options": [
+        {
+          "answer": "Ultra-baja (p95 < 20ms)",
+          "recommendation": {
+            "primary": "Rust",
+            "secondary": "C++",
+            "tertiary": "Go",
+            "justification": "Rust ofrece zero-cost abstractions, memory safety sin GC, y control total sobre rendimiento. Ideal para latencias ultra-bajas.",
+            "warnings": ["Curva de aprendizaje pronunciada", "Compilación más lenta que Go"],
+            "examples": ["Discord (migró de Go a Rust para reducir latency spikes)", "Cloudflare Workers"]
+          }
+        },
+        {
+          "answer": "Baja (p95 < 50ms)",
+          "recommendation": {
+            "primary": "Go",
+            "secondary": "Rust",
+            "tertiary": "Java (GraalVM)",
+            "justification": "Go combina excelente rendimiento (goroutines, GC pausas <1ms) con productividad. Compilación rápida, deploy simple (binario único).",
+            "warnings": ["Más verboso que Python/TypeScript", "Generics recién agregados (Go 1.18)"],
+            "examples": ["Uber (microservicios críticos)", "Dropbox (migró de Python)", "Docker, Kubernetes"]
+          }
+        },
+        {
+          "answer": "Media (p95 < 200ms)",
+          "recommendation": {
+            "primary": "Node.js",
+            "secondary": "Python (asyncio)",
+            "tertiary": "Go",
+            "justification": "Node.js con event loop es ideal para I/O concurrente. Suficiente para mayoría de casos. Python asyncio viable si equipo ya conoce Python.",
+            "warnings": ["Callback hell (usar async/await)", "CPU-bound tasks bloquean event loop"],
+            "examples": ["Netflix (API gateway)", "LinkedIn (infraestructura mobile)"]
+          }
+        }
+      ]
+    },
+
+    "business_logic": {
+      "question": "¿Qué tan compleja es la lógica de negocio?",
+      "options": [
+        {
+          "answer": "Simple (CRUD básico, <5 reglas de validación)",
+          "recommendation": {
+            "primary": "Python (FastAPI)",
+            "secondary": "Node.js (Express)",
+            "tertiary": "Ruby (Rails)",
+            "justification": "FastAPI combina rapidez de desarrollo (Pydantic para validación automática) con buen rendimiento (async). Ideal para MVPs.",
+            "warnings": ["GIL limita concurrencia CPU-bound", "Dependencias pueden romper con updates"],
+            "examples": ["Uber (ML serving)", "Microsoft (Azure ML)"],
+            "code_example": {
+              "language": "python",
+              "snippet": "@app.post('/tasks')\nasync def create_task(task: TaskCreate):\n    # Pydantic valida automáticamente\n    return await db.tasks.create(task)"
+            }
+          }
+        },
+        {
+          "answer": "Compleja (>10 reglas, workflows, state machines)",
+          "recommendation": {
+            "primary": "TypeScript (NestJS)",
+            "secondary": "Java (Spring Boot)",
+            "tertiary": "C# (.NET)",
+            "justification": "TypeScript con NestJS ofrece type-safety + dependency injection + decorators para estructurar lógica compleja. Java/C# para enterprise.",
+            "warnings": ["Más boilerplate que Python", "Tooling más pesado"],
+            "examples": ["Airbnb (backend services)", "Slack (API backend)"],
+            "code_example": {
+              "language": "typescript",
+              "snippet": "@Injectable()\nclass TaskService {\n  constructor(\n    private validator: ValidationService,\n    private stateManager: StateManager\n  ) {}\n}"
+            }
+          }
+        },
+        {
+          "answer": "Muy compleja (domain-driven design, event sourcing)",
+          "recommendation": {
+            "primary": "Java (Spring Boot + Axon)",
+            "secondary": "C# (.NET + Event Store)",
+            "tertiary": "Scala (Akka)",
+            "justification": "Java/Spring tiene frameworks maduros para DDD (Domain-Driven Design), CQRS, Event Sourcing. Axon Framework, Event Store.",
+            "warnings": ["Verbosidad alta", "Overhead de frameworks"],
+            "examples": ["Banking systems", "Insurance platforms"],
+            "frameworks": ["Axon Framework", "Eventuate", "Lagom"]
+          }
+        }
+      ]
+    },
+
+    "ml_datascience": {
+      "question": "¿Qué tipo de workload ML tienes?",
+      "options": [
+        {
+          "answer": "Training de modelos (batch, exploratorio)",
+          "recommendation": {
+            "primary": "Python (scikit-learn, PyTorch, TensorFlow)",
+            "secondary": "R (estadística avanzada)",
+            "tertiary": "Julia (performance científico)",
+            "justification": "Python es estándar de facto. Ecosistema imbatible: scikit-learn (ML clásico), PyTorch (deep learning), Pandas/Polars (data prep), Jupyter (notebooks).",
+            "warnings": ["Training a escala requiere GPUs/TPUs", "Notebooks pueden ser difíciles de versionar"],
+            "examples": ["Todos los gigantes tech usan Python para ML"],
+            "must_have_libs": ["scikit-learn", "pandas/polars", "matplotlib/seaborn", "jupyter"]
+          }
+        },
+        {
+          "answer": "Serving de modelos (inference en producción)",
+          "recommendation": {
+            "primary": "Python (FastAPI + ONNX Runtime)",
+            "secondary": "Go (con ONNX bindings)",
+            "tertiary": "Rust (Tract, tract-onnx)",
+            "justification": "FastAPI para serving HTTP rápido. ONNX Runtime para inference optimizado (C++ backend). Alternativamente Go/Rust para latencia ultra-baja.",
+            "warnings": ["Batch inference != online inference (latency)", "Monitorear model drift"],
+            "examples": ["OpenAI (FastAPI)", "Hugging Face (inference API)"],
+            "deployment_options": ["FastAPI + Gunicorn", "TorchServe", "TensorFlow Serving", "Seldon Core"]
+          }
+        },
+        {
+          "answer": "Data pipelines / Feature engineering",
+          "recommendation": {
+            "primary": "Python (Polars, Dask, Airflow)",
+            "secondary": "Scala (Apache Spark)",
+            "tertiary": "SQL (dbt)",
+            "justification": "Polars (Rust-based) es 10x más rápido que Pandas. Dask para paralelizar. Spark si ya tienes infra Hadoop. dbt para transformaciones SQL declarativas.",
+            "warnings": ["Spark tiene overhead alto (cluster management)", "dbt solo para SQL (no custom Python)"],
+            "examples": ["Uber (Spark)", "Netflix (Spark + Airflow)"],
+            "tools": ["Polars", "Dask", "Apache Airflow", "Prefect", "Dagster"]
+          }
+        }
+      ]
+    },
+
+    "frontend": {
+      "question": "¿Qué tipo de aplicación frontend?",
+      "options": [
+        {
+          "answer": "Dashboard / Admin panel (B2B, interno)",
+          "recommendation": {
+            "primary": "React + TypeScript + TanStack Query + shadcn/ui",
+            "secondary": "Vue 3 + TypeScript + Pinia",
+            "tertiary": "Svelte + SvelteKit",
+            "justification": "React con TypeScript para type-safety. TanStack Query gestiona estado server (cache, refetch). shadcn/ui componentes accesibles copy-paste.",
+            "warnings": ["React tiene muchas formas de hacer lo mismo (confuso para juniors)", "Bundle size si no optimizas"],
+            "examples": ["Airbnb", "Netflix admin tools"],
+            "starter_templates": ["Vite + React + TS", "Next.js", "Remix"]
+          }
+        },
+        {
+          "answer": "App pública / E-commerce (B2C, SEO crítico)",
+          "recommendation": {
+            "primary": "Next.js (React SSR)",
+            "secondary": "Nuxt (Vue SSR)",
+            "tertiary": "SvelteKit",
+            "justification": "Next.js con App Router (React Server Components) para SSR/SSG. SEO-friendly, Core Web Vitals optimizados. Vercel deploy trivial.",
+            "warnings": ["App Router tiene curva de aprendizaje", "Caching puede ser confuso"],
+            "examples": ["Vercel", "Hulu", "TikTok"],
+            "features": ["SSR", "SSG", "ISR (Incremental Static Regen)", "Image optimization"]
+          }
+        },
+        {
+          "answer": "App mobile (React Native / Híbrida)",
+          "recommendation": {
+            "primary": "React Native + Expo",
+            "secondary": "Flutter",
+            "tertiary": "Ionic (web-based)",
+            "justification": "React Native con Expo para desarrollo rápido (80% código compartido iOS/Android). Flutter si necesitas performance nativo superior.",
+            "warnings": ["React Native puede requerir native modules (Swift/Kotlin)", "Flutter usa Dart (menos mainstream)"],
+            "examples": ["Facebook", "Instagram", "Discord"],
+            "comparison": {
+              "react_native": "JavaScript, reutiliza skills web, ecosystem grande",
+              "flutter": "Dart, performance mejor, widgets propios (no nativos)"
+            }
+          }
+        }
+      ]
+    },
+
+    "batch_etl": {
+      "question": "¿Qué volumen de datos procesas?",
+      "options": [
+        {
+          "answer": "Pequeño (<1GB, <1M registros)",
+          "recommendation": {
+            "primary": "Python (Polars)",
+            "secondary": "SQL (dbt)",
+            "tertiary": "Python (Pandas)",
+            "justification": "Polars es suficiente para datasets pequeños, 10x más rápido que Pandas. dbt si transformaciones son puramente SQL.",
+            "warnings": ["Polars API diferente de Pandas (lazy evaluation)", "No todo Pandas funciona en Polars"],
+            "examples": ["Startups early-stage", "Analytics internos"],
+            "code_example": {
+              "language": "python",
+              "snippet": "import polars as pl\ndf = pl.read_csv('data.csv')\nresult = df.lazy().filter(pl.col('age') > 30).collect()"
+            }
+          }
+        },
+        {
+          "answer": "Mediano (1GB-100GB, 1M-100M registros)",
+          "recommendation": {
+            "primary": "Python (Dask)",
+            "secondary": "Scala (Apache Spark)",
+            "tertiary": "DuckDB (SQL embebido)",
+            "justification": "Dask permite usar Pandas API sobre datasets que no caben en memoria (partitioning automático). Spark si ya tienes cluster. DuckDB si queries SQL simples.",
+            "warnings": ["Dask scheduler puede ser bottleneck", "Spark overhead alto para datos medianos"],
+            "examples": ["Medium companies", "Data warehouses pequeños"],
+            "when_to_use": {
+              "dask": "Pandas-like API, datasets >RAM",
+              "spark": "Ya tienes cluster Hadoop/Databricks",
+              "duckdb": "SQL queries rápidos, embebido (no cluster)"
+            }
+          }
+        },
+        {
+          "answer": "Grande (>100GB, >100M registros)",
+          "recommendation": {
+            "primary": "Scala (Apache Spark)",
+            "secondary": "Python (PySpark)",
+            "tertiary": "Presto/Trino (SQL federado)",
+            "justification": "Spark es estándar para big data. Scala para mejor performance vs PySpark (no serialization overhead). Presto para queries ad-hoc sobre múltiples fuentes.",
+            "warnings": ["Spark requiere cluster (Databricks, EMR)", "Costos de infra altos"],
+            "examples": ["Uber", "Airbnb", "Netflix"],
+            "managed_platforms": ["Databricks", "AWS EMR", "Google Dataproc", "Azure Synapse"]
+          }
+        }
+      ]
+    },
+
+    "integrations": {
+      "question": "¿Qué tipo de integración?",
+      "options": [
+        {
+          "answer": "APIs REST (Stripe, Twilio, SendGrid, etc.)",
+          "recommendation": {
+            "primary": "Python",
+            "secondary": "Node.js",
+            "tertiary": "Go",
+            "justification": "Python tiene SDKs oficiales para 95% de servicios SaaS. Manejo de rate limits, retries, auth built-in. Node.js también bueno.",
+            "warnings": ["Verificar que SDK esté mantenido (algunos abandonados)", "Manejar versioning de APIs"],
+            "examples": ["Stripe SDK", "Twilio SDK", "SendGrid SDK", "OpenAI SDK"],
+            "best_practices": [
+              "Usar SDKs oficiales (no custom HTTP)",
+              "Implementar circuit breaker",
+              "Loguear todas las llamadas (auditoría)",
+              "Manejar rate limits con exponential backoff"
+            ]
+          }
+        },
+        {
+          "answer": "Webhooks (recibir eventos de terceros)",
+          "recommendation": {
+            "primary": "Node.js (Express)",
+            "secondary": "Python (FastAPI)",
+            "tertiary": "Go",
+            "justification": "Node.js con Express para recibir webhooks async. Validar signatures (HMAC) para seguridad. Queue para procesamiento async.",
+            "warnings": ["Validar SIEMPRE signatures de webhooks", "Idempotencia (reintentos)", "Timeouts (responder <5s)"],
+            "examples": ["Stripe webhooks", "GitHub webhooks", "Shopify webhooks"],
+            "security_checklist": [
+              "Verificar signature HMAC",
+              "Validar payload contra schema",
+              "Rate limiting por source IP",
+              "Loguear todo (auditoría)",
+              "Procesar async (responder rápido al webhook)"
+            ]
+          }
+        },
+        {
+          "answer": "Web scraping / Crawling",
+          "recommendation": {
+            "primary": "Python (Scrapy, BeautifulSoup, Playwright)",
+            "secondary": "Node.js (Puppeteer)",
+            "tertiary": "Go (Colly)",
+            "justification": "Scrapy para crawling a escala. BeautifulSoup para scraping simple. Playwright para sites con JavaScript (headless browser).",
+            "warnings": ["Respetar robots.txt", "Rate limiting (no DDoS)", "Legal (ToS del sitio)"],
+            "examples": ["Price comparison sites", "Job aggregators"],
+            "tools": {
+              "scrapy": "Framework completo (pipelines, middleware)",
+              "beautifulsoup": "Parsing HTML simple",
+              "playwright": "Headless browser (sites con JS)",
+              "selenium": "Legacy (más lento que Playwright)"
+            }
+          }
+        }
+      ]
+    },
+
+    "realtime": {
+      "question": "¿Cuántas conexiones simultáneas esperas?",
+      "options": [
+        {
+          "answer": "Pocas (<100 conexiones)",
+          "recommendation": {
+            "primary": "Python (FastAPI + WebSockets)",
+            "secondary": "Node.js (Socket.io)",
+            "tertiary": "Go (Gorilla WebSocket)",
+            "justification": "FastAPI con WebSockets built-in. Suficiente para apps pequeñas. Node.js si ya tienes backend JS.",
+            "warnings": ["Python asyncio puede ser complejo", "Testing de WebSockets no trivial"],
+            "examples": ["Internal admin dashboards", "Small chat apps"],
+            "code_example": {
+              "language": "python",
+              "snippet": "@app.websocket('/ws')\nasync def websocket_endpoint(websocket: WebSocket):\n    await websocket.accept()\n    while True:\n        data = await websocket.receive_text()\n        await websocket.send_text(f'Echo: {data}')"
+            }
+          }
+        },
+        {
+          "answer": "Medias (100-10K conexiones)",
+          "recommendation": {
+            "primary": "Node.js (Socket.io + Redis)",
+            "secondary": "Go (Gorilla WebSocket + Redis)",
+            "tertiary": "Elixir (Phoenix Channels)",
+            "justification": "Node.js con Socket.io simplifica WebSockets (fallback a polling). Redis pub/sub para escalar horizontal (múltiples instancias Node.js).",
+            "warnings": ["Sticky sessions si no usas Redis adapter", "Memory leaks si no limpias sockets"],
+            "examples": ["Slack (real-time messaging)", "Trello (live updates)"],
+            "scaling": {
+              "single_instance": "1K-2K conexiones max",
+              "horizontal_redis": "10K+ conexiones (múltiples instancias Node.js)",
+              "architecture": "Load Balancer → N x Node.js instances → Redis Pub/Sub"
+            }
+          }
+        },
+        {
+          "answer": "Muchas (>10K conexiones)",
+          "recommendation": {
+            "primary": "Go (Gorilla WebSocket + NATS/Kafka)",
+            "secondary": "Elixir (Phoenix + Channels)",
+            "tertiary": "Rust (Tokio + Tungstenite)",
+            "justification": "Go con goroutines escala a 100K+ conexiones por instancia. NATS para pub/sub distribuido. Elixir con Erlang VM también excelente (WhatsApp scale).",
+            "warnings": ["Debugging concurrencia es complejo", "Monitorear memory por conexión"],
+            "examples": ["WhatsApp (Erlang/Elixir)", "Discord (Go + Rust)", "Gaming servers"],
+            "scaling": {
+              "go": "100K+ conexiones/instancia (goroutines baratas)",
+              "elixir": "2M+ conexiones/instance (Phoenix Channels record)",
+              "architecture": "Load Balancer → Go/Elixir instances → NATS/Kafka → Event Bus"
+            }
+          }
+        }
+      ]
+    }
+  },
+
+  "usage_example": {
+    "description": "Ejemplo de uso del decision tree",
+    "scenario": "Módulo de procesamiento de eventos de tareas",
+    "walkthrough": [
+      {
+        "step": 1,
+        "question": "¿Cuál es el tipo principal de trabajo del módulo?",
+        "answer": "Procesamiento de eventos de alta carga (>1K eventos/seg)",
+        "next_node": "high_performance"
+      },
+      {
+        "step": 2,
+        "question": "¿Qué nivel de latencia necesitas?",
+        "answer": "Baja (p95 < 50ms)",
+        "recommendation": {
+          "primary": "Go",
+          "justification": "Goroutines para concurrencia, latencia baja, deploy simple"
+        }
+      }
+    ],
+    "final_decision": {
+      "stack": "Go + Kafka Consumer + Redis",
+      "justification": "Procesa 5K eventos/seg con latencia p95 < 50ms. Goroutines permiten alta concurrencia. Kafka para ingesta, Redis para deduplicación."
+    }
+  }
+}

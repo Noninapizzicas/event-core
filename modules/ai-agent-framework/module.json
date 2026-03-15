@@ -1,0 +1,115 @@
+{
+  "name": "ai-agent-framework",
+  "version": "1.0.0",
+  "description": "Framework para crear agentes IA event-driven con context management y tool calling",
+  "author": "Event Core Team",
+  "provides": [
+    "agent-orchestration",
+    "context-management",
+    "tool-calling"
+  ],
+  "subscribes": [
+    "agent.*.created",
+    "agent.*.completed",
+    "agent.*.failed",
+    { "event": "agent.execute.request", "handler": "onExecuteRequest" }
+  ],
+  "apis": [
+    {
+      "method": "POST",
+      "path": "/agents",
+      "description": "Registrar un nuevo agente",
+      "schema": "./schemas/register-agent.json",
+      "handler": "handleRegisterAgent"
+    },
+    {
+      "method": "GET",
+      "path": "/agents",
+      "description": "Listar agentes registrados",
+      "schema": "./schemas/list-agents.json",
+      "handler": "handleListAgents"
+    },
+    {
+      "method": "GET",
+      "path": "/agents/:id",
+      "description": "Obtener detalles de un agente",
+      "schema": "./schemas/get-agent.json",
+      "handler": "handleGetAgent"
+    },
+    {
+      "method": "PUT",
+      "path": "/agents/:id",
+      "description": "Actualizar configuración de agente",
+      "schema": "./schemas/update-agent.json",
+      "handler": "handleUpdateAgent"
+    },
+    {
+      "method": "DELETE",
+      "path": "/agents/:id",
+      "description": "Eliminar un agente",
+      "schema": "./schemas/delete-agent.json",
+      "handler": "handleDeleteAgent"
+    },
+    {
+      "method": "POST",
+      "path": "/agents/:id/trigger",
+      "description": "Trigger manual de un agente",
+      "schema": "./schemas/trigger-agent.json",
+      "handler": "handleTriggerAgent"
+    },
+    {
+      "method": "GET",
+      "path": "/agents/:id/context",
+      "description": "Obtener contexto/memoria de un agente",
+      "schema": "./schemas/get-context.json",
+      "handler": "handleGetContext"
+    },
+    {
+      "method": "DELETE",
+      "path": "/agents/:id/context",
+      "description": "Limpiar contexto de un agente",
+      "schema": "./schemas/clear-context.json",
+      "handler": "handleClearContext"
+    },
+    {
+      "method": "GET",
+      "path": "/tools",
+      "description": "Listar tools disponibles para agentes",
+      "schema": "./schemas/list-tools.json",
+      "handler": "handleListTools"
+    },
+    {
+      "method": "GET",
+      "path": "/agents/:id/stats",
+      "description": "Obtener estadísticas de ejecución de un agente",
+      "schema": "./schemas/get-agent-stats.json",
+      "handler": "handleGetAgentStats"
+    }
+  ],
+  "hooks": {},
+  "config": {
+    "max_agents": 100,
+    "context": {
+      "max_messages_per_agent": 100,
+      "ttl_minutes": 1440
+    },
+    "execution": {
+      "timeout_ms": 60000,
+      "max_retries": 3
+    },
+    "tools": {
+      "enabled": true,
+      "timeout_ms": 10000
+    }
+  },
+  "dependencies": [
+    "prompt-manager",
+    "ai-gateway"
+  ],
+  "tags": [
+    "ai",
+    "agents",
+    "orchestration",
+    "automation"
+  ]
+}

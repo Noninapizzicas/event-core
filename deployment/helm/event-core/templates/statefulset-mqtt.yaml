@@ -1,0 +1,125 @@
+{{- if and .Values.eventCore.mqtt.enabled .Values.eventCore.mqtt.embedded.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "event-core.fullname" . }}-mqtt
+  labels:
+    {{- include "event-core.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mqtt
+spec:
+  serviceName: {{ include "event-core.fullname" . }}-mqtt
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "event-core.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: mqtt
+  template:
+    metadata:
+      labels:
+        {{- include "event-core.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: mqtt
+    spec:
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+      - name: mosquitto
+        image: eclipse-mosquitto:2.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: mqtt
+          containerPort: 1883
+          protocol: TCP
+        - name: websocket
+          containerPort: 9001
+          protocol: TCP
+        livenessProbe:
+          tcpSocket:
+            port: mqtt
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: mqtt
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          limits:
+            cpu: 200m
+            memory: 256Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+        volumeMounts:
+        - name: mosquitto-config
+          mountPath: /mosquitto/config
+        {{- if .Values.eventCore.mqtt.embedded.persistence.enabled }}
+        - name: mosquitto-data
+          mountPath: /mosquitto/data
+        {{- end }}
+      volumes:
+      - name: mosquitto-config
+        configMap:
+          name: {{ include "event-core.fullname" . }}-mqtt-config
+  {{- if .Values.eventCore.mqtt.embedded.persistence.enabled }}
+  volumeClaimTemplates:
+  - metadata:
+      name: mosquitto-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      {{- if .Values.eventCore.mqtt.embedded.persistence.storageClass }}
+      storageClassName: {{ .Values.eventCore.mqtt.embedded.persistence.storageClass }}
+      {{- end }}
+      resources:
+        requests:
+          storage: {{ .Values.eventCore.mqtt.embedded.persistence.size }}
+  {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "event-core.fullname" . }}-mqtt
+  labels:
+    {{- include "event-core.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mqtt
+spec:
+  type: ClusterIP
+  ports:
+  - port: 1883
+    targetPort: mqtt
+    protocol: TCP
+    name: mqtt
+  - port: 9001
+    targetPort: websocket
+    protocol: TCP
+    name: websocket
+  clusterIP: None
+  selector:
+    {{- include "event-core.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: mqtt
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "event-core.fullname" . }}-mqtt-config
+  labels:
+    {{- include "event-core.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mqtt
+data:
+  mosquitto.conf: |
+    listener 1883
+    protocol mqtt
+    allow_anonymous true
+
+    listener 9001
+    protocol websockets
+    allow_anonymous true
+
+    persistence true
+    persistence_location /mosquitto/data/
+
+    log_dest stdout
+    log_type all
+
+    max_queued_messages 1000
+    max_inflight_messages 20
+{{- end }}

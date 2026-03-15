@@ -1,0 +1,56 @@
+{
+  "name": "tts.synthesize",
+  "description": "TTS de alta calidad con voces realistas",
+  "event": "elevenlabs.tts.synthesize.request",
+  "method": "POST",
+  "endpoint": "/text-to-speech/{{voice_id}}",
+  "headers": {
+    "Content-Type": "application/json",
+    "Accept": "audio/mpeg"
+  },
+  "input": {
+    "text": {
+      "type": "string",
+      "description": "Texto a convertir",
+      "required": true
+    },
+    "voice_id": {
+      "type": "string",
+      "description": "ID de la voz de ElevenLabs",
+      "required": true
+    },
+    "model_id": {
+      "type": "string",
+      "description": "Modelo a usar",
+      "default": "eleven_multilingual_v2"
+    },
+    "stability": {
+      "type": "number",
+      "description": "Estabilidad de la voz (0-1)",
+      "default": 0.5
+    },
+    "similarity_boost": {
+      "type": "number",
+      "description": "Boost de similitud (0-1)",
+      "default": 0.75
+    }
+  },
+  "request_template": {
+    "text": "{{text}}",
+    "model_id": "{{model_id}}",
+    "voice_settings": {
+      "stability": "{{stability}}",
+      "similarity_boost": "{{similarity_boost}}"
+    }
+  },
+  "output": {
+    "audio": {
+      "type": "string",
+      "description": "Audio en base64 (MP3)"
+    },
+    "duration": {
+      "type": "number",
+      "description": "Duracion en segundos"
+    }
+  }
+}

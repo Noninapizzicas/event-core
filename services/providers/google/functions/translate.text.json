@@ -1,0 +1,44 @@
+{
+  "name": "translate.text",
+  "description": "Traducir texto entre idiomas",
+  "event": "google.translate.text.request",
+  "method": "POST",
+  "base_url": "https://translation.googleapis.com/language/translate/v2",
+  "endpoint": "",
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "input": {
+    "text": {
+      "type": "string",
+      "description": "Texto a traducir",
+      "required": true
+    },
+    "source": {
+      "type": "string",
+      "description": "Idioma origen (auto-detect si no se especifica)"
+    },
+    "target": {
+      "type": "string",
+      "description": "Idioma destino",
+      "required": true
+    }
+  },
+  "request_template": {
+    "q": "{{text}}",
+    "source": "{{source}}",
+    "target": "{{target}}",
+    "format": "text"
+  },
+  "output": {
+    "text": {
+      "type": "string",
+      "description": "Texto traducido"
+    },
+    "detected_source": {
+      "type": "string",
+      "description": "Idioma detectado"
+    }
+  },
+  "response_path": "data.translations[0].translatedText"
+}

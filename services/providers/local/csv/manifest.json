@@ -1,0 +1,75 @@
+{
+  "$schema": "../../../schemas/provider-manifest.schema.json",
+  "name": "local.csv",
+  "version": "1.0.0",
+  "description": "Servicio local para crear y parsear CSVs",
+  "type": "provider",
+  "requires": {
+    "credentials": [],
+    "npm": []
+  },
+  "functions": {
+    "create": {
+      "event": "local.csv.create.request",
+      "description": "Crear CSV desde array de objetos",
+      "input": {
+        "data": {
+          "type": "array",
+          "description": "Array de objetos",
+          "required": true
+        },
+        "columns": {
+          "type": "array",
+          "description": "Columnas a incluir (opcional, infiere de data)"
+        },
+        "filename": {
+          "type": "string",
+          "description": "Nombre del archivo",
+          "required": true
+        },
+        "delimiter": {
+          "type": "string",
+          "description": "Delimitador",
+          "default": ","
+        }
+      },
+      "output": {
+        "path": {
+          "type": "string"
+        },
+        "rows": {
+          "type": "number"
+        }
+      }
+    },
+    "parse": {
+      "event": "local.csv.parse.request",
+      "description": "Leer CSV y convertir a array de objetos",
+      "input": {
+        "path": {
+          "type": "string",
+          "description": "Ruta del archivo"
+        },
+        "content": {
+          "type": "string",
+          "description": "Contenido CSV (alternativa a path)"
+        },
+        "delimiter": {
+          "type": "string",
+          "default": ","
+        }
+      },
+      "output": {
+        "data": {
+          "type": "array"
+        },
+        "columns": {
+          "type": "array"
+        },
+        "rows": {
+          "type": "number"
+        }
+      }
+    }
+  }
+}

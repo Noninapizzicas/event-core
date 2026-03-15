@@ -1,0 +1,270 @@
+{
+  "id": "test-ciclo-completo",
+  "name": "TEST: Ciclo Completo Factura",
+  "description": "Flow de prueba que ejecuta todo el ciclo: Telegram -> Guardar -> OCR -> Excel",
+  "version": "1.0.0",
+  "enabled": false,
+  "trigger": {
+    "event": "bot.file.stored",
+    "filter": {
+      "file.mimeType": {
+        "$in": [
+          "image/jpeg",
+          "image/png",
+          "image/webp",
+          "application/pdf"
+        ]
+      }
+    }
+  },
+  "steps": [
+    {
+      "id": "verificar-bot",
+      "type": "condition",
+      "if": "{{ trigger.botName == config.telegram.botName }}",
+      "then": "log-inicio",
+      "else": "ignorar"
+    },
+    {
+      "id": "ignorar",
+      "type": "log",
+      "level": "debug",
+      "message": "Ignorando archivo de bot {{ trigger.botName }} (esperado: {{ config.telegram.botName }})"
+    },
+    {
+      "id": "log-inicio",
+      "type": "log",
+      "level": "info",
+      "message": "=== INICIO CICLO COMPLETO === Factura recibida: {{ trigger.file.originalName }}"
+    },
+    {
+      "id": "crear-directorio-inbox",
+      "type": "service",
+      "service": "fs",
+      "action": "mkdir",
+      "path": "@/projects/{{ project.id }}/{{ config.storage.inbox }}",
+      "onError": "continue"
+    },
+    {
+      "id": "generar-nombre",
+      "type": "set",
+      "variables": {
+        "nombreArchivo": "factura_{{ timestamp }}.jpg"
+      }
+    },
+    {
+      "id": "copiar-archivo",
+      "type": "service",
+      "service": "fs",
+      "action": "copy",
+      "source": "{{ globalPath(trigger.file.path) }}",
+      "destination": "@/projects/{{ project.id }}/{{ config.storage.inbox }}/{{ variables.nombreArchivo }}",
+      "timeout": 30000
+    },
+    {
+      "id": "log-guardado",
+      "type": "log",
+      "level": "info",
+      "message": "PASO 1 OK: Archivo guardado en inbox: {{ variables.nombreArchivo }}"
+    },
+    {
+      "id": "registrar-bd",
+      "type": "service",
+      "service": "local.facturas-db",
+      "action": "registrar",
+      "proyecto": "{{ project.id }}",
+      "nombre_archivo": "{{ variables.nombreArchivo }}",
+      "source": "telegram",
+      "path_original": "@/projects/{{ project.id }}/{{ config.storage.inbox }}/{{ variables.nombreArchivo }}",
+      "origen": {
+        "botName": "{{ trigger.botName }}",
+        "chatId": "{{ trigger.chatId }}",
+        "userId": "{{ trigger.userId }}",
+        "userName": "{{ default(trigger.userName, '') }}"
+      },
+      "timeout": 10000
+    },
+    {
+      "id": "log-registrado",
+      "type": "log",
+      "level": "info",
+      "message": "PASO 2 OK: Registrado en BD con ID: {{ steps.registrar-bd.data.id }}"
+    },
+    {
+      "id": "ejecutar-ocr",
+      "type": "service",
+      "service": "{{ config.ocr.provider }}",
+      "action": "extractText",
+      "imagePath": "@/projects/{{ project.id }}/{{ config.storage.inbox }}/{{ variables.nombreArchivo }}",
+      "languages": "{{ json(config.ocr.languages) }}",
+      "timeout": 120000,
+      "onError": "log-error-ocr"
+    },
+    {
+      "id": "log-ocr",
+      "type": "log",
+      "level": "info",
+      "message": "PASO 3 OK: OCR completado - {{ steps.ejecutar-ocr.data.text.substring(0, 100) }}..."
+    },
+    {
+      "id": "extraer-datos",
+      "type": "agent",
+      "provider": "anthropic",
+      "model": "claude-3-haiku-20240307",
+      "system": "Eres un extractor de datos de facturas. Analiza el texto OCR y extrae los datos estructurados. Responde SOLO con JSON valido.",
+      "prompt": "Analiza el siguiente texto OCR de una factura y extrae los datos:\n\n{{ steps.ejecutar-ocr.data.text }}\n\nExtrae en JSON:\n{\n  \"numero_factura\": \"numero\",\n  \"fecha_factura\": \"YYYY-MM-DD\",\n  \"nif_proveedor\": \"NIF/CIF\",\n  \"nombre_proveedor\": \"nombre\",\n  \"concepto\": \"descripcion\",\n  \"base_imponible\": 0.00,\n  \"porcentaje_iva\": 21,\n  \"cuota_iva\": 0.00,\n  \"total\": 0.00,\n  \"categoria\": \"suministros|servicios|material|otros\"\n}",
+      "responseFormat": "json",
+      "timeout": 60000,
+      "onError": "log-error-extraccion"
+    },
+    {
+      "id": "log-extraccion",
+      "type": "log",
+      "level": "info",
+      "message": "PASO 4 OK: Datos extraidos - Proveedor: {{ steps.extraer-datos.data.nombre_proveedor }} - Total: {{ steps.extraer-datos.data.total }}"
+    },
+    {
+      "id": "crear-dir-procesadas",
+      "type": "service",
+      "service": "fs",
+      "action": "mkdir",
+      "path": "@/projects/{{ project.id }}/{{ config.storage.procesadas }}/originales",
+      "onError": "continue"
+    },
+    {
+      "id": "mover-a-procesadas",
+      "type": "service",
+      "service": "fs",
+      "action": "move",
+      "source": "@/projects/{{ project.id }}/{{ config.storage.inbox }}/{{ variables.nombreArchivo }}",
+      "destination": "@/projects/{{ project.id }}/{{ config.storage.procesadas }}/originales/{{ variables.nombreArchivo }}",
+      "timeout": 30000
+    },
+    {
+      "id": "{{ steps.registrar-bd.data.id }}",
+      "type": "service",
+      "service": "local.facturas-db",
+      "action": "actualizar",
+      "proyecto": "{{ project.id }}",
+      "datos": {
+        "estado": "procesada",
+        "numero_factura": "{{ steps.extraer-datos.data.numero_factura }}",
+        "fecha_factura": "{{ steps.extraer-datos.data.fecha_factura }}",
+        "nif_proveedor": "{{ steps.extraer-datos.data.nif_proveedor }}",
+        "nombre_proveedor": "{{ steps.extraer-datos.data.nombre_proveedor }}",
+        "concepto": "{{ steps.extraer-datos.data.concepto }}",
+        "base_imponible": "{{ steps.extraer-datos.data.base_imponible }}",
+        "porcentaje_iva": "{{ steps.extraer-datos.data.porcentaje_iva }}",
+        "cuota_iva": "{{ steps.extraer-datos.data.cuota_iva }}",
+        "total": "{{ steps.extraer-datos.data.total }}",
+        "categoria": "{{ steps.extraer-datos.data.categoria }}",
+        "path_procesada": "@/projects/{{ project.id }}/{{ config.storage.procesadas }}/originales/{{ variables.nombreArchivo }}"
+      },
+      "timeout": 10000
+    },
+    {
+      "id": "log-bd-actualizada",
+      "type": "log",
+      "level": "info",
+      "message": "PASO 5 OK: BD actualizada con datos extraidos"
+    },
+    {
+      "id": "crear-dir-exports",
+      "type": "service",
+      "service": "fs",
+      "action": "mkdir",
+      "path": "@/projects/{{ project.id }}/{{ config.storage.exports }}",
+      "onError": "continue"
+    },
+    {
+      "id": "generar-excel",
+      "type": "service",
+      "service": "local.xlsx",
+      "action": "create",
+      "sheets": [
+        {
+          "name": "Factura",
+          "data": [
+            {
+              "Campo": "Numero Factura",
+              "Valor": "{{ steps.extraer-datos.data.numero_factura }}"
+            },
+            {
+              "Campo": "Fecha",
+              "Valor": "{{ steps.extraer-datos.data.fecha_factura }}"
+            },
+            {
+              "Campo": "NIF Proveedor",
+              "Valor": "{{ steps.extraer-datos.data.nif_proveedor }}"
+            },
+            {
+              "Campo": "Proveedor",
+              "Valor": "{{ steps.extraer-datos.data.nombre_proveedor }}"
+            },
+            {
+              "Campo": "Concepto",
+              "Valor": "{{ steps.extraer-datos.data.concepto }}"
+            },
+            {
+              "Campo": "Base Imponible",
+              "Valor": "{{ steps.extraer-datos.data.base_imponible }}"
+            },
+            {
+              "Campo": "% IVA",
+              "Valor": "{{ steps.extraer-datos.data.porcentaje_iva }}"
+            },
+            {
+              "Campo": "Cuota IVA",
+              "Valor": "{{ steps.extraer-datos.data.cuota_iva }}"
+            },
+            {
+              "Campo": "Total",
+              "Valor": "{{ steps.extraer-datos.data.total }}"
+            },
+            {
+              "Campo": "Categoria",
+              "Valor": "{{ steps.extraer-datos.data.categoria }}"
+            }
+          ]
+        }
+      ],
+      "outputPath": "@/projects/{{ project.id }}/{{ config.storage.exports }}/test_factura_{{ timestamp }}.xlsx",
+      "timeout": 30000
+    },
+    {
+      "id": "log-excel",
+      "type": "log",
+      "level": "info",
+      "message": "PASO 6 OK: Excel generado: test_factura_{{ timestamp }}.xlsx"
+    },
+    {
+      "id": "responder-telegram",
+      "type": "service",
+      "service": "telegram",
+      "action": "sendMessage",
+      "botName": "{{ trigger.botName }}",
+      "chatId": "{{ trigger.chatId }}",
+      "text": "Factura procesada!\n\nProveedor: {{ steps.extraer-datos.data.nombre_proveedor }}\nTotal: {{ steps.extraer-datos.data.total }} EUR\nFecha: {{ steps.extraer-datos.data.fecha_factura }}\n\nExcel generado en exports/",
+      "timeout": 10000,
+      "onError": "continue"
+    },
+    {
+      "id": "log-completado",
+      "type": "log",
+      "level": "info",
+      "message": "=== CICLO COMPLETO FINALIZADO === ID: {{ steps.registrar-bd.data.id }} - Total: {{ steps.extraer-datos.data.total }} EUR"
+    },
+    {
+      "id": "log-error-ocr",
+      "type": "log",
+      "level": "error",
+      "message": "ERROR en OCR: {{ error.message }}"
+    },
+    {
+      "id": "log-error-extraccion",
+      "type": "log",
+      "level": "error",
+      "message": "ERROR en extraccion de datos: {{ error.message }}"
+    }
+  ]
+}

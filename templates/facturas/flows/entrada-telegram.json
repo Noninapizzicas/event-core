@@ -1,0 +1,105 @@
+{
+  "id": "entrada-telegram",
+  "name": "Entrada Facturas - Telegram",
+  "description": "Recibe facturas desde bot Telegram, las guarda en inbox y registra en BD",
+  "version": "1.0.0",
+  "enabled": false,
+  "trigger": {
+    "event": "bot.file.stored",
+    "filter": {
+      "file.mimeType": {
+        "$in": [
+          "image/jpeg",
+          "image/png",
+          "image/webp",
+          "application/pdf"
+        ]
+      }
+    }
+  },
+  "steps": [
+    {
+      "id": "verificar-bot",
+      "type": "condition",
+      "if": "{{ trigger.botName == config.telegram.botName }}",
+      "then": "log-entrada",
+      "else": "ignorar"
+    },
+    {
+      "id": "ignorar",
+      "type": "log",
+      "level": "debug",
+      "message": "Ignorando archivo de bot {{ trigger.botName }} (esperado: {{ config.telegram.botName }})"
+    },
+    {
+      "id": "log-entrada",
+      "type": "log",
+      "level": "info",
+      "message": "Factura recibida desde Telegram: {{ trigger.file.originalName }} ({{ trigger.botName }})"
+    },
+    {
+      "id": "crear-directorio",
+      "type": "service",
+      "service": "fs",
+      "action": "mkdir",
+      "path": "@/projects/{{ project.id }}/{{ config.storage.inbox }}",
+      "onError": "continue"
+    },
+    {
+      "id": "generar-nombre",
+      "type": "set",
+      "variables": {
+        "extension": "{{ trigger.file.originalName.split('.').pop() }}",
+        "nombreArchivo": "telegram_{{ date }}_{{ time.replace(':', '').substring(0, 4) }}_pendiente.{{ trigger.file.originalName.split('.').pop() }}"
+      }
+    },
+    {
+      "id": "copiar-archivo",
+      "type": "service",
+      "service": "fs",
+      "action": "copy",
+      "source": "{{ globalPath(trigger.file.path) }}",
+      "destination": "@/projects/{{ project.id }}/{{ config.storage.inbox }}/{{ variables.nombreArchivo }}",
+      "timeout": 30000
+    },
+    {
+      "id": "registrar-bd",
+      "type": "service",
+      "service": "local.facturas-db",
+      "action": "registrar",
+      "proyecto": "{{ project.id }}",
+      "nombre_archivo": "{{ variables.nombreArchivo }}",
+      "source": "telegram",
+      "path_original": "@/projects/{{ project.id }}/{{ config.storage.inbox }}/{{ variables.nombreArchivo }}",
+      "origen": {
+        "botName": "{{ trigger.botName }}",
+        "chatId": "{{ trigger.chatId }}",
+        "userId": "{{ trigger.userId }}",
+        "userName": "{{ default(trigger.userName, '') }}",
+        "caption": "{{ default(trigger.caption, '') }}"
+      },
+      "timeout": 10000
+    },
+    {
+      "id": "log-registrada",
+      "type": "log",
+      "level": "info",
+      "message": "Factura registrada: {{ variables.nombreArchivo }} - ID: {{ steps.registrar-bd.data.id }}"
+    },
+    {
+      "id": "emitir-factura-recibida",
+      "type": "emit",
+      "event": "factura.recibida",
+      "data": {
+        "projectId": "{{ project.id }}",
+        "id": "{{ steps.registrar-bd.data.id }}",
+        "source": "telegram",
+        "archivo": {
+          "nombre": "{{ variables.nombreArchivo }}",
+          "path": "@/projects/{{ project.id }}/{{ config.storage.inbox }}/{{ variables.nombreArchivo }}",
+          "mimeType": "{{ trigger.file.mimeType }}"
+        }
+      }
+    }
+  ]
+}

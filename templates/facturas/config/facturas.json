@@ -1,0 +1,52 @@
+{
+  "enabled": true,
+  "version": "1.0.0",
+
+  "telegram": {
+    "botName": "CAMBIAR_nombre_bot",
+    "allowedUsers": [],
+    "allowedChats": []
+  },
+
+  "gmail": {
+    "enabled": false,
+    "account": "",
+    "searchQuery": "has:attachment (subject:factura OR subject:fra OR subject:invoice) is:unread newer_than:7d"
+  },
+
+  "ocr": {
+    "provider": "local.google-vision",
+    "languages": ["es", "en"],
+    "hint": "DOCUMENT_TEXT_DETECTION"
+  },
+
+  "schedule": {
+    "gmail": "0 3 * * *",
+    "procesamiento": "0 3 * * 0",
+    "exportacion": "0 6 * * 0",
+    "timezone": "Europe/Madrid"
+  },
+
+  "storage": {
+    "inbox": "storage/facturas/inbox",
+    "procesadas": "storage/facturas/procesadas",
+    "exports": "storage/facturas/exports"
+  },
+
+  "asesoria": {
+    "nombre": "",
+    "email": "",
+    "formatoExcel": "libro-registro"
+  },
+
+  "notificaciones": {
+    "telegram": {
+      "enabled": false,
+      "chatId": ""
+    },
+    "email": {
+      "enabled": false,
+      "to": ""
+    }
+  }
+}

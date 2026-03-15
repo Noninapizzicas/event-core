@@ -1,0 +1,424 @@
+{
+  "name": "menu-generator",
+  "version": "4.0.0",
+  "description": "Asistente de cartas de restaurante — genera, ajusta, consulta cartas via herramientas AI en el chat",
+  "author": "Pizzepos Team",
+  "main": "index.js",
+
+  "provides": {
+    "events": ["carta.generada", "menu.generado", "menu.validado", "menu.error"]
+  },
+
+  "events": {
+    "publishes": [
+      {
+        "event": "carta.generada",
+        "description": "Carta generada o actualizada con categorías, productos e ingredientes",
+        "schema": { "$ref": "./schemas/carta-output.json" }
+      },
+      {
+        "event": "menu.generado",
+        "description": "Carta exportada al POS — sincroniza categorias, ingredientes y productos (draft)"
+      },
+      {
+        "event": "menu.validado",
+        "description": "Carta validada — productos sync catalogo"
+      },
+      {
+        "event": "menu.error",
+        "description": "Error en operación sobre carta"
+      }
+    ],
+    "subscribes": [
+      { "event": "project.activated", "handler": "onProjectActivated" },
+      { "event": "project.deactivated", "handler": "onProjectDeactivated" },
+      { "event": "ai.chat.response", "handler": "onAIChatResponse" }
+    ]
+  },
+
+  "ui_handlers": [
+    { "domain": "menu", "action": "generate", "handler": "handleGenerate" },
+    { "domain": "menu", "action": "list", "handler": "handleListCartas" },
+    { "domain": "menu", "action": "get", "handler": "handleGetCarta" },
+    { "domain": "menu", "action": "health", "handler": "handleHealth" },
+    { "domain": "sharp", "action": "prepare-ocr", "handler": "handleSharpPrepareOcr" },
+    { "domain": "pdfjs", "action": "info", "handler": "handlePdfjsInfo" },
+    { "domain": "pdfjs", "action": "render", "handler": "handlePdfjsRender" },
+    { "domain": "google-vision", "action": "extract", "handler": "handleGoogleVisionExtract" },
+    { "domain": "tesseract", "action": "extract", "handler": "handleTesseractExtract" },
+    { "domain": "scribe-ocr", "action": "extract", "handler": "handleScribeOcrExtract" },
+    { "domain": "document-processor", "action": "process", "handler": "handleDocumentProcessorProcess" },
+    { "domain": "menu", "action": "export", "handler": "handleExport" },
+    { "domain": "menu", "action": "enrich", "handler": "handleEnrichProducts" },
+    { "domain": "menu", "action": "set-product-image", "handler": "handleSetProductImage" },
+    { "domain": "menu", "action": "set-category-image", "handler": "handleSetCategoryImage" }
+  ],
+
+  "tools": [
+    {
+      "name": "menu.generate",
+      "description": "Genera una carta estructurada desde texto crudo (OCR, lista de productos, JSON). Devuelve categorías, productos con precios e ingredientes.",
+      "handler": "toolGenerate",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "texto": {
+            "type": "string",
+            "description": "Contenido de la carta: texto OCR, lista de productos, JSON crudo, o cualquier formato"
+          },
+          "nombre": {
+            "type": "string",
+            "description": "Nombre para identificar esta carta (ej: 'Carta Pizzicas', 'Menú Nocturno')"
+          }
+        },
+        "required": ["texto"]
+      }
+    },
+    {
+      "name": "menu.list_cartas",
+      "description": "Lista todas las cartas generadas con resumen (nombre, estado, nº productos, nº categorías, fecha)",
+      "handler": "toolListCartas",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "menu.get_carta",
+      "description": "Obtiene una carta completa por ID con todas sus categorías, productos e ingredientes",
+      "handler": "toolGetCarta",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "carta_id": {
+            "type": "string",
+            "description": "ID de la carta a obtener"
+          }
+        },
+        "required": ["carta_id"]
+      }
+    },
+    {
+      "name": "menu.update_prices",
+      "description": "Actualiza precios de productos de una carta. Puede aplicar porcentaje global, por categoría, o precios individuales.",
+      "handler": "toolUpdatePrices",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "carta_id": {
+            "type": "string",
+            "description": "ID de la carta"
+          },
+          "porcentaje": {
+            "type": "number",
+            "description": "Porcentaje a aplicar a todos los productos (ej: 10 = +10%, -5 = -5%)"
+          },
+          "categoria": {
+            "type": "string",
+            "description": "Si se indica, solo aplica el porcentaje a esta categoría"
+          },
+          "precios": {
+            "type": "object",
+            "description": "Objeto {producto_id: nuevo_precio} para precios individuales"
+          }
+        },
+        "required": ["carta_id"]
+      }
+    },
+    {
+      "name": "menu.add_product",
+      "description": "Añade un producto nuevo a una carta existente",
+      "handler": "toolAddProduct",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "carta_id": {
+            "type": "string",
+            "description": "ID de la carta"
+          },
+          "nombre": {
+            "type": "string",
+            "description": "Nombre del producto"
+          },
+          "categoria": {
+            "type": "string",
+            "description": "ID de la categoría (debe existir en la carta)"
+          },
+          "precio": {
+            "type": "number",
+            "description": "Precio del producto"
+          },
+          "ingredientes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "nombre": { "type": "string" },
+                "emoji": { "type": "string" }
+              },
+              "required": ["nombre"]
+            },
+            "description": "Lista de ingredientes con nombre y emoji"
+          }
+        },
+        "required": ["carta_id", "nombre", "categoria", "precio"]
+      }
+    },
+    {
+      "name": "menu.remove_product",
+      "description": "Elimina un producto de una carta",
+      "handler": "toolRemoveProduct",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "carta_id": {
+            "type": "string",
+            "description": "ID de la carta"
+          },
+          "producto_id": {
+            "type": "string",
+            "description": "ID del producto a eliminar"
+          }
+        },
+        "required": ["carta_id", "producto_id"]
+      }
+    },
+    {
+      "name": "menu.add_category",
+      "description": "Añade una categoría nueva a una carta existente",
+      "handler": "toolAddCategory",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "carta_id": {
+            "type": "string",
+            "description": "ID de la carta"
+          },
+          "nombre": {
+            "type": "string",
+            "description": "Nombre de la categoría"
+          }
+        },
+        "required": ["carta_id", "nombre"]
+      }
+    },
+    {
+      "name": "menu.update_product",
+      "description": "Actualiza datos de un producto existente (nombre, precio, ingredientes, categoría)",
+      "handler": "toolUpdateProduct",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "carta_id": {
+            "type": "string",
+            "description": "ID de la carta"
+          },
+          "producto_id": {
+            "type": "string",
+            "description": "ID del producto a actualizar"
+          },
+          "nombre": {
+            "type": "string",
+            "description": "Nuevo nombre (opcional)"
+          },
+          "precio": {
+            "type": "number",
+            "description": "Nuevo precio (opcional)"
+          },
+          "categoria": {
+            "type": "string",
+            "description": "Nueva categoría (opcional)"
+          },
+          "ingredientes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "nombre": { "type": "string" },
+                "emoji": { "type": "string" }
+              },
+              "required": ["nombre"]
+            },
+            "description": "Nueva lista de ingredientes (reemplaza la existente)"
+          }
+        },
+        "required": ["carta_id", "producto_id"]
+      }
+    },
+    {
+      "name": "menu.update_ingredient_prices",
+      "description": "Actualiza precios extra de ingredientes en una carta. Puede cambiar precios individuales por nombre, poner un precio fijo a todos o por tipo, o aplicar porcentaje. Los cambios se persisten a disco y se propagan al POS en tiempo real. Ejemplos: 'pon todos los extras a 0', 'las carnes a 2€', 'sube un 10% los quesos', 'mozzarella a 1.50'.",
+      "handler": "toolUpdateIngredientPrices",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "carta_id": {
+            "type": "string",
+            "description": "ID de la carta"
+          },
+          "precios": {
+            "type": "object",
+            "description": "Objeto {nombre_ingrediente: nuevo_precio_extra} para precios individuales (ej: {\"Mozzarella\": 2.00, \"Bacon\": 2.50})"
+          },
+          "precio_extra": {
+            "type": "number",
+            "description": "Precio fijo a aplicar a todos los ingredientes, o solo a los del tipo indicado (ej: 0 = gratis, 1.50 = todos a 1.50€)"
+          },
+          "porcentaje": {
+            "type": "number",
+            "description": "Porcentaje a aplicar a todos los precio_extra (ej: 10 = +10%, -5 = -5%)"
+          },
+          "tipo": {
+            "type": "string",
+            "description": "Filtra por tipo de ingrediente: queso, carne, verdura, salsa, marisco, masa, otro. Se combina con precio_extra o porcentaje"
+          }
+        },
+        "required": ["carta_id"]
+      }
+    },
+    {
+      "name": "menu.search_products",
+      "description": "Busca productos en una carta por nombre o ingrediente",
+      "handler": "toolSearchProducts",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "carta_id": {
+            "type": "string",
+            "description": "ID de la carta donde buscar"
+          },
+          "query": {
+            "type": "string",
+            "description": "Texto a buscar en nombres de productos o ingredientes"
+          }
+        },
+        "required": ["carta_id", "query"]
+      }
+    },
+    {
+      "name": "menu.stats",
+      "description": "Obtiene estadísticas de una carta: total productos, por categoría, rango de precios, precio medio",
+      "handler": "toolStats",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "carta_id": {
+            "type": "string",
+            "description": "ID de la carta"
+          }
+        },
+        "required": ["carta_id"]
+      }
+    },
+    {
+      "name": "menu.export_to_pos",
+      "description": "Exporta una carta al sistema POS (pizzepos). Sincroniza categorías, ingredientes y productos via eventos menu.generado + menu.validado. Requiere proyecto activo.",
+      "handler": "toolExportToPOS",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "carta_id": {
+            "type": "string",
+            "description": "ID de la carta a exportar al POS"
+          }
+        },
+        "required": ["carta_id"]
+      }
+    },
+    {
+      "name": "menu.enrich_products",
+      "description": "Enriquece productos de una carta con descripciones atractivas, emojis e ingredientes clasificados usando IA. Los datos se guardan directamente en la carta JSON.",
+      "handler": "toolEnrichProducts",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "carta_id": {
+            "type": "string",
+            "description": "ID de la carta cuyos productos enriquecer"
+          },
+          "producto_ids": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "IDs de productos específicos a enriquecer (opcional, si no se indica se enriquecen todos)"
+          },
+          "idioma": {
+            "type": "string",
+            "description": "Idioma de las descripciones (default: 'es')"
+          }
+        },
+        "required": ["carta_id"]
+      }
+    },
+    {
+      "name": "menu.set_product_image",
+      "description": "Asocia una imagen a un producto de la carta. Acepta ruta de archivo o imagen en base64.",
+      "handler": "toolSetProductImage",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "carta_id": {
+            "type": "string",
+            "description": "ID de la carta"
+          },
+          "producto_id": {
+            "type": "string",
+            "description": "ID del producto"
+          },
+          "imagen": {
+            "type": "string",
+            "description": "Ruta de la imagen (relativa al storage del proyecto o URL externa)"
+          },
+          "imagen_base64": {
+            "type": "string",
+            "description": "Imagen codificada en base64 (alternativa a ruta)"
+          }
+        },
+        "required": ["carta_id", "producto_id"]
+      }
+    },
+    {
+      "name": "menu.set_category_image",
+      "description": "Asocia una imagen o icono a una categoría de la carta.",
+      "handler": "toolSetCategoryImage",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "carta_id": {
+            "type": "string",
+            "description": "ID de la carta"
+          },
+          "categoria_id": {
+            "type": "string",
+            "description": "ID de la categoría"
+          },
+          "imagen": {
+            "type": "string",
+            "description": "Ruta de imagen para la categoría"
+          },
+          "icon": {
+            "type": "string",
+            "description": "Emoji o icono para la categoría"
+          }
+        },
+        "required": ["carta_id", "categoria_id"]
+      }
+    }
+  ],
+
+  "observability": {
+    "metrics": {
+      "counters": [
+        "menu.generate.requested",
+        "menu.generate.completed",
+        "menu.generate.errors",
+        "menu.product.added",
+        "menu.product.removed",
+        "menu.prices.updated",
+        "menu.ingredient_prices.updated",
+        "menu.enrich.requested",
+        "menu.enrich.completed",
+        "menu.product_image.set"
+      ]
+    }
+  }
+}

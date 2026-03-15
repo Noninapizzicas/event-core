@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Chat Session Events",
+  "description": "Event schemas for chat-session module",
+  "definitions": {
+    "session_created": {
+      "type": "object",
+      "properties": {
+        "conversation_id": { "type": "string", "format": "uuid" },
+        "project_id": { "type": "string", "format": "uuid" },
+        "user_id": { "type": ["string", "null"] },
+        "title": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["conversation_id", "project_id", "created_at"]
+    },
+    "session_updated": {
+      "type": "object",
+      "properties": {
+        "conversation_id": { "type": "string", "format": "uuid" },
+        "updated_fields": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "updated_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["conversation_id", "updated_fields", "updated_at"]
+    },
+    "session_deleted": {
+      "type": "object",
+      "properties": {
+        "conversation_id": { "type": "string", "format": "uuid" },
+        "project_id": { "type": "string", "format": "uuid" },
+        "messages_deleted": { "type": "integer" },
+        "deleted_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["conversation_id", "project_id", "deleted_at"]
+    },
+    "session_message_saved": {
+      "type": "object",
+      "properties": {
+        "message_id": { "type": "string", "format": "uuid" },
+        "conversation_id": { "type": "string", "format": "uuid" },
+        "project_id": { "type": "string", "format": "uuid" },
+        "role": { "type": "string", "enum": ["user", "assistant", "system"] },
+        "saved_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["message_id", "conversation_id", "role", "saved_at"]
+    }
+  }
+}

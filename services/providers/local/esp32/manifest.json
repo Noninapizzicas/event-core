@@ -1,0 +1,70 @@
+{
+  "$schema": "provider-manifest-v1",
+  "name": "local.esp32",
+  "version": "1.0.0",
+  "description": "Comunicación con dispositivos ESP32 via MQTT — comandos, sensores, OTA",
+  "type": "local",
+  "requires": {
+    "npm": [],
+    "credentials": []
+  },
+  "functions": {
+    "send-command": {
+      "event": "local.esp32.send-command.request",
+      "description": "Envía un comando a un dispositivo ESP32 via MQTT",
+      "input": {
+        "deviceId": { "type": "string", "required": true, "description": "ID del dispositivo ESP32" },
+        "command": { "type": "string", "required": true, "description": "Comando a enviar" },
+        "params": { "type": "object", "required": false, "description": "Parámetros adicionales del comando" }
+      },
+      "output": {
+        "sent": { "type": "boolean", "description": "Si el comando fue enviado" },
+        "topic": { "type": "string", "description": "Topic MQTT utilizado" }
+      }
+    },
+    "read-sensor": {
+      "event": "local.esp32.read-sensor.request",
+      "description": "Lee datos de sensores de un dispositivo ESP32",
+      "input": {
+        "deviceId": { "type": "string", "required": true, "description": "ID del dispositivo ESP32" },
+        "sensor": { "type": "string", "required": false, "description": "Sensor específico a leer" }
+      },
+      "output": {
+        "deviceId": { "type": "string", "description": "ID del dispositivo" },
+        "readings": { "type": "object", "description": "Lecturas de sensores" }
+      }
+    },
+    "ota-update": {
+      "event": "local.esp32.ota-update.request",
+      "description": "Envía actualización OTA a un dispositivo ESP32",
+      "input": {
+        "deviceId": { "type": "string", "required": true, "description": "ID del dispositivo ESP32" },
+        "firmware_url": { "type": "string", "required": true, "description": "URL del firmware a instalar" },
+        "version": { "type": "string", "required": false, "description": "Versión del firmware" }
+      },
+      "output": {
+        "sent": { "type": "boolean", "description": "Si la actualización fue enviada" }
+      }
+    },
+    "list-devices": {
+      "event": "local.esp32.list-devices.request",
+      "description": "Lista todos los dispositivos ESP32 registrados",
+      "input": {},
+      "output": {
+        "devices": { "type": "array", "description": "Lista de dispositivos ESP32" },
+        "total": { "type": "number", "description": "Total de dispositivos" }
+      }
+    },
+    "status": {
+      "event": "local.esp32.status.request",
+      "description": "Consulta el estado de un dispositivo ESP32",
+      "input": {
+        "deviceId": { "type": "string", "required": true, "description": "ID del dispositivo ESP32" }
+      },
+      "output": {
+        "online": { "type": "boolean", "description": "Si el dispositivo está en línea" },
+        "info": { "type": "object", "description": "Información del dispositivo" }
+      }
+    }
+  }
+}

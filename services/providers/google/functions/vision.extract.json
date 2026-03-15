@@ -1,0 +1,49 @@
+{
+  "name": "vision.extract",
+  "description": "OCR - Extraer texto de imagen usando Google Vision API",
+  "event": "google.vision.extract.request",
+  "method": "POST",
+  "base_url": "https://vision.googleapis.com/v1",
+  "endpoint": "/images:annotate",
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "input": {
+    "image": {
+      "type": "string",
+      "description": "Imagen en base64",
+      "required": true
+    },
+    "hint": {
+      "type": "string",
+      "enum": ["TEXT_DETECTION", "DOCUMENT_TEXT_DETECTION", "HANDWRITING"],
+      "description": "Tipo de deteccion OCR",
+      "default": "TEXT_DETECTION"
+    }
+  },
+  "request_template": {
+    "requests": [
+      {
+        "image": {
+          "content": "{{image}}"
+        },
+        "features": [
+          {
+            "type": "{{hint}}"
+          }
+        ]
+      }
+    ]
+  },
+  "output": {
+    "text": {
+      "type": "string",
+      "description": "Texto extraido"
+    },
+    "confidence": {
+      "type": "number",
+      "description": "Confianza de la extraccion (0-1)"
+    }
+  },
+  "response_path": "responses[0].fullTextAnnotation.text"
+}

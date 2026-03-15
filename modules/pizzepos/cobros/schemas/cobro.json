@@ -1,0 +1,94 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://pizzepos.com/schemas/cobro.json",
+  "title": "Cobro Schema",
+  "description": "Esquemas de datos para cobros",
+
+  "definitions": {
+    "cobro": {
+      "type": "object",
+      "required": ["id", "cuenta_id", "monto", "metodo_pago", "estado", "created_at"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^cobro_[a-z0-9]+$"},
+        "cuenta_id": {"type": "string"},
+        "pedido_ids": {"type": "array", "items": {"type": "string"}},
+        "monto": {"type": "number", "minimum": 0},
+        "metodo_pago": {"type": "string", "enum": ["efectivo", "tarjeta", "bizum", "transferencia", "mixto", "link_pago", "qr"]},
+        "estado": {"type": "string", "enum": ["pendiente", "procesando", "completado", "fallido", "reembolsado"]},
+        "propina": {"type": "number", "minimum": 0},
+        "monto_total": {"type": "number", "minimum": 0},
+        "cambio": {"type": "number"},
+        "referencia_pago": {"type": "string"},
+        "completado_at": {"type": "string", "format": "date-time"},
+        "created_at": {"type": "string", "format": "date-time"},
+        "desglose": {
+          "type": "array",
+          "description": "Para método mixto: desglose de pagos por método",
+          "items": {
+            "type": "object",
+            "required": ["metodo", "monto"],
+            "properties": {
+              "metodo": {"type": "string", "enum": ["efectivo", "tarjeta", "bizum", "transferencia"]},
+              "monto": {"type": "number", "minimum": 0.01},
+              "referencia": {"type": "string"}
+            }
+          }
+        },
+        "link_url": {
+          "type": "string",
+          "description": "Para método link_pago: URL del link de pago generado",
+          "format": "uri"
+        },
+        "expira_en": {
+          "type": "string",
+          "description": "Para método link_pago/qr: Fecha de expiración del link/QR",
+          "format": "date-time"
+        },
+        "estado_externo": {
+          "type": "string",
+          "description": "Para métodos link_pago/qr: Estado del pago en sistema externo",
+          "enum": ["pendiente", "procesando", "completado", "expirado", "cancelado"]
+        },
+        "referencia_externa": {
+          "type": "string",
+          "description": "Para métodos link_pago/qr: ID de transacción en sistema externo"
+        },
+        "qr_data": {
+          "type": "string",
+          "description": "Para método qr: Datos codificados en el QR"
+        },
+        "qr_url": {
+          "type": "string",
+          "description": "Para método qr: URL de la imagen del QR generado"
+        }
+      }
+    },
+
+    "iniciar_cobro_request": {
+      "type": "object",
+      "required": ["cuenta_id", "monto", "metodo_pago"],
+      "properties": {
+        "cuenta_id": {"type": "string"},
+        "pedido_ids": {"type": "array"},
+        "monto": {"type": "number", "minimum": 0.01},
+        "metodo_pago": {"type": "string"},
+        "propina": {"type": "number", "minimum": 0},
+        "monto_recibido": {"type": "number"},
+        "desglose": {
+          "type": "array",
+          "description": "Para método mixto: desglose de pagos",
+          "items": {
+            "type": "object",
+            "required": ["metodo", "monto"],
+            "properties": {
+              "metodo": {"type": "string"},
+              "monto": {"type": "number", "minimum": 0.01},
+              "monto_recibido": {"type": "number"},
+              "referencia": {"type": "string"}
+            }
+          }
+        }
+      }
+    }
+  }
+}

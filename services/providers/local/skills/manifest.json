@@ -1,0 +1,112 @@
+{
+  "$schema": "../../../schemas/provider-manifest.schema.json",
+  "name": "local.skills",
+  "version": "1.0.0",
+  "description": "Generador automatizado de servicios locales con documentación en contexto",
+  "type": "provider",
+  "requires": {
+    "credentials": [],
+    "npm": []
+  },
+  "functions": {
+    "generate": {
+      "event": "local.skills.generate.request",
+      "description": "Genera un nuevo servicio local completo (index.js + manifest.json + contexto)",
+      "input": {
+        "name": {
+          "type": "string",
+          "description": "Nombre del servicio en kebab-case",
+          "required": true
+        },
+        "description": {
+          "type": "string",
+          "description": "Descripción del servicio",
+          "required": true
+        },
+        "functions": {
+          "type": "array",
+          "description": "Array de funciones con params y output",
+          "required": true
+        },
+        "npmDependency": {
+          "type": "string",
+          "description": "Dependencia npm si requiere"
+        },
+        "hasFileInput": {
+          "type": "boolean",
+          "description": "Si acepta archivos/base64 como input",
+          "default": false
+        }
+      },
+      "output": {
+        "created": { "type": "boolean", "description": "Si se creó correctamente" },
+        "path": { "type": "string", "description": "Ruta del provider creado" },
+        "files": { "type": "array", "description": "Archivos generados" },
+        "events": { "type": "array", "description": "Eventos registrados" },
+        "catalogUpdated": { "type": "boolean", "description": "Si se actualizó el catálogo" }
+      }
+    },
+    "list": {
+      "event": "local.skills.list.request",
+      "description": "Lista todos los servicios locales disponibles con sus funciones",
+      "input": {},
+      "output": {
+        "skills": { "type": "array", "description": "Array de servicios" },
+        "count": { "type": "number", "description": "Total de servicios" }
+      }
+    },
+    "get": {
+      "event": "local.skills.get.request",
+      "description": "Obtiene detalles completos de un servicio local",
+      "input": {
+        "name": {
+          "type": "string",
+          "description": "Nombre del servicio (sin prefijo local.)",
+          "required": true
+        }
+      },
+      "output": {
+        "skill": { "type": "object", "description": "Definición completa del servicio" },
+        "files": { "type": "array", "description": "Archivos del servicio" },
+        "hasManifest": { "type": "boolean", "description": "Si tiene manifest.json" }
+      }
+    },
+    "remove": {
+      "event": "local.skills.remove.request",
+      "description": "Elimina un servicio local y su documentación",
+      "input": {
+        "name": {
+          "type": "string",
+          "description": "Nombre del servicio a eliminar",
+          "required": true
+        }
+      },
+      "output": {
+        "removed": { "type": "boolean", "description": "Si se eliminó correctamente" },
+        "filesRemoved": { "type": "array", "description": "Archivos eliminados" },
+        "catalogUpdated": { "type": "boolean", "description": "Si se actualizó el catálogo" }
+      }
+    },
+    "validate": {
+      "event": "local.skills.validate.request",
+      "description": "Valida una definición de skill antes de generarlo",
+      "input": {
+        "name": {
+          "type": "string",
+          "description": "Nombre del servicio",
+          "required": true
+        },
+        "functions": {
+          "type": "array",
+          "description": "Array de funciones a validar",
+          "required": true
+        }
+      },
+      "output": {
+        "valid": { "type": "boolean", "description": "Si la definición es válida" },
+        "errors": { "type": "array", "description": "Errores encontrados" },
+        "warnings": { "type": "array", "description": "Advertencias" }
+      }
+    }
+  }
+}

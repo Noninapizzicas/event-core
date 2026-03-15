@@ -1,0 +1,628 @@
+{
+  "name": "credential-manager",
+  "version": "2.1.0",
+  "description": "Multi-level credential management with .env storage (GLOBAL/PROJECT/CLIENT/CUSTOM)",
+  "author": "Aichat Team",
+  "main": "index.js",
+
+  "provides": {
+    "events": [
+      "credential.saved",
+      "credential.updated",
+      "credential.deleted",
+      "credential.resolved",
+      "credential.resolve.failed"
+    ],
+    "queries": [
+      "credential.resolve.request"
+    ]
+  },
+
+  "tools": [
+    {
+      "name": "credential.list",
+      "description": "Lista nombres de credenciales disponibles por proveedor y nivel. IMPORTANTE: Solo retorna metadata (provider, level, identifier), NUNCA valores de API keys.",
+      "handler": "handleToolCredentialList",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "type": "string",
+            "enum": ["GLOBAL", "PROJECT", "CLIENT", "CUSTOM"],
+            "description": "Filtrar por nivel de credencial (opcional)"
+          },
+          "provider": {
+            "type": "string",
+            "enum": ["OPENAI", "DEEPSEEK", "ANTHROPIC", "GROQ", "GEMINI", "OLLAMA", "GOOGLE", "GMAIL", "GLOVO", "CLOUDFLARE"],
+            "description": "Filtrar por proveedor (opcional)"
+          }
+        },
+        "required": []
+      }
+    }
+  ],
+
+  "events": {
+    "publishes": [
+      {
+        "event": "credential.saved",
+        "description": "Credential saved or created",
+        "schema": { "$ref": "./schemas/events.json#/definitions/credential_saved" }
+      },
+      {
+        "event": "credential.updated",
+        "description": "Credential value updated",
+        "schema": { "$ref": "./schemas/events.json#/definitions/credential_updated" }
+      },
+      {
+        "event": "credential.deleted",
+        "description": "Credential removed",
+        "schema": { "$ref": "./schemas/events.json#/definitions/credential_deleted" }
+      },
+      {
+        "event": "credential.resolved",
+        "description": "Credential successfully resolved",
+        "schema": { "$ref": "./schemas/events.json#/definitions/credential_resolved" }
+      },
+      {
+        "event": "credential.resolve.failed",
+        "description": "Credential resolution failed",
+        "schema": { "$ref": "./schemas/events.json#/definitions/credential_resolve_failed" }
+      },
+      {
+        "event": "credential.resolve.response",
+        "description": "Response to credential resolve request",
+        "schema": { "$ref": "./schemas/events.json#/definitions/credential_resolve_response" }
+      },
+      {
+        "event": "credential/state",
+        "description": "Full UI state with providers, levels, and grouped credentials"
+      }
+    ],
+    "subscribes": [
+      {
+        "event": "credential.resolve.request",
+        "description": "Handle credential resolution requests from other modules",
+        "handler": "onResolveRequest"
+      },
+      {
+        "event": "credential/state/request",
+        "description": "Frontend requests current state via MQTT",
+        "handler": "onStateRequest"
+      },
+      {
+        "event": "credential/create",
+        "description": "Frontend creates a new credential via MQTT",
+        "handler": "onCreateCredential"
+      },
+      {
+        "event": "credential/update",
+        "description": "Frontend updates a credential via MQTT",
+        "handler": "onUpdateCredential"
+      },
+      {
+        "event": "credential/delete",
+        "description": "Frontend deletes a credential via MQTT",
+        "handler": "onDeleteCredential"
+      },
+      {
+        "event": "credential.oauth.resolve.request",
+        "description": "OAuth credential resolution for Gmail and other OAuth providers",
+        "handler": "onOAuthResolveRequest"
+      }
+    ]
+  },
+
+  "ui_handlers": [
+    { "domain": "credential", "action": "list", "handler": "handleUIList" },
+    { "domain": "credential", "action": "get", "handler": "handleUIGet" },
+    { "domain": "credential", "action": "create", "handler": "handleUICreate" },
+    { "domain": "credential", "action": "update", "handler": "handleUIUpdate" },
+    { "domain": "credential", "action": "delete", "handler": "handleUIDelete" },
+    { "domain": "credential", "action": "test", "handler": "handleUITest" },
+    { "domain": "credential", "action": "oauth.start", "handler": "handleUIOAuthStart" },
+    { "domain": "credential", "action": "oauth.status", "handler": "handleUIOAuthStatus" },
+    { "domain": "credential", "action": "oauth.config.list", "handler": "handleUIOAuthConfigList" },
+    { "domain": "credential", "action": "oauth.config.save", "handler": "handleUIOAuthConfigSave" },
+    { "domain": "credential", "action": "oauth.config.delete", "handler": "handleUIOAuthConfigDelete" },
+    { "domain": "credential", "action": "glovo.save", "handler": "handleUIGlovoSave" },
+    { "domain": "credential", "action": "glovo.delete", "handler": "handleUIGlovoDelete" },
+    { "domain": "credential", "action": "telegram.notif.save", "handler": "handleUITelegramNotifSave" },
+    { "domain": "credential", "action": "telegram.notif.delete", "handler": "handleUITelegramNotifDelete" }
+  ],
+
+  "ui": {
+    "enabled": true,
+    "version": "2.0",
+    "title": "Credential Manager",
+    "icon": "🔐",
+    "description": "Gestión simple de credenciales para proveedores de IA",
+
+    "views": {
+      "main": {
+        "type": "dashboard",
+        "permissions": ["admin", "gerente"],
+
+        "layout": {
+          "type": "two-column",
+          "config": {
+            "leftWidth": "70%",
+            "rightWidth": "30%",
+            "gap": "var(--space-lg)"
+          }
+        },
+
+        "sections": [
+          {
+            "id": "stats_total",
+            "widget": "stat-card",
+            "config": {
+              "label": "Total Credenciales",
+              "value": "@compute.count(@data.credentials)",
+              "icon": "🔑",
+              "color": "primary"
+            }
+          },
+          {
+            "id": "stats_global",
+            "widget": "stat-card",
+            "config": {
+              "label": "GLOBAL",
+              "value": "@compute.count(@compute.filter(@data.credentials, 'level', 'GLOBAL'))",
+              "icon": "🌐",
+              "color": "success"
+            }
+          },
+          {
+            "id": "stats_project",
+            "widget": "stat-card",
+            "config": {
+              "label": "PROJECT",
+              "value": "@compute.count(@compute.filter(@data.credentials, 'level', 'PROJECT'))",
+              "icon": "📁",
+              "color": "info"
+            }
+          },
+          {
+            "id": "credentials_table",
+            "widget": "table-advanced",
+            "config": {
+              "title": "🔐 Credenciales Configuradas",
+              "dataSource": "@data.credentials",
+              "columns": [
+                {
+                  "key": "key",
+                  "label": "Key",
+                  "type": "text",
+                  "width": "25%"
+                },
+                {
+                  "key": "provider",
+                  "label": "Provider",
+                  "type": "badge",
+                  "width": "20%",
+                  "badgeColors": {
+                    "OPENAI": "primary",
+                    "DEEPSEEK": "info",
+                    "ANTHROPIC": "success",
+                    "OLLAMA": "warning",
+                    "GMAIL": "danger",
+                    "CLOUDFLARE": "info"
+                  }
+                },
+                {
+                  "key": "level",
+                  "label": "Level",
+                  "type": "badge",
+                  "width": "15%",
+                  "badgeColors": {
+                    "GLOBAL": "success",
+                    "PROJECT": "info",
+                    "CLIENT": "warning",
+                    "CUSTOM": "danger"
+                  }
+                },
+                {
+                  "key": "api_key_preview",
+                  "label": "Preview",
+                  "type": "text",
+                  "width": "20%"
+                },
+                {
+                  "key": "identifier",
+                  "label": "Identifier",
+                  "type": "text",
+                  "width": "20%"
+                }
+              ],
+              "sortable": true,
+              "filterable": true,
+              "paginated": true,
+              "pageSize": 10,
+              "actions": [
+                {
+                  "label": "Editar",
+                  "icon": "✏️",
+                  "action": "edit",
+                  "permissions": ["admin"],
+                  "endpoint": "/modules/credential-manager/credentials/{{key}}"
+                },
+                {
+                  "label": "Eliminar",
+                  "icon": "🗑️",
+                  "action": "delete",
+                  "permissions": ["admin"],
+                  "endpoint": "/modules/credential-manager/credentials/{{key}}",
+                  "confirm": true,
+                  "confirmMessage": "¿Eliminar credencial {{key}}?"
+                }
+              ]
+            }
+          },
+          {
+            "id": "cascade_info",
+            "widget": "card",
+            "config": {
+              "title": "🔄 Cascada de Resolución",
+              "content": {
+                "type": "markdown",
+                "text": "El sistema busca credenciales en orden de prioridad:\n\n1. **CUSTOM** (🔴 Prioridad 1) - Específico personalizado\n2. **CLIENT** (🟡 Prioridad 2) - Por cliente\n3. **PROJECT** (🔵 Prioridad 3) - Por proyecto\n4. **GLOBAL** (🟢 Prioridad 4) - Fallback general"
+              }
+            }
+          },
+          {
+            "id": "providers_panel",
+            "widget": "card",
+            "config": {
+              "title": "🔌 Proveedores",
+              "content": {
+                "type": "info",
+                "items": [
+                  {
+                    "label": "OpenAI",
+                    "value": "GPT-4, GPT-3.5",
+                    "icon": "🤖"
+                  },
+                  {
+                    "label": "DeepSeek",
+                    "value": "DeepSeek Chat",
+                    "icon": "🔮"
+                  },
+                  {
+                    "label": "Anthropic",
+                    "value": "Claude",
+                    "icon": "🧠"
+                  },
+                  {
+                    "label": "Ollama",
+                    "value": "Local Models",
+                    "icon": "🦙"
+                  },
+                  {
+                    "label": "Gmail",
+                    "value": "OAuth2 (3 keys)",
+                    "icon": "📧"
+                  },
+                  {
+                    "label": "Cloudflare",
+                    "value": "Workers, Pages",
+                    "icon": "☁️"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+
+      "create": {
+        "type": "form",
+        "permissions": ["admin"],
+        "config": {
+          "title": "Nueva Credencial",
+          "endpoint": "/modules/credential-manager/credentials",
+          "method": "POST",
+          "validation": true,
+          "fields": [
+            {
+              "name": "provider",
+              "label": "Proveedor",
+              "type": "select",
+              "required": true,
+              "options": [
+                { "value": "OPENAI", "label": "🤖 OpenAI" },
+                { "value": "DEEPSEEK", "label": "🔮 DeepSeek" },
+                { "value": "ANTHROPIC", "label": "🧠 Anthropic" },
+                { "value": "OLLAMA", "label": "🦙 Ollama" },
+                { "value": "GOOGLE", "label": "☁️ Google Cloud" },
+                { "value": "GMAIL", "label": "📧 Gmail (OAuth2)" },
+                { "value": "CLOUDFLARE", "label": "☁️ Cloudflare" }
+              ]
+            },
+            {
+              "name": "level",
+              "label": "Nivel",
+              "type": "select",
+              "required": true,
+              "options": [
+                { "value": "GLOBAL", "label": "🌐 GLOBAL" },
+                { "value": "PROJECT", "label": "📁 PROJECT" },
+                { "value": "CLIENT", "label": "👤 CLIENT" },
+                { "value": "CUSTOM", "label": "⚙️ CUSTOM" }
+              ]
+            },
+            {
+              "name": "identifier",
+              "label": "Identificador (opcional)",
+              "type": "text",
+              "required": false,
+              "placeholder": "proyecto-1 o cliente-xyz"
+            },
+            {
+              "name": "api_key",
+              "label": "API Key",
+              "type": "password",
+              "required": true,
+              "placeholder": "sk-..."
+            }
+          ],
+          "onSuccess": {
+            "message": "Credencial guardada correctamente",
+            "redirect": "/ui/modules/credential-manager"
+          }
+        }
+      },
+
+      "oauth": {
+        "type": "form",
+        "permissions": ["admin"],
+        "config": {
+          "title": "Autorizar OAuth2 (Gmail/Google)",
+          "description": "Autoriza acceso a servicios de Google que requieren OAuth2 (Gmail, Calendar, Drive)",
+          "mqttAction": "credential.oauth.start",
+          "validation": true,
+          "fields": [
+            {
+              "name": "provider",
+              "label": "Servicio",
+              "type": "select",
+              "required": true,
+              "options": [
+                { "value": "GMAIL", "label": "📧 Gmail" },
+                { "value": "GOOGLE", "label": "☁️ Google (Calendar, Drive, Sheets)" }
+              ]
+            },
+            {
+              "name": "level",
+              "label": "Nivel",
+              "type": "select",
+              "required": true,
+              "options": [
+                { "value": "GLOBAL", "label": "🌐 GLOBAL" },
+                { "value": "PROJECT", "label": "📁 PROJECT" },
+                { "value": "CLIENT", "label": "👤 CLIENT" },
+                { "value": "CUSTOM", "label": "⚙️ CUSTOM" }
+              ]
+            },
+            {
+              "name": "identifier",
+              "label": "Identificador",
+              "type": "text",
+              "required": false,
+              "placeholder": "empresa-xyz, proyecto-1",
+              "hint": "Requerido para PROJECT, CLIENT y CUSTOM"
+            },
+            {
+              "name": "scopes",
+              "label": "Permisos",
+              "type": "multiselect",
+              "required": false,
+              "default": ["gmail"],
+              "options": [
+                { "value": "gmail", "label": "📧 Gmail (enviar, leer, modificar)" },
+                { "value": "drive", "label": "📁 Drive (archivos)" },
+                { "value": "calendar", "label": "📅 Calendar" },
+                { "value": "sheets", "label": "📊 Sheets" }
+              ]
+            }
+          ],
+          "submitButton": {
+            "label": "Iniciar Autorización",
+            "icon": "🔐"
+          },
+          "onSubmit": {
+            "type": "oauth_popup",
+            "description": "Abre popup con URL de autorización de Google"
+          },
+          "onSuccess": {
+            "message": "Autorización completada. La credencial ha sido guardada.",
+            "redirect": "/ui/modules/credential-manager"
+          }
+        }
+      }
+    },
+
+    "mqtt": {
+      "enabled": true,
+      "topics": [
+        "credential.saved",
+        "credential.updated",
+        "credential.deleted"
+      ],
+      "auto_refresh": true
+    }
+  },
+
+  "schema": {
+    "id": {
+      "type": "string",
+      "label": "ID",
+      "format": "hidden"
+    },
+    "key": {
+      "type": "string",
+      "label": "Credential Key",
+      "required": false
+    },
+    "provider": {
+      "type": "enum",
+      "label": "Provider",
+      "enum": ["OPENAI", "ANTHROPIC", "DEEPSEEK", "GROQ", "GEMINI", "OLLAMA", "GMAIL", "CLOUDFLARE", "CUSTOM"],
+      "required": true
+    },
+    "level": {
+      "type": "enum",
+      "label": "Level",
+      "enum": ["GLOBAL", "PROJECT", "CLIENT", "CUSTOM"],
+      "required": true
+    },
+    "identifier": {
+      "type": "string",
+      "label": "Identifier",
+      "required": false
+    },
+    "api_key": {
+      "type": "string",
+      "label": "API Key",
+      "format": "password",
+      "required": true
+    },
+    "api_key_preview": {
+      "type": "string",
+      "label": "API Key Preview",
+      "required": false
+    },
+    "created": {
+      "type": "boolean",
+      "label": "Created"
+    },
+    "updated": {
+      "type": "boolean",
+      "label": "Updated"
+    }
+  },
+
+  "apis": [
+    {
+      "method": "POST",
+      "path": "/credentials",
+      "handler": "handleSaveCredential",
+      "description": "Save credential (publishes credential.saved)",
+      "request_schema": { "$ref": "./schemas/credential.json#/definitions/save_request" },
+      "response_schema": { "$ref": "./schemas/credential.json#/definitions/save_response" }
+    },
+    {
+      "method": "GET",
+      "path": "/credentials/resolve",
+      "handler": "handleResolveCredential",
+      "description": "Resolve credential by cascade (publishes credential.resolved)",
+      "response_schema": { "$ref": "./schemas/credential.json#/definitions/resolve_response" }
+    },
+    {
+      "method": "GET",
+      "path": "/credentials",
+      "handler": "handleListCredentials",
+      "description": "List credentials (masked)",
+      "response_schema": { "$ref": "./schemas/credential.json#/definitions/list_response" }
+    },
+    {
+      "method": "PUT",
+      "path": "/credentials/:key",
+      "handler": "handleUpdateCredential",
+      "description": "Update credential (publishes credential.updated)",
+      "request_schema": { "$ref": "./schemas/credential.json#/definitions/update_request" },
+      "response_schema": { "$ref": "./schemas/credential.json#/definitions/update_response" }
+    },
+    {
+      "method": "DELETE",
+      "path": "/credentials/:key",
+      "handler": "handleDeleteCredential",
+      "description": "Delete credential (publishes credential.deleted)",
+      "response_schema": { "$ref": "./schemas/credential.json#/definitions/delete_response" }
+    },
+    {
+      "method": "GET",
+      "path": "/credentials/levels",
+      "handler": "handleGetLevels",
+      "description": "Get available credential levels"
+    },
+    {
+      "method": "POST",
+      "path": "/ui/test",
+      "handler": "handleTestCredential",
+      "description": "Test if an API key is valid before saving"
+    },
+    {
+      "method": "GET",
+      "path": "/health",
+      "handler": "handleHealthCheck",
+      "description": "Health check endpoint"
+    },
+    {
+      "method": "GET",
+      "path": "/metrics",
+      "handler": "handleGetMetrics",
+      "description": "Module metrics"
+    },
+    {
+      "method": "GET",
+      "path": "/oauth/callback",
+      "handler": "handleOAuthCallback",
+      "description": "OAuth2 callback endpoint for Google authorization"
+    }
+  ],
+
+  "observability": {
+    "logging": {
+      "level": "info",
+      "structured": true,
+      "correlation_id": true
+    },
+    "metrics": {
+      "enabled": true,
+      "counters": [
+        "credential.saved.total",
+        "credential.updated.total",
+        "credential.deleted.total",
+        "credential.resolved.total",
+        "credential.resolve.failed.total",
+        "credential.errors.total"
+      ],
+      "gauges": [
+        "credential.count.total",
+        "credential.count.by_level"
+      ],
+      "timings": [
+        "credential.resolve.duration",
+        "credential.save.duration"
+      ]
+    }
+  },
+
+  "config": {
+    "envFile": ".env",
+    "maskLength": 4,
+    "levels": {
+      "CUSTOM": {
+        "priority": 1,
+        "requiresIdentifier": true,
+        "description": "Highest priority - custom specific credentials"
+      },
+      "CLIENT": {
+        "priority": 2,
+        "requiresIdentifier": true,
+        "description": "Client-specific credentials"
+      },
+      "PROJECT": {
+        "priority": 3,
+        "requiresIdentifier": true,
+        "description": "Project-specific credentials"
+      },
+      "GLOBAL": {
+        "priority": 4,
+        "requiresIdentifier": false,
+        "description": "Global fallback credentials"
+      }
+    }
+  }
+}

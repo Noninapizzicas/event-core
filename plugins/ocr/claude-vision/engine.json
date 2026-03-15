@@ -1,0 +1,67 @@
+{
+  "name": "claude-vision",
+  "type": "ocr-engine",
+  "version": "1.0.0",
+  "description": "Anthropic Claude Vision OCR (usa modelo multimodal)",
+
+  "local": false,
+
+  "provider": "ANTHROPIC",
+  "credentialKey": "ANTHROPIC_API_KEY",
+
+  "capabilities": ["image", "handwriting", "document", "context"],
+  "supportedFormats": ["jpg", "png", "gif", "webp"],
+  "maxFileSize": 5242880,
+
+  "priority": 3,
+
+  "request": {
+    "method": "POST",
+    "url": "https://api.anthropic.com/v1/messages",
+    "headers": {
+      "Content-Type": "application/json",
+      "x-api-key": "{{credential}}",
+      "anthropic-version": "2023-06-01"
+    },
+    "body": {
+      "model": "claude-3-haiku-20240307",
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "image",
+              "source": {
+                "type": "base64",
+                "media_type": "image/jpeg",
+                "data": "{{input_base64}}"
+              }
+            },
+            {
+              "type": "text",
+              "text": "Extract all text from this image. Return ONLY the extracted text, nothing else. Preserve the original formatting and structure as much as possible."
+            }
+          ]
+        }
+      ]
+    }
+  },
+
+  "response": {
+    "textPath": "content[0].text",
+    "confidencePath": null
+  },
+
+  "config": {
+    "timeout": 60000,
+    "retries": 1,
+    "model": "claude-3-haiku-20240307"
+  },
+
+  "pricing": {
+    "currency": "USD",
+    "inputPer1M": 0.25,
+    "outputPer1M": 1.25
+  }
+}

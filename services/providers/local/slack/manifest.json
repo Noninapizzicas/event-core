@@ -1,0 +1,73 @@
+{
+  "$schema": "provider-manifest-v1",
+  "name": "local.slack",
+  "version": "1.0.0",
+  "description": "Integración Slack Bot API — mensajes, canales, archivos",
+  "type": "local",
+  "requires": {
+    "npm": [],
+    "credentials": ["SLACK_BOT_TOKEN"]
+  },
+  "functions": {
+    "send": {
+      "event": "local.slack.send.request",
+      "description": "Envía un mensaje a un canal o usuario de Slack",
+      "input": {
+        "channel": { "type": "string", "required": true, "description": "ID del canal o usuario" },
+        "text": { "type": "string", "required": true, "description": "Texto del mensaje" },
+        "blocks": { "type": "array", "required": false, "description": "Blocks de Slack (rich formatting, opcional)" },
+        "thread_ts": { "type": "string", "required": false, "description": "Timestamp del mensaje padre (para threads)" }
+      },
+      "output": {
+        "ts": { "type": "string", "description": "Timestamp del mensaje enviado" }
+      }
+    },
+    "list-channels": {
+      "event": "local.slack.list-channels.request",
+      "description": "Lista canales del workspace",
+      "input": {
+        "types": { "type": "string", "required": false, "description": "public_channel,private_channel (default: public_channel)" },
+        "limit": { "type": "number", "required": false, "description": "Máximo resultados (default: 100)" }
+      },
+      "output": {
+        "channels": { "type": "array", "description": "Lista de canales" }
+      }
+    },
+    "history": {
+      "event": "local.slack.history.request",
+      "description": "Obtiene historial de mensajes de un canal",
+      "input": {
+        "channel": { "type": "string", "required": true, "description": "ID del canal" },
+        "limit": { "type": "number", "required": false, "description": "Máximo mensajes (default: 20)" }
+      },
+      "output": {
+        "messages": { "type": "array", "description": "Mensajes del canal" }
+      }
+    },
+    "upload": {
+      "event": "local.slack.upload.request",
+      "description": "Sube un archivo a un canal",
+      "input": {
+        "channel": { "type": "string", "required": true, "description": "ID del canal" },
+        "content": { "type": "string", "required": true, "description": "Contenido del archivo (texto)" },
+        "filename": { "type": "string", "required": true, "description": "Nombre del archivo" },
+        "title": { "type": "string", "required": false, "description": "Título (opcional)" }
+      },
+      "output": {
+        "file_id": { "type": "string", "description": "ID del archivo subido" }
+      }
+    },
+    "react": {
+      "event": "local.slack.react.request",
+      "description": "Añade una reacción emoji a un mensaje",
+      "input": {
+        "channel": { "type": "string", "required": true, "description": "ID del canal" },
+        "timestamp": { "type": "string", "required": true, "description": "Timestamp del mensaje" },
+        "name": { "type": "string", "required": true, "description": "Nombre del emoji (sin :)" }
+      },
+      "output": {
+        "added": { "type": "boolean", "description": "Si se añadió" }
+      }
+    }
+  }
+}

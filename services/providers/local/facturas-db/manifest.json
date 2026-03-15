@@ -1,0 +1,186 @@
+{
+  "$schema": "../../../schemas/provider-manifest.schema.json",
+  "name": "local.facturas-db",
+  "version": "2.0.0",
+  "description": "Gestión de facturas usando database-manager del sistema",
+  "type": "provider",
+  "requires": {
+    "credentials": [],
+    "npm": [
+      "crypto"
+    ]
+  },
+  "functions": {
+    "init": {
+      "event": "local.facturas-db.init.request",
+      "description": "Inicializar schema de facturas en un proyecto",
+      "input": {
+        "proyecto": {
+          "type": "string",
+          "required": true,
+          "description": "ID del proyecto"
+        }
+      },
+      "output": {}
+    },
+    "registrar": {
+      "event": "local.facturas-db.registrar.request",
+      "description": "Registrar nueva factura en la base de datos",
+      "input": {
+        "proyecto": {
+          "type": "string",
+          "required": true,
+          "description": "ID del proyecto"
+        },
+        "nombre_archivo": {
+          "type": "string",
+          "required": true
+        },
+        "source": {
+          "type": "string",
+          "required": true,
+          "enum": [
+            "telegram",
+            "gmail"
+          ]
+        },
+        "path_original": {
+          "type": "string",
+          "required": true
+        },
+        "origen": {
+          "type": "object",
+          "description": "Metadata del origen (bot, email, etc.)"
+        }
+      },
+      "output": {}
+    },
+    "actualizar": {
+      "event": "local.facturas-db.actualizar.request",
+      "description": "Actualizar factura existente",
+      "input": {
+        "proyecto": {
+          "type": "string",
+          "required": true
+        },
+        "id": {
+          "type": "string",
+          "required": true
+        },
+        "campos": {
+          "type": "object",
+          "required": true,
+          "description": "Campos a actualizar"
+        }
+      },
+      "output": {}
+    },
+    "listar": {
+      "event": "local.facturas-db.listar.request",
+      "description": "Listar facturas con filtros",
+      "input": {
+        "proyecto": {
+          "type": "string",
+          "required": true
+        },
+        "estado": {
+          "type": "string",
+          "description": "Filtrar por estado"
+        },
+        "desde": {
+          "type": "string",
+          "description": "Fecha desde (ISO)"
+        },
+        "hasta": {
+          "type": "string",
+          "description": "Fecha hasta (ISO)"
+        },
+        "limit": {
+          "type": "number",
+          "default": 100
+        }
+      },
+      "output": {}
+    },
+    "obtener": {
+      "event": "local.facturas-db.obtener.request",
+      "description": "Obtener una factura por ID",
+      "input": {
+        "proyecto": {
+          "type": "string",
+          "required": true
+        },
+        "id": {
+          "type": "string",
+          "required": true
+        }
+      },
+      "output": {}
+    },
+    "pendientes": {
+      "event": "local.facturas-db.pendientes.request",
+      "description": "Obtener facturas pendientes de procesar",
+      "input": {
+        "proyecto": {
+          "type": "string",
+          "required": true
+        },
+        "limit": {
+          "type": "number",
+          "default": 100
+        }
+      },
+      "output": {}
+    },
+    "estadisticas": {
+      "event": "local.facturas-db.estadisticas.request",
+      "description": "Obtener estadísticas de facturas",
+      "input": {
+        "proyecto": {
+          "type": "string",
+          "required": true
+        },
+        "semana": {
+          "type": "string",
+          "description": "Semana ISO (2026-W03)"
+        }
+      },
+      "output": {}
+    },
+    "exportar": {
+      "event": "local.facturas-db.exportar.request",
+      "description": "Exportar facturas procesadas en formato para asesoría",
+      "input": {
+        "proyecto": {
+          "type": "string",
+          "required": true
+        },
+        "semana": {
+          "type": "string",
+          "description": "Semana ISO (si no se especifica, usa actual)"
+        }
+      },
+      "output": {}
+    },
+    "marcarExportadas": {
+      "event": "local.facturas-db.marcarExportadas.request",
+      "description": "Marcar facturas como exportadas",
+      "input": {
+        "proyecto": {
+          "type": "string",
+          "required": true
+        },
+        "ids": {
+          "type": "array",
+          "required": true,
+          "description": "IDs de facturas a marcar"
+        },
+        "semana": {
+          "type": "string",
+          "required": true
+        }
+      },
+      "output": {}
+    }
+  }
+}

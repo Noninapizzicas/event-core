@@ -1,0 +1,197 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://pizzepos.com/schemas/pedido.json",
+  "title": "Pedido Schema",
+  "description": "Esquemas de datos para pedidos",
+
+  "definitions": {
+    "pedido_item": {
+      "type": "object",
+      "required": ["item_id", "producto_id", "nombre", "cantidad", "precio_unitario", "precio_total"],
+      "properties": {
+        "item_id": {
+          "type": "string",
+          "pattern": "^item_[a-z0-9]+$"
+        },
+        "producto_id": {
+          "type": "string",
+          "pattern": "^prod_[a-z0-9_]+$"
+        },
+        "nombre": {
+          "type": "string",
+          "minLength": 1
+        },
+        "cantidad": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "precio_unitario": {
+          "type": "number",
+          "minimum": 0
+        },
+        "precio_total": {
+          "type": "number",
+          "minimum": 0
+        },
+        "variaciones": {
+          "type": "object",
+          "properties": {
+            "ingredientes_quitar": {
+              "type": "array",
+              "items": {"type": "string"}
+            },
+            "ingredientes_anadir": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "ingrediente_id": {"type": "string"},
+                  "cantidad": {"type": "integer", "minimum": 1}
+                }
+              }
+            },
+            "precio_extras": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "notas": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "Notas especiales del cliente"
+        },
+        "estado": {
+          "type": "string",
+          "enum": ["pendiente", "en_cocina", "listo", "servido", "cancelado"]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "pedido": {
+      "type": "object",
+      "required": ["id", "cuenta_id", "items", "estado", "total", "created_at"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^pedido_[a-z0-9]+$"
+        },
+        "cuenta_id": {
+          "type": "string",
+          "pattern": "^cuenta_[a-z0-9]+$"
+        },
+        "canal": {
+          "type": "string",
+          "enum": ["mesa", "telefono", "llevar", "glovo", "whatsapp"],
+          "description": "Canal de venta detectado por prefijo del cuenta_id"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/pedido_item"
+          }
+        },
+        "estado": {
+          "type": "string",
+          "enum": ["borrador", "confirmado", "en_cocina", "listo", "completado", "cancelado"]
+        },
+        "subtotal": {
+          "type": "number",
+          "minimum": 0
+        },
+        "total": {
+          "type": "number",
+          "minimum": 0
+        },
+        "notas_generales": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "enviado_cocina_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "completado_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "cancelado_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "create_request": {
+      "type": "object",
+      "required": ["cuenta_id"],
+      "properties": {
+        "cuenta_id": {
+          "type": "string",
+          "pattern": "^cuenta_[a-z0-9]+$"
+        },
+        "notas_generales": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "agregar_item_request": {
+      "type": "object",
+      "required": ["producto_id", "cantidad"],
+      "properties": {
+        "producto_id": {
+          "type": "string"
+        },
+        "cantidad": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 99
+        },
+        "variaciones": {
+          "type": "object",
+          "properties": {
+            "ingredientes_quitar": {
+              "type": "array",
+              "items": {"type": "string"}
+            },
+            "ingredientes_anadir": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "ingrediente_id": {"type": "string"},
+                  "cantidad": {"type": "integer"}
+                }
+              }
+            }
+          }
+        },
+        "notas": {
+          "type": "string",
+          "maxLength": 500
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

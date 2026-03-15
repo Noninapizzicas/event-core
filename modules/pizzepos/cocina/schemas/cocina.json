@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://pizzepos.com/schemas/cocina.json",
+  "title": "Cocina Schema",
+  "description": "Esquemas de datos para display de cocina",
+
+  "definitions": {
+    "item_cocina": {
+      "type": "object",
+      "required": ["item_id", "producto_id", "nombre", "cantidad", "estado"],
+      "properties": {
+        "item_id": {"type": "string"},
+        "producto_id": {"type": "string"},
+        "nombre": {"type": "string"},
+        "cantidad": {"type": "integer", "minimum": 1},
+        "variaciones": {
+          "type": "object",
+          "properties": {
+            "ingredientes_quitar": {"type": "array", "items": {"type": "string"}},
+            "ingredientes_anadir": {"type": "array"}
+          }
+        },
+        "notas": {"type": "string"},
+        "estado": {
+          "type": "string",
+          "enum": ["pendiente", "preparando", "listo"]
+        },
+        "preparado_at": {"type": "string", "format": "date-time"}
+      }
+    },
+
+    "pedido_cocina": {
+      "type": "object",
+      "required": ["pedido_id", "items", "estado", "recibido_at"],
+      "properties": {
+        "pedido_id": {"type": "string"},
+        "cuenta_id": {"type": "string"},
+        "canal": {"type": "string", "enum": ["mesa", "telefono", "llevar", "glovo", "whatsapp"], "description": "Canal de venta detectado por prefijo del cuenta_id"},
+        "items": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/item_cocina"}
+        },
+        "estado": {
+          "type": "string",
+          "enum": ["activo", "listo", "cancelado"]
+        },
+        "notas_generales": {"type": "string"},
+        "recibido_at": {"type": "string", "format": "date-time"},
+        "listo_at": {"type": "string", "format": "date-time"},
+        "tiempo_preparacion": {"type": "number", "description": "Tiempo en segundos"}
+      }
+    }
+  }
+}

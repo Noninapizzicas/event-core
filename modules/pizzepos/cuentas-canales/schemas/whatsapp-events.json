@@ -1,0 +1,128 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://pizzepos.com/schemas/whatsapp-events.json",
+  "title": "WhatsApp Events Schema",
+  "description": "Esquemas de eventos de pedidos WhatsApp",
+
+  "definitions": {
+    "whatsapp_mensaje_recibido": {
+      "type": "object",
+      "required": ["event_type", "payload"],
+      "properties": {
+        "event_type": { "const": "whatsapp.mensaje_recibido" },
+        "payload": {
+          "type": "object",
+          "required": ["telefono", "mensaje"],
+          "properties": {
+            "telefono": { "type": "string" },
+            "nombre": { "type": "string" },
+            "mensaje": { "type": "string" },
+            "tipo_mensaje": { "type": "string" },
+            "conversacion_estado": { "type": "string" }
+          }
+        },
+        "correlation_id": { "type": "string" }
+      }
+    },
+
+    "whatsapp_pedido_creado": {
+      "type": "object",
+      "required": ["event_type", "payload"],
+      "properties": {
+        "event_type": { "const": "whatsapp.pedido_creado" },
+        "payload": {
+          "type": "object",
+          "required": ["cuenta_id", "numero_pedido", "telefono"],
+          "properties": {
+            "cuenta_id": { "type": "string" },
+            "numero_pedido": { "type": "integer" },
+            "telefono": { "type": "string" },
+            "nombre": { "type": "string" },
+            "items": { "type": "array" },
+            "total": { "type": "number" },
+            "modo_entrega": { "type": "string" }
+          }
+        },
+        "correlation_id": { "type": "string" }
+      }
+    },
+
+    "whatsapp_pedido_confirmado": {
+      "type": "object",
+      "required": ["event_type", "payload"],
+      "properties": {
+        "event_type": { "const": "whatsapp.pedido_confirmado" },
+        "payload": {
+          "type": "object",
+          "required": ["cuenta_id", "numero_pedido", "telefono"],
+          "properties": {
+            "cuenta_id": { "type": "string" },
+            "numero_pedido": { "type": "integer" },
+            "telefono": { "type": "string" },
+            "total": { "type": "number" }
+          }
+        },
+        "correlation_id": { "type": "string" }
+      }
+    },
+
+    "whatsapp_pedido_listo": {
+      "type": "object",
+      "required": ["event_type", "payload"],
+      "properties": {
+        "event_type": { "const": "whatsapp.pedido_listo" },
+        "payload": {
+          "type": "object",
+          "required": ["cuenta_id", "numero_pedido", "telefono"],
+          "properties": {
+            "cuenta_id": { "type": "string" },
+            "numero_pedido": { "type": "integer" },
+            "telefono": { "type": "string" },
+            "nombre": { "type": "string" },
+            "total": { "type": "number" }
+          }
+        },
+        "correlation_id": { "type": "string" }
+      }
+    },
+
+    "cuenta_creada": {
+      "type": "object",
+      "required": ["event_type", "payload"],
+      "properties": {
+        "event_type": { "const": "cuenta.creada" },
+        "payload": {
+          "type": "object",
+          "required": ["cuenta_id", "tipo", "origen"],
+          "properties": {
+            "cuenta_id": { "type": "string" },
+            "tipo": { "const": "whatsapp" },
+            "origen": { "const": "cuentas-canales:whatsapp" },
+            "total": { "type": "number" },
+            "metadata": { "type": "object" }
+          }
+        },
+        "correlation_id": { "type": "string" }
+      }
+    },
+
+    "cuenta_cerrada": {
+      "type": "object",
+      "required": ["event_type", "payload"],
+      "properties": {
+        "event_type": { "const": "cuenta.cerrada" },
+        "payload": {
+          "type": "object",
+          "required": ["cuenta_id", "tipo", "total"],
+          "properties": {
+            "cuenta_id": { "type": "string" },
+            "tipo": { "const": "whatsapp" },
+            "total": { "type": "number" },
+            "metadata": { "type": "object" }
+          }
+        },
+        "correlation_id": { "type": "string" }
+      }
+    }
+  }
+}

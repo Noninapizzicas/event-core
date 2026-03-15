@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://pizzepos.com/schemas/categoria.json",
+  "title": "Categoria Schema",
+  "description": "Esquemas de datos para categorías",
+
+  "definitions": {
+    "categoria": {
+      "type": "object",
+      "required": ["id", "nombre", "orden"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^cat_[a-z0-9_]+$"
+        },
+        "nombre": {
+          "type": "string",
+          "minLength": 1
+        },
+        "emoji": {
+          "type": "string"
+        },
+        "orden": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "activa": {
+          "type": "boolean"
+        },
+        "descripcion": {
+          "type": "string"
+        },
+        "color": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "description": "Color hexadecimal para UI"
+        },
+        "icono": {
+          "type": "string",
+          "description": "Nombre de icono alternativo"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

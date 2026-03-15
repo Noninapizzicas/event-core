@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>{{nombre_carta}}</title>
+  <style>
+    /* =====================================================
+       PLANTILLA: A5 Menú del Día
+       Uso: Carta corta, menú del día, pocas categorías
+       Imprimir: Ctrl+P → Tamaño A5 → Guardar como PDF
+       ===================================================== */
+
+    @page {
+      size: A5 portrait;
+      margin: 1cm 1.2cm;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      font-size: 9pt;
+      color: #111;
+      background: #fff;
+      line-height: 1.45;
+    }
+
+    .cabecera {
+      text-align: center;
+      padding-bottom: 0.4cm;
+      margin-bottom: 0.4cm;
+      border-bottom: 2.5px double #111;
+    }
+
+    .cabecera h1 {
+      font-size: 16pt;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .cabecera .fecha {
+      font-size: 7.5pt;
+      color: #777;
+      margin-top: 0.1cm;
+    }
+
+    .categoria {
+      margin-bottom: 0.4cm;
+      break-inside: avoid;
+    }
+
+    .categoria-nombre {
+      font-size: 9.5pt;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      background: #111;
+      color: #fff;
+      padding: 0.1cm 0.25cm;
+      margin-bottom: 0.2cm;
+    }
+
+    .producto {
+      display: flex;
+      flex-direction: column;
+      padding: 0.12cm 0.1cm;
+      border-bottom: 1px dotted #ccc;
+    }
+
+    .producto:last-child { border-bottom: none; }
+
+    .producto-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 0.2cm;
+    }
+
+    .producto-nombre {
+      font-size: 9pt;
+      font-weight: 600;
+      flex: 1;
+    }
+
+    .precio {
+      font-size: 9pt;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .producto-ingredientes {
+      font-size: 7pt;
+      color: #888;
+      margin-top: 0.03cm;
+      font-style: italic;
+    }
+
+    .pie {
+      margin-top: 0.4cm;
+      text-align: center;
+      font-size: 7pt;
+      color: #bbb;
+    }
+
+    @media screen {
+      body {
+        max-width: 14.8cm;
+        margin: 1cm auto;
+        padding: 1.2cm;
+        box-shadow: 0 0 10px rgba(0,0,0,0.2);
+        font-size: 10pt;
+      }
+      .cabecera h1 { font-size: 20pt; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="cabecera">
+    <h1>{{nombre_carta}}</h1>
+    <div class="fecha">{{fecha}}</div>
+  </div>
+
+  <div class="carta-contenido">
+    {{categorias_html}}
+  </div>
+
+  <div class="pie">{{total_productos}} productos · {{total_categorias}} categorías</div>
+
+</body>
+</html>

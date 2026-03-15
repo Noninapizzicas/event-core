@@ -1,0 +1,127 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://pizzepos.com/schemas/telefono-events.json",
+  "title": "Telefono Events Schema",
+  "description": "Esquemas de eventos de pedidos telefónicos",
+
+  "definitions": {
+    "telefono_llamada_detectada": {
+      "type": "object",
+      "required": ["event_type", "payload"],
+      "properties": {
+        "event_type": {"const": "telefono.llamada_detectada"},
+        "payload": {
+          "type": "object",
+          "required": ["telefono", "timestamp"],
+          "properties": {
+            "telefono": {"type": "string"},
+            "caller_name": {"type": "string"},
+            "timestamp": {"type": "string", "format": "date-time"}
+          }
+        },
+        "correlation_id": {"type": "string"}
+      }
+    },
+
+    "telefono_contacto_identificado": {
+      "type": "object",
+      "required": ["event_type", "payload"],
+      "properties": {
+        "event_type": {"const": "telefono.contacto_identificado"},
+        "payload": {
+          "type": "object",
+          "required": ["telefono", "nombre"],
+          "properties": {
+            "telefono": {"type": "string"},
+            "nombre": {"type": "string"},
+            "pedidos_anteriores": {"type": "integer"},
+            "ultima_compra": {"type": "string", "format": "date-time"}
+          }
+        },
+        "correlation_id": {"type": "string"}
+      }
+    },
+
+    "telefono_pedido_creado": {
+      "type": "object",
+      "required": ["event_type", "payload"],
+      "properties": {
+        "event_type": {"const": "telefono.pedido_creado"},
+        "payload": {
+          "type": "object",
+          "required": ["cuenta_id", "numero_pedido", "telefono", "hora_recogida_estimada"],
+          "properties": {
+            "cuenta_id": {"type": "string"},
+            "numero_pedido": {"type": "integer"},
+            "telefono": {"type": "string"},
+            "nombre": {"type": "string"},
+            "hora_recogida_estimada": {"type": "string", "format": "date-time"}
+          }
+        },
+        "correlation_id": {"type": "string"}
+      }
+    },
+
+    "telefono_listo_para_recoger": {
+      "type": "object",
+      "required": ["event_type", "payload"],
+      "properties": {
+        "event_type": {"const": "telefono.listo_para_recoger"},
+        "payload": {
+          "type": "object",
+          "required": ["cuenta_id", "numero_pedido", "telefono", "nombre"],
+          "properties": {
+            "cuenta_id": {"type": "string"},
+            "numero_pedido": {"type": "integer"},
+            "telefono": {"type": "string"},
+            "nombre": {"type": "string"},
+            "total": {"type": "number"},
+            "whatsapp_message": {"type": "string"}
+          }
+        },
+        "correlation_id": {"type": "string"}
+      }
+    },
+
+    "cuenta_creada": {
+      "type": "object",
+      "required": ["event_type", "payload"],
+      "properties": {
+        "event_type": {"const": "cuenta.creada"},
+        "payload": {
+          "type": "object",
+          "required": ["cuenta_id", "tipo", "origen"],
+          "properties": {
+            "cuenta_id": {"type": "string"},
+            "tipo": {"const": "telefono"},
+            "origen": {"const": "cuentas-telefono"},
+            "numero_pedido": {"type": "integer"},
+            "telefono": {"type": "string"},
+            "total": {"type": "number"},
+            "metadata": {"type": "object"}
+          }
+        },
+        "correlation_id": {"type": "string"}
+      }
+    },
+
+    "cuenta_cerrada": {
+      "type": "object",
+      "required": ["event_type", "payload"],
+      "properties": {
+        "event_type": {"const": "cuenta.cerrada"},
+        "payload": {
+          "type": "object",
+          "required": ["cuenta_id", "tipo", "total"],
+          "properties": {
+            "cuenta_id": {"type": "string"},
+            "tipo": {"const": "telefono"},
+            "total": {"type": "number"},
+            "metadata": {"type": "object"}
+          }
+        },
+        "correlation_id": {"type": "string"}
+      }
+    }
+  }
+}

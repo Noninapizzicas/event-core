@@ -1,0 +1,196 @@
+{
+  "name": "chat-session",
+  "version": "1.0.0",
+  "description": "Persistencia de conversaciones y mensajes con gestión de contexto FIFO",
+  "author": "Event Core Team",
+
+  "events": {
+    "publishes": [
+      "session.created",
+      "session.updated",
+      "session.deleted",
+      "session.message.saved"
+    ],
+    "subscribes": [
+      { "event": "db.query.response", "handler": "onDbQueryResponse" },
+      { "event": "project.activated", "handler": "onProjectActivated" },
+      { "event": "project.deactivated", "handler": "onProjectDeactivated" },
+      { "event": "session.create.request", "handler": "onCreateRequest" },
+      { "event": "session.list.request", "handler": "onListRequest" },
+      { "event": "session.get.request", "handler": "onGetRequest" },
+      { "event": "session.update.request", "handler": "onUpdateRequest" },
+      { "event": "session.delete.request", "handler": "onDeleteRequest" },
+      { "event": "session.messages.request", "handler": "onMessagesRequest" },
+      { "event": "session.save.request", "handler": "onSaveRequest" },
+      { "event": "session.context.load.request", "handler": "onContextLoadRequest" },
+      { "event": "session.context.toggle.request", "handler": "onToggleContextRequest" },
+      { "event": "session.context.stats.request", "handler": "onContextStatsRequest" }
+    ]
+  },
+
+  "ui_handlers": [
+    { "domain": "conversation", "action": "load", "handler": "handleConversationLoad" },
+    { "domain": "conversation", "action": "create", "handler": "handleConversationCreate" },
+    { "domain": "conversation", "action": "list", "handler": "handleConversationList" },
+    { "domain": "conversation", "action": "get", "handler": "handleConversationGet" },
+    { "domain": "conversation", "action": "update", "handler": "handleConversationUpdate" },
+    { "domain": "conversation", "action": "delete", "handler": "handleConversationDelete" },
+    { "domain": "conversation", "action": "toggleContext", "handler": "handleConversationToggleContext" },
+    { "domain": "conversation", "action": "contextStats", "handler": "handleConversationContextStats" },
+    { "domain": "session", "action": "create", "handler": "handleUICreate" },
+    { "domain": "session", "action": "list", "handler": "handleUIList" },
+    { "domain": "session", "action": "get", "handler": "handleUIGet" },
+    { "domain": "session", "action": "update", "handler": "handleUIUpdate" },
+    { "domain": "session", "action": "delete", "handler": "handleUIDelete" },
+    { "domain": "session", "action": "messages", "handler": "handleUIMessages" },
+    { "domain": "session", "action": "save", "handler": "handleUISave" },
+    { "domain": "session", "action": "toggleContext", "handler": "handleUIToggleContext" },
+    { "domain": "session", "action": "contextStats", "handler": "handleUIContextStats" }
+  ],
+
+  "apis": [
+    {
+      "method": "POST",
+      "path": "/conversations",
+      "handler": "handleCreateConversation",
+      "description": "Crear nueva conversación"
+    },
+    {
+      "method": "GET",
+      "path": "/conversations",
+      "handler": "handleListConversations",
+      "description": "Listar conversaciones de un proyecto"
+    },
+    {
+      "method": "GET",
+      "path": "/conversations/:id",
+      "handler": "handleGetConversation",
+      "description": "Obtener conversación por ID"
+    },
+    {
+      "method": "PUT",
+      "path": "/conversations/:id",
+      "handler": "handleUpdateConversation",
+      "description": "Actualizar conversación"
+    },
+    {
+      "method": "DELETE",
+      "path": "/conversations/:id",
+      "handler": "handleDeleteConversation",
+      "description": "Eliminar conversación"
+    },
+    {
+      "method": "GET",
+      "path": "/conversations/:id/messages",
+      "handler": "handleGetMessages",
+      "description": "Obtener mensajes de una conversación"
+    },
+    {
+      "method": "POST",
+      "path": "/conversations/:id/messages",
+      "handler": "handleSaveMessage",
+      "description": "Guardar mensaje en conversación"
+    },
+    {
+      "method": "GET",
+      "path": "/conversations/:id/context",
+      "handler": "handleGetContextStats",
+      "description": "Obtener estadísticas del contexto"
+    },
+    {
+      "method": "POST",
+      "path": "/messages/:id/toggle-context",
+      "handler": "handleToggleContext",
+      "description": "Activar/desactivar mensaje del contexto"
+    },
+    {
+      "method": "GET",
+      "path": "/health",
+      "handler": "handleHealthCheck",
+      "description": "Health check del módulo"
+    }
+  ],
+
+  "tools": [
+    {
+      "name": "session.list_conversations",
+      "description": "Listar todas las conversaciones de un proyecto",
+      "handler": "toolListConversations",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "project_id": {
+            "type": "string",
+            "description": "ID del proyecto"
+          },
+          "limit": {
+            "type": "number",
+            "description": "Límite de resultados",
+            "default": 20
+          }
+        },
+        "required": ["project_id"]
+      }
+    },
+    {
+      "name": "session.get_conversation",
+      "description": "Obtener detalles de una conversación",
+      "handler": "toolGetConversation",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "conversation_id": {
+            "type": "string",
+            "description": "ID de la conversación"
+          }
+        },
+        "required": ["conversation_id"]
+      }
+    },
+    {
+      "name": "session.get_messages",
+      "description": "Obtener mensajes de una conversación",
+      "handler": "toolGetMessages",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "conversation_id": {
+            "type": "string",
+            "description": "ID de la conversación"
+          },
+          "in_context_only": {
+            "type": "boolean",
+            "description": "Solo mensajes en contexto activo",
+            "default": false
+          }
+        },
+        "required": ["conversation_id"]
+      }
+    }
+  ],
+
+  "ui": {
+    "zone": "chat-config",
+    "icon": "💬",
+    "handlers": {
+      "conversation": {
+        "actions": ["load", "create", "list", "get", "update", "delete", "toggleContext", "contextStats"],
+        "note": "Primary frontend entry point for conversation CRUD"
+      },
+      "session": {
+        "actions": ["create", "list", "get", "update", "delete", "messages", "save", "toggleContext", "contextStats"],
+        "note": "Internal inter-module communication"
+      }
+    }
+  },
+
+  "dependencies": [
+    "database-manager",
+    "project-manager"
+  ],
+
+  "config": {
+    "contextWindow": 20,
+    "dbTimeout": 10000
+  }
+}

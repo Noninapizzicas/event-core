@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>{{nombre_carta}} · 4 por hoja</title>
+  <style>
+    /* =====================================================
+       PLANTILLA: A4 Cuádruple (4 por hoja, recortar)
+       Uso: Cartas muy cortas (hasta 2 categorías, ~8 productos)
+       Imprimir: Ctrl+P → Sin márgenes → Recortar con tijeras
+       ===================================================== */
+
+    @page {
+      size: A4 portrait;
+      margin: 0;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      font-size: 7pt;
+      color: #111;
+      background: #fff;
+      width: 21cm;
+      height: 29.7cm;
+    }
+
+    /* Grid 2×2 que ocupa toda la hoja */
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      width: 21cm;
+      height: 29.7cm;
+      /* Líneas de corte */
+      gap: 1px;
+      background: #999;
+    }
+
+    .card {
+      background: #fff;
+      padding: 0.4cm 0.5cm;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Marca de corte en esquina */
+    .card::after {
+      content: '✂';
+      position: absolute;
+      font-size: 6pt;
+      color: #bbb;
+      right: 0.1cm;
+      top: 0.1cm;
+    }
+
+    .cabecera {
+      text-align: center;
+      padding-bottom: 0.25cm;
+      margin-bottom: 0.25cm;
+      border-bottom: 1.5px solid #111;
+    }
+
+    .cabecera h1 {
+      font-size: 10pt;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .categoria {
+      margin-bottom: 0.25cm;
+    }
+
+    .categoria-nombre {
+      font-size: 7.5pt;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      border-bottom: 1px solid #666;
+      padding-bottom: 0.05cm;
+      margin-bottom: 0.12cm;
+    }
+
+    .producto {
+      display: flex;
+      flex-direction: column;
+      padding: 0.06cm 0;
+      border-bottom: 1px dotted #ddd;
+    }
+
+    .producto:last-child { border-bottom: none; }
+
+    .producto-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 0.1cm;
+    }
+
+    .producto-nombre {
+      font-size: 7pt;
+      font-weight: 600;
+      flex: 1;
+    }
+
+    .precio {
+      font-size: 7pt;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .producto-ingredientes {
+      font-size: 5.5pt;
+      color: #999;
+      margin-top: 0.02cm;
+      font-style: italic;
+    }
+
+    @media screen {
+      body {
+        width: auto;
+        height: auto;
+        max-width: 21cm;
+        margin: 1cm auto;
+        box-shadow: 0 0 12px rgba(0,0,0,0.2);
+      }
+      .grid {
+        width: 100%;
+        height: auto;
+        min-height: 29.7cm;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="grid">
+
+    <div class="card">
+      <div class="cabecera"><h1>{{nombre_carta}}</h1></div>
+      {{categorias_html}}
+    </div>
+
+    <div class="card">
+      <div class="cabecera"><h1>{{nombre_carta}}</h1></div>
+      {{categorias_html}}
+    </div>
+
+    <div class="card">
+      <div class="cabecera"><h1>{{nombre_carta}}</h1></div>
+      {{categorias_html}}
+    </div>
+
+    <div class="card">
+      <div class="cabecera"><h1>{{nombre_carta}}</h1></div>
+      {{categorias_html}}
+    </div>
+
+  </div>
+
+</body>
+</html>

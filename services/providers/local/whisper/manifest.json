@@ -1,0 +1,43 @@
+{
+  "$schema": "provider-manifest-v1",
+  "name": "local.whisper",
+  "version": "1.0.0",
+  "description": "Transcripción de audio con Whisper — speech-to-text local",
+  "type": "local",
+  "requires": {
+    "npm": [],
+    "credentials": [],
+    "system": ["whisper"]
+  },
+  "functions": {
+    "transcribe": {
+      "event": "local.whisper.transcribe.request",
+      "description": "Transcribe un archivo de audio a texto usando Whisper",
+      "input": {
+        "file": { "type": "string", "required": true, "description": "Ruta del archivo de audio a transcribir" },
+        "model": { "type": "string", "required": false, "description": "Modelo de Whisper: tiny, base, small, medium, large" },
+        "language": { "type": "string", "required": false, "description": "Código de idioma (ej: es, en)" },
+        "format": { "type": "string", "required": false, "description": "Formato de salida: txt, srt, vtt, json" },
+        "task": { "type": "string", "required": false, "description": "Tarea: transcribe o translate" }
+      },
+      "output": {
+        "text": { "type": "string", "description": "Texto transcrito" },
+        "language": { "type": "string", "description": "Idioma detectado" },
+        "outputFile": { "type": "string", "description": "Ruta del archivo de salida" },
+        "duration": { "type": "string", "description": "Duración del audio" }
+      }
+    },
+    "detect-language": {
+      "event": "local.whisper.detect-language.request",
+      "description": "Detecta el idioma de un archivo de audio",
+      "input": {
+        "file": { "type": "string", "required": true, "description": "Ruta del archivo de audio" },
+        "model": { "type": "string", "required": false, "description": "Modelo de Whisper a utilizar" }
+      },
+      "output": {
+        "language": { "type": "string", "description": "Código del idioma detectado" },
+        "confidence": { "type": "string", "description": "Nivel de confianza de la detección" }
+      }
+    }
+  }
+}

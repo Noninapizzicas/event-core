@@ -1,0 +1,62 @@
+{
+  "$schema": "../../../schemas/provider-manifest.schema.json",
+  "name": "local.xlsx",
+  "version": "1.0.0",
+  "description": "Servicio local para crear y parsear archivos Excel",
+  "type": "provider",
+  "requires": {
+    "credentials": [],
+    "npm": [
+      "exceljs"
+    ]
+  },
+  "functions": {
+    "create": {
+      "event": "local.xlsx.create.request",
+      "description": "Crear Excel con multiples hojas",
+      "input": {
+        "sheets": {
+          "type": "array",
+          "description": "Array de hojas con name y data",
+          "required": true
+        },
+        "filename": {
+          "type": "string",
+          "description": "Nombre del archivo",
+          "required": true
+        }
+      },
+      "output": {
+        "path": {
+          "type": "string"
+        },
+        "sheets": {
+          "type": "number"
+        }
+      }
+    },
+    "parse": {
+      "event": "local.xlsx.parse.request",
+      "description": "Leer Excel y convertir a datos",
+      "input": {
+        "path": {
+          "type": "string",
+          "description": "Ruta del archivo",
+          "required": true
+        },
+        "sheet": {
+          "type": "string|number",
+          "description": "Hoja a leer (nombre o indice, default: primera)"
+        }
+      },
+      "output": {
+        "sheets": {
+          "type": "array"
+        },
+        "data": {
+          "type": "array"
+        }
+      }
+    }
+  }
+}

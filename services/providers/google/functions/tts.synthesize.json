@@ -1,0 +1,53 @@
+{
+  "name": "tts.synthesize",
+  "description": "Text-to-Speech - Convertir texto a audio",
+  "event": "google.tts.synthesize.request",
+  "method": "POST",
+  "base_url": "https://texttospeech.googleapis.com/v1",
+  "endpoint": "/text:synthesize",
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "input": {
+    "text": {
+      "type": "string",
+      "description": "Texto a convertir",
+      "required": true
+    },
+    "language": {
+      "type": "string",
+      "description": "Codigo de idioma (es-ES, en-US)",
+      "default": "es-ES"
+    },
+    "voice": {
+      "type": "string",
+      "description": "Nombre de la voz",
+      "default": "es-ES-Standard-A"
+    },
+    "speed": {
+      "type": "number",
+      "description": "Velocidad 0.5-2.0",
+      "default": 1.0
+    }
+  },
+  "request_template": {
+    "input": {
+      "text": "{{text}}"
+    },
+    "voice": {
+      "languageCode": "{{language}}",
+      "name": "{{voice}}"
+    },
+    "audioConfig": {
+      "audioEncoding": "MP3",
+      "speakingRate": "{{speed}}"
+    }
+  },
+  "output": {
+    "audio": {
+      "type": "string",
+      "description": "Audio en base64"
+    }
+  },
+  "response_path": "audioContent"
+}

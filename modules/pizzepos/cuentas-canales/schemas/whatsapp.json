@@ -1,0 +1,172 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://pizzepos.com/schemas/whatsapp.json",
+  "title": "WhatsApp Schema",
+  "description": "Esquemas de datos para pedidos vía WhatsApp",
+
+  "definitions": {
+    "estado_pedido_whatsapp": {
+      "type": "string",
+      "enum": ["pendiente_confirmacion", "confirmado", "preparando", "listo", "entregado", "cancelado"],
+      "description": "Estado del pedido WhatsApp"
+    },
+
+    "modo_entrega": {
+      "type": "string",
+      "enum": ["recogida", "delivery"],
+      "default": "recogida",
+      "description": "Modo de entrega del pedido"
+    },
+
+    "whatsapp_item": {
+      "type": "object",
+      "required": ["nombre"],
+      "properties": {
+        "nombre": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "cantidad": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50,
+          "default": 1
+        },
+        "precio": {
+          "type": "number",
+          "minimum": 0,
+          "multipleOf": 0.01
+        },
+        "notas": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "Personalización: sin cebolla, extra queso, etc."
+        }
+      }
+    },
+
+    "pedido_whatsapp": {
+      "type": "object",
+      "required": ["cuenta_id", "numero_pedido", "telefono", "estado", "hora_pedido"],
+      "properties": {
+        "cuenta_id": {
+          "type": "string",
+          "pattern": "^wa_\\d{8}_\\d{3}$",
+          "description": "ID interno: wa_{YYYYMMDD}_{secuencial}"
+        },
+        "numero_pedido": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "telefono": {
+          "type": "string",
+          "pattern": "^\\+?[1-9]\\d{1,14}$"
+        },
+        "nombre": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "estado": {
+          "$ref": "#/definitions/estado_pedido_whatsapp"
+        },
+        "items": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/whatsapp_item" }
+        },
+        "total": {
+          "type": "number",
+          "minimum": 0,
+          "multipleOf": 0.01
+        },
+        "modo_entrega": {
+          "$ref": "#/definitions/modo_entrega"
+        },
+        "hora_pedido": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "hora_confirmado": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "hora_listo": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "hora_entrega": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "confirmado": {
+          "type": "boolean",
+          "default": false
+        },
+        "pedidos": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "notas": {
+          "type": "string",
+          "maxLength": 500
+        }
+      }
+    },
+
+    "mensaje_recibido_request": {
+      "type": "object",
+      "required": ["telefono", "mensaje"],
+      "properties": {
+        "telefono": {
+          "type": "string",
+          "pattern": "^\\+?[1-9]\\d{1,14}$"
+        },
+        "nombre": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "mensaje": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "tipo_mensaje": {
+          "type": "string",
+          "enum": ["text", "image", "audio", "document", "location"],
+          "default": "text"
+        },
+        "media_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL del media adjunto (imagen, audio, documento)"
+        }
+      }
+    },
+
+    "crear_pedido_request": {
+      "type": "object",
+      "required": ["telefono"],
+      "properties": {
+        "telefono": {
+          "type": "string",
+          "pattern": "^\\+?[1-9]\\d{1,14}$"
+        },
+        "nombre": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "items": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/whatsapp_item" }
+        },
+        "notas": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "modo_entrega": {
+          "$ref": "#/definitions/modo_entrega"
+        }
+      }
+    }
+  }
+}

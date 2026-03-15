@@ -1,0 +1,348 @@
+{
+  "name": "recetas",
+  "version": "1.0.0",
+  "description": "Gestión de recetas con ingredientes, cantidades y precios de mercado. Base para escandallo y estudio de viabilidad.",
+  "author": "Event Core Team",
+  "main": "index.js",
+
+  "provides": {
+    "events": ["receta.creada", "receta.actualizada", "receta.eliminada", "ingrediente.precio.actualizado"]
+  },
+
+  "events": {
+    "publishes": [
+      {
+        "event": "receta.creada",
+        "description": "Receta creada con ingredientes y cantidades",
+        "schema": { "$ref": "./schemas/receta.json" }
+      },
+      {
+        "event": "receta.actualizada",
+        "description": "Receta actualizada (ingredientes, cantidades, precios)"
+      },
+      {
+        "event": "receta.eliminada",
+        "description": "Receta eliminada del proyecto"
+      },
+      {
+        "event": "ingrediente.precio.actualizado",
+        "description": "Precio de mercado de un ingrediente actualizado"
+      }
+    ],
+    "subscribes": [
+      { "event": "project.activated", "handler": "onProjectActivated" },
+      { "event": "project.deactivated", "handler": "onProjectDeactivated" },
+      { "event": "factura.procesada", "handler": "onFacturaProcesada" }
+    ]
+  },
+
+  "ui_handlers": [
+    { "domain": "recetas", "action": "list", "handler": "handleList" },
+    { "domain": "recetas", "action": "get", "handler": "handleGet" },
+    { "domain": "recetas", "action": "create", "handler": "handleCreate" },
+    { "domain": "recetas", "action": "update", "handler": "handleUpdate" },
+    { "domain": "recetas", "action": "delete", "handler": "handleDelete" },
+    { "domain": "recetas", "action": "ingredientes", "handler": "handleIngredientes" },
+    { "domain": "recetas", "action": "stats", "handler": "handleStats" }
+  ],
+
+  "tools": [
+    {
+      "name": "recetas.crear",
+      "description": "Crea una receta nueva con ingredientes, cantidades y precios de mercado estimados. Usa esta herramienta cuando el usuario quiera añadir una receta al proyecto.",
+      "handler": "toolCrear",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "description": "Nombre de la receta (ej: 'Pasta Carbonara', 'Tarta de queso')"
+          },
+          "descripcion": {
+            "type": "string",
+            "description": "Descripción breve de la receta"
+          },
+          "categoria": {
+            "type": "string",
+            "description": "Categoría (ej: 'Pastas', 'Postres', 'Entrantes', 'Carnes')"
+          },
+          "porciones": {
+            "type": "number",
+            "description": "Número de porciones/raciones que salen de la receta"
+          },
+          "tiempo_preparacion": {
+            "type": "number",
+            "description": "Tiempo de preparación en minutos"
+          },
+          "dificultad": {
+            "type": "string",
+            "enum": ["baja", "media", "alta"],
+            "description": "Nivel de dificultad"
+          },
+          "ingredientes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "nombre": { "type": "string", "description": "Nombre del ingrediente" },
+                "cantidad": { "type": "number", "description": "Cantidad necesaria" },
+                "unidad": { "type": "string", "description": "Unidad de medida (g, kg, ml, l, ud, cucharada, etc.)" },
+                "precio_mercado": { "type": "number", "description": "Precio estimado de mercado para esa cantidad (en €). Estima por ALTO si no estás seguro." },
+                "notas": { "type": "string", "description": "Notas opcionales (sustituciones, calidad, etc.)" }
+              },
+              "required": ["nombre", "cantidad", "unidad", "precio_mercado"]
+            },
+            "description": "Lista de ingredientes con cantidades y precios de mercado"
+          },
+          "elaboracion": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Pasos de elaboración (cada string es un paso)"
+          },
+          "tags": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Etiquetas (ej: ['italiana', 'pasta', 'clásica'])"
+          },
+          "fuente": {
+            "type": "string",
+            "description": "Referencia de dónde se obtuvo la receta"
+          },
+          "notas": {
+            "type": "string",
+            "description": "Notas adicionales"
+          }
+        },
+        "required": ["nombre", "ingredientes", "porciones"]
+      }
+    },
+    {
+      "name": "recetas.listar",
+      "description": "Lista todas las recetas del proyecto con resumen (nombre, categoría, nº ingredientes, coste estimado, porciones)",
+      "handler": "toolListar",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "categoria": {
+            "type": "string",
+            "description": "Filtrar por categoría (opcional)"
+          }
+        }
+      }
+    },
+    {
+      "name": "recetas.obtener",
+      "description": "Obtiene una receta completa por ID con todos sus ingredientes, cantidades, precios y elaboración",
+      "handler": "toolObtener",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "receta_id": {
+            "type": "string",
+            "description": "ID de la receta"
+          }
+        },
+        "required": ["receta_id"]
+      }
+    },
+    {
+      "name": "recetas.actualizar",
+      "description": "Actualiza una receta existente: nombre, ingredientes, cantidades, precios, porciones, elaboración. Solo envía los campos que cambian.",
+      "handler": "toolActualizar",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "receta_id": {
+            "type": "string",
+            "description": "ID de la receta a actualizar"
+          },
+          "nombre": { "type": "string" },
+          "descripcion": { "type": "string" },
+          "categoria": { "type": "string" },
+          "porciones": { "type": "number" },
+          "tiempo_preparacion": { "type": "number" },
+          "dificultad": { "type": "string", "enum": ["baja", "media", "alta"] },
+          "ingredientes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "nombre": { "type": "string" },
+                "cantidad": { "type": "number" },
+                "unidad": { "type": "string" },
+                "precio_mercado": { "type": "number" },
+                "notas": { "type": "string" }
+              },
+              "required": ["nombre", "cantidad", "unidad", "precio_mercado"]
+            }
+          },
+          "elaboracion": { "type": "array", "items": { "type": "string" } },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "fuente": { "type": "string" },
+          "notas": { "type": "string" }
+        },
+        "required": ["receta_id"]
+      }
+    },
+    {
+      "name": "recetas.eliminar",
+      "description": "Elimina una receta del proyecto",
+      "handler": "toolEliminar",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "receta_id": {
+            "type": "string",
+            "description": "ID de la receta a eliminar"
+          }
+        },
+        "required": ["receta_id"]
+      }
+    },
+    {
+      "name": "recetas.buscar",
+      "description": "Busca recetas por nombre, ingrediente o categoría",
+      "handler": "toolBuscar",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Texto a buscar en nombres, ingredientes o categorías"
+          }
+        },
+        "required": ["query"]
+      }
+    },
+    {
+      "name": "recetas.investigar",
+      "description": "Investiga una receta: busca información, propone ingredientes con cantidades y precios de mercado estimados. NO la guarda — la presenta al usuario para que confirme. Estima precios por ALTO (mejor pasarse que quedarse corto).",
+      "handler": "toolInvestigar",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "description": "Nombre o descripción de la receta a investigar (ej: 'carbonara clásica romana', 'tarta de queso vasca')"
+          },
+          "porciones": {
+            "type": "number",
+            "description": "Para cuántas porciones calcular (default: 4)"
+          },
+          "estilo": {
+            "type": "string",
+            "description": "Estilo o variante (ej: 'romana', 'napolitana', 'casera', 'gourmet')"
+          }
+        },
+        "required": ["nombre"]
+      }
+    },
+    {
+      "name": "recetas.ingredientes",
+      "description": "Lista el catálogo de ingredientes del proyecto con sus precios de mercado y de compra (si los hay)",
+      "handler": "toolIngredientes",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "categoria": {
+            "type": "string",
+            "description": "Filtrar por categoría de ingrediente (opcional)"
+          }
+        }
+      }
+    },
+    {
+      "name": "recetas.precio_mercado",
+      "description": "Actualiza el precio de mercado de un ingrediente del catálogo. Si se indica fuente, la registra.",
+      "handler": "toolPrecioMercado",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "ingrediente_id": {
+            "type": "string",
+            "description": "ID del ingrediente"
+          },
+          "nombre": {
+            "type": "string",
+            "description": "Nombre del ingrediente (alternativa al ID)"
+          },
+          "precio_mercado_kg": {
+            "type": "number",
+            "description": "Nuevo precio de mercado por kg (o unidad base)"
+          },
+          "unidad_base": {
+            "type": "string",
+            "description": "Unidad base para el precio (default: 'kg')"
+          },
+          "fuente_precio": {
+            "type": "string",
+            "description": "De dónde se obtuvo el precio (ej: 'mercadona.es', 'makro.es')"
+          }
+        }
+      }
+    },
+    {
+      "name": "recetas.duplicar",
+      "description": "Duplica una receta para crear una variante. Copia toda la receta con un nuevo ID y nombre.",
+      "handler": "toolDuplicar",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "receta_id": {
+            "type": "string",
+            "description": "ID de la receta a duplicar"
+          },
+          "nuevo_nombre": {
+            "type": "string",
+            "description": "Nombre para la nueva variante"
+          }
+        },
+        "required": ["receta_id", "nuevo_nombre"]
+      }
+    },
+    {
+      "name": "recetas.escandallo",
+      "description": "Calcula el escandallo (desglose de costes) de una receta: coste total, coste por porción, porcentaje de cada ingrediente sobre el total. Muestra también margen si se indica precio de venta.",
+      "handler": "toolEscandallo",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "receta_id": {
+            "type": "string",
+            "description": "ID de la receta"
+          },
+          "precio_venta": {
+            "type": "number",
+            "description": "Precio de venta por porción (opcional, para calcular margen)"
+          },
+          "usar_precio_compra": {
+            "type": "boolean",
+            "description": "Si true, usa precios de compra reales en vez de mercado (si están disponibles)"
+          }
+        },
+        "required": ["receta_id"]
+      }
+    },
+    {
+      "name": "recetas.resumen",
+      "description": "Resumen general de todas las recetas: costes, categorías, ingredientes más usados, receta más cara/barata",
+      "handler": "toolResumen",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  ],
+
+  "observability": {
+    "metrics": {
+      "counters": [
+        "recetas.created",
+        "recetas.updated",
+        "recetas.deleted",
+        "recetas.investigated",
+        "recetas.escandallo.calculated"
+      ]
+    }
+  }
+}

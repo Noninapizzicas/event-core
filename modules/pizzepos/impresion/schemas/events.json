@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://pizzepos.com/schemas/impresion-events.json",
+  "title": "Impresion Events Schema",
+  "description": "Esquemas de eventos del módulo impresión de comandas",
+
+  "definitions": {
+    "impresion_comanda_generada": {
+      "type": "object",
+      "required": ["event_type", "payload"],
+      "properties": {
+        "event_type": {"const": "impresion.comanda_generada"},
+        "payload": {
+          "type": "object",
+          "required": ["comanda_id", "pedido_id", "items_count", "generada_at"],
+          "properties": {
+            "comanda_id": {"type": "string"},
+            "pedido_id": {"type": "string"},
+            "cuenta_id": {"type": "string"},
+            "canal": {"type": "string"},
+            "items_count": {"type": "integer"},
+            "reimpresion": {"type": "boolean", "default": false},
+            "generada_at": {"type": "string", "format": "date-time"}
+          }
+        },
+        "correlation_id": {"type": "string"}
+      }
+    },
+
+    "impresion_error": {
+      "type": "object",
+      "required": ["event_type", "payload"],
+      "properties": {
+        "event_type": {"const": "impresion.error"},
+        "payload": {
+          "type": "object",
+          "required": ["error", "pedido_id"],
+          "properties": {
+            "error": {"type": "string"},
+            "pedido_id": {"type": "string"},
+            "fase": {
+              "type": "string",
+              "enum": ["formato", "envio"],
+              "description": "Fase donde ocurrió el error"
+            }
+          }
+        },
+        "correlation_id": {"type": "string"}
+      }
+    }
+  }
+}

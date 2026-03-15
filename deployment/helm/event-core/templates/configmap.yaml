@@ -1,0 +1,85 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "event-core.fullname" . }}-config
+  labels:
+    {{- include "event-core.labels" . | nindent 4 }}
+data:
+  config.json: |
+    {
+      "core_id": "{{ .Values.eventCore.coreId }}-{{ .Release.Name }}",
+      "log_level": "{{ .Values.eventCore.logLevel }}",
+      "mqtt": {
+        "url": "{{ include "event-core.mqttUrl" . }}",
+        "client_id": "{{ .Values.eventCore.coreId }}-{{ .Release.Name }}-${HOSTNAME}",
+        "qos": 1,
+        "retry": {
+          "max_attempts": 5,
+          "initial_delay_ms": 1000
+        }
+      },
+      "http": {
+        "port": {{ .Values.eventCore.http.port }},
+        "host": "0.0.0.0",
+        "cors": {
+          "enabled": {{ .Values.eventCore.http.enableCors }},
+          "origins": ["*"]
+        }
+      },
+      "modules": {
+        "auto_discover": true,
+        "hot_reload": true,
+        "enabled_modules": [
+          {{- range $index, $module := .Values.eventCore.modules }}
+          {{- if $module.enabled }}
+          {{- if $index }},{{ end }}
+          "{{ $module.name }}"
+          {{- end }}
+          {{- end }}
+        ]
+      },
+      "hooks": {
+        "enabled": true
+      },
+      "observability": {
+        "enabled": true,
+        "tracing": {
+          "enabled": true
+        },
+        "metrics": {
+          "enabled": true
+        }
+      }
+    }
+
+  ai-config.json: |
+    {
+      "providers": {
+        "deepseek": {
+          "enabled": {{ .Values.eventCore.ai.providers.deepseek.enabled }},
+          "priority": 1,
+          "api_base": "https://api.deepseek.com/v1",
+          "default_model": "deepseek-chat"
+        },
+        "anthropic": {
+          "enabled": {{ .Values.eventCore.ai.providers.anthropic.enabled }},
+          "priority": 2,
+          "api_base": "https://api.anthropic.com/v1",
+          "default_model": "claude-3-sonnet-20240229"
+        },
+        "openai": {
+          "enabled": {{ .Values.eventCore.ai.providers.openai.enabled }},
+          "priority": 3,
+          "api_base": "https://api.openai.com/v1",
+          "default_model": "gpt-4"
+        }
+        {{- if .Values.eventCore.ai.providers.ollama.enabled }},
+        "ollama": {
+          "enabled": true,
+          "priority": 4,
+          "api_base": "{{ .Values.eventCore.ai.providers.ollama.url }}",
+          "default_model": "llama2"
+        }
+        {{- end }}
+      }
+    }

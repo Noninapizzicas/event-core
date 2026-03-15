@@ -1,0 +1,69 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://pizzepos.com/schemas/ingrediente-events.json",
+  "title": "Ingrediente Events Schema",
+  "description": "Esquemas de eventos del módulo ingredientes",
+
+  "definitions": {
+    "event_envelope": {
+      "type": "object",
+      "required": ["event_id", "event_type", "correlation_id", "occurred_at", "producer", "schema_version", "payload"],
+      "properties": {
+        "event_id": {"type": "string", "format": "uuid"},
+        "event_type": {"type": "string", "pattern": "^[a-z]+\\.[a-z_]+$"},
+        "correlation_id": {"type": "string", "format": "uuid"},
+        "occurred_at": {"type": "string", "format": "date-time"},
+        "producer": {"type": "string", "minLength": 1},
+        "schema_version": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$"},
+        "payload": {"type": "object"}
+      },
+      "additionalProperties": false
+    },
+
+    "ingrediente_creado": {
+      "allOf": [
+        {"$ref": "#/definitions/event_envelope"},
+        {
+          "properties": {
+            "event_type": {"const": "ingrediente.creado"},
+            "payload": {
+              "type": "object",
+              "required": ["ingrediente_id", "nombre", "tipo"],
+              "properties": {
+                "ingrediente_id": {"type": "string"},
+                "nombre": {"type": "string"},
+                "emoji": {"type": "string"},
+                "tipo": {"type": "string"},
+                "es_alergeno": {"type": "boolean"},
+                "alergenos": {"type": "array"},
+                "created_at": {"type": "string", "format": "date-time"}
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+
+    "ingrediente_actualizado": {
+      "allOf": [
+        {"$ref": "#/definitions/event_envelope"},
+        {
+          "properties": {
+            "event_type": {"const": "ingrediente.actualizado"},
+            "payload": {
+              "type": "object",
+              "required": ["ingrediente_id", "cambios"],
+              "properties": {
+                "ingrediente_id": {"type": "string"},
+                "cambios": {"type": "object"},
+                "updated_at": {"type": "string", "format": "date-time"}
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    }
+  }
+}

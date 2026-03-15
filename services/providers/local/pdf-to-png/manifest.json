@@ -1,0 +1,70 @@
+{
+  "$schema": "../../../schemas/provider-manifest.schema.json",
+  "name": "local.pdf-to-png",
+  "version": "1.0.0",
+  "description": "Convertir páginas de PDF a imágenes PNG",
+  "type": "provider",
+  "requires": {
+    "credentials": [],
+    "npm": [
+      "os"
+    ]
+  },
+  "functions": {
+    "convert": {
+      "event": "local.pdf-to-png.convert.request",
+      "description": "Convertir páginas de PDF a PNG",
+      "input": {
+        "pdf": {
+          "type": "string",
+          "description": "PDF en base64 o path al archivo",
+          "required": true
+        },
+        "pages": {
+          "type": "array",
+          "description": "Páginas a convertir [1,2,3] (1-based). Vacío = todas",
+          "default": []
+        },
+        "scale": {
+          "type": "number",
+          "description": "Escala del viewport (2.0 = 200%)",
+          "default": 2
+        },
+        "outputFolder": {
+          "type": "string",
+          "description": "Carpeta para guardar PNGs (opcional)",
+          "default": ""
+        },
+        "password": {
+          "type": "string",
+          "description": "Contraseña para PDFs encriptados",
+          "default": ""
+        }
+      },
+      "output": {
+        "success": {
+          "type": "boolean",
+          "description": "Si la operacion fue exitosa"
+        },
+        "data": {
+          "type": "object",
+          "description": "Datos de las imágenes (NOTA: acceder via steps.ID.data.images)",
+          "properties": {
+            "images": {
+              "type": "array",
+              "description": "Array de imágenes PNG"
+            },
+            "totalPages": {
+              "type": "number",
+              "description": "Total de páginas convertidas"
+            }
+          }
+        },
+        "error": {
+          "type": "string",
+          "description": "Mensaje de error si success=false"
+        }
+      }
+    }
+  }
+}

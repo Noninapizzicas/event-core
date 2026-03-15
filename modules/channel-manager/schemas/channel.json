@@ -1,0 +1,78 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "channel_binding": {
+      "type": "object",
+      "description": "Vinculacion de un canal externo a un proyecto interno",
+      "properties": {
+        "id": { "type": "integer", "description": "ID autoincremental" },
+        "channel_type": {
+          "type": "string",
+          "enum": ["telegram", "gmail", "whatsapp", "glovo", "web"],
+          "description": "Tipo de canal externo"
+        },
+        "external_id": {
+          "type": "string",
+          "description": "Identificador unico dentro del tipo de canal. Ejemplos: 'mibot:12345' (telegram), 'facturas@empresa.com' (gmail), '+34600123456' (whatsapp)"
+        },
+        "project_id": {
+          "type": "string",
+          "description": "ID del proyecto destino"
+        },
+        "purpose": {
+          "type": "string",
+          "enum": ["facturas", "pedidos", "notificaciones", "general"],
+          "description": "Proposito de este canal dentro del proyecto"
+        },
+        "label": {
+          "type": ["string", "null"],
+          "description": "Etiqueta legible (ej: 'Bot facturas Nonina', 'WhatsApp pedidos')"
+        },
+        "metadata": {
+          "type": "object",
+          "description": "Datos adicionales especificos del canal",
+          "properties": {
+            "bot_name": { "type": "string" },
+            "chat_title": { "type": "string" },
+            "contact_name": { "type": "string" },
+            "store_id": { "type": "string" }
+          },
+          "additionalProperties": true
+        },
+        "enabled": {
+          "type": "integer",
+          "enum": [0, 1],
+          "description": "1 = activo, 0 = deshabilitado"
+        },
+        "created_at": { "type": "string", "format": "date-time" },
+        "updated_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["channel_type", "external_id", "project_id"]
+    },
+
+    "resolve_request": {
+      "type": "object",
+      "description": "Peticion de resolucion de canal",
+      "properties": {
+        "channel_type": { "type": "string" },
+        "external_id": { "type": "string" },
+        "correlationId": { "type": "string" }
+      },
+      "required": ["channel_type", "external_id"]
+    },
+
+    "register_request": {
+      "type": "object",
+      "description": "Peticion de registro de canal",
+      "properties": {
+        "channel_type": { "type": "string" },
+        "external_id": { "type": "string" },
+        "project_id": { "type": "string" },
+        "purpose": { "type": "string" },
+        "label": { "type": "string" },
+        "metadata": { "type": "object" }
+      },
+      "required": ["channel_type", "external_id", "project_id"]
+    }
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "$schema": "provider-manifest-v1",
+  "name": "local.svg",
+  "version": "1.0.0",
+  "description": "Generación de gráficos SVG — planos, esquemas, diagramas, gráficas",
+  "type": "local",
+  "requires": {
+    "npm": [],
+    "credentials": []
+  },
+  "functions": {
+    "create": {
+      "event": "local.svg.create.request",
+      "description": "Crea un SVG a partir de elementos definidos",
+      "input": {
+        "width": { "type": "number", "required": false, "description": "Ancho del SVG en píxeles" },
+        "height": { "type": "number", "required": false, "description": "Alto del SVG en píxeles" },
+        "elements": { "type": "array", "required": true, "description": "Elementos SVG a renderizar" },
+        "filename": { "type": "string", "required": false, "description": "Nombre del archivo de salida" },
+        "title": { "type": "string", "required": false, "description": "Título del SVG" }
+      },
+      "output": {
+        "path": { "type": "string", "description": "Ruta del archivo generado" },
+        "svg": { "type": "string", "description": "Contenido SVG generado" }
+      }
+    },
+    "from-data": {
+      "event": "local.svg.from-data.request",
+      "description": "Genera una gráfica SVG a partir de datos",
+      "input": {
+        "type": { "type": "string", "required": true, "description": "Tipo de gráfica: bar, line, pie, scatter" },
+        "data": { "type": "array", "required": true, "description": "Datos para la gráfica" },
+        "title": { "type": "string", "required": false, "description": "Título de la gráfica" },
+        "width": { "type": "number", "required": false, "description": "Ancho del SVG" },
+        "height": { "type": "number", "required": false, "description": "Alto del SVG" },
+        "colors": { "type": "array", "required": false, "description": "Paleta de colores personalizada" },
+        "filename": { "type": "string", "required": false, "description": "Nombre del archivo de salida" }
+      },
+      "output": {
+        "path": { "type": "string", "description": "Ruta del archivo generado" }
+      }
+    },
+    "schematic": {
+      "event": "local.svg.schematic.request",
+      "description": "Genera un esquema de bloques y conexiones",
+      "input": {
+        "blocks": { "type": "array", "required": true, "description": "Bloques del esquema" },
+        "connections": { "type": "array", "required": false, "description": "Conexiones entre bloques" },
+        "title": { "type": "string", "required": false, "description": "Título del esquema" },
+        "filename": { "type": "string", "required": false, "description": "Nombre del archivo de salida" }
+      },
+      "output": {
+        "path": { "type": "string", "description": "Ruta del archivo generado" }
+      }
+    },
+    "floorplan": {
+      "event": "local.svg.floorplan.request",
+      "description": "Genera un plano de planta con habitaciones y puertas",
+      "input": {
+        "rooms": { "type": "array", "required": true, "description": "Habitaciones del plano" },
+        "doors": { "type": "array", "required": false, "description": "Puertas y aberturas" },
+        "scale": { "type": "number", "required": false, "description": "Escala del plano" },
+        "title": { "type": "string", "required": false, "description": "Título del plano" },
+        "filename": { "type": "string", "required": false, "description": "Nombre del archivo de salida" }
+      },
+      "output": {
+        "path": { "type": "string", "description": "Ruta del archivo generado" }
+      }
+    }
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "$schema": "../../../schemas/provider-manifest.schema.json",
+  "name": "local.scribe-ocr",
+  "version": "1.0.0",
+  "description": "OCR avanzado con scribe.js-ocr (Tesseract WASM)",
+  "type": "provider",
+  "requires": {
+    "credentials": [],
+    "npm": [
+      "os"
+    ]
+  },
+  "functions": {
+    "extract": {
+      "event": "local.scribe-ocr.extract.request",
+      "description": "Extraer texto de imagen o PDF usando OCR",
+      "input": {
+        "input": {
+          "type": "string",
+          "description": "Imagen/PDF en base64 o path al archivo",
+          "required": true
+        },
+        "lang": {
+          "type": "string",
+          "description": "Código de idioma: spa, eng, fra, deu, ita, etc.",
+          "default": "eng"
+        },
+        "oem": {
+          "type": "number",
+          "description": "OCR Engine Mode: 0=Legacy, 1=LSTM, 2=Legacy+LSTM, 3=Default",
+          "default": 1
+        },
+        "psm": {
+          "type": "number",
+          "description": "Page Segmentation Mode: 3=Auto, 6=Block, 11=Sparse, 13=Raw line",
+          "default": 6
+        }
+      },
+      "output": {
+        "success": {
+          "type": "boolean",
+          "description": "Si la operacion fue exitosa"
+        },
+        "data": {
+          "type": "object",
+          "description": "Datos extraidos (NOTA: acceder via steps.ID.data.text)",
+          "properties": {
+            "text": {
+              "type": "string",
+              "description": "Texto extraido"
+            },
+            "confidence": {
+              "type": "number",
+              "description": "Confianza promedio 0-100"
+            },
+            "pages": {
+              "type": "number",
+              "description": "Páginas procesadas"
+            },
+            "lang": {
+              "type": "string",
+              "description": "Idioma usado"
+            }
+          }
+        },
+        "error": {
+          "type": "string",
+          "description": "Mensaje de error si success=false"
+        }
+      }
+    }
+  }
+}

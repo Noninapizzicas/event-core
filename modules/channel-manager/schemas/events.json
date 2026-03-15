@@ -1,0 +1,74 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "channel_registered": {
+      "type": "object",
+      "description": "Nuevo canal vinculado a un proyecto",
+      "properties": {
+        "channel_type": { "type": "string", "enum": ["telegram", "gmail", "whatsapp", "glovo", "web"] },
+        "external_id": { "type": "string", "description": "Identificador externo unico del canal" },
+        "project_id": { "type": "string", "description": "Proyecto destino" },
+        "purpose": { "type": "string", "description": "Proposito: facturas, pedidos, notificaciones, general" },
+        "label": { "type": ["string", "null"], "description": "Etiqueta legible para humanos" }
+      },
+      "required": ["channel_type", "external_id", "project_id"]
+    },
+
+    "channel_updated": {
+      "type": "object",
+      "description": "Canal actualizado",
+      "properties": {
+        "channel_type": { "type": "string" },
+        "external_id": { "type": "string" },
+        "updates": {
+          "type": "object",
+          "description": "Campos actualizados"
+        }
+      },
+      "required": ["channel_type", "external_id", "updates"]
+    },
+
+    "channel_removed": {
+      "type": "object",
+      "description": "Canal desvinculado",
+      "properties": {
+        "channel_type": { "type": "string" },
+        "external_id": { "type": "string" },
+        "project_id": { "type": ["string", "null"] }
+      },
+      "required": ["channel_type", "external_id"]
+    },
+
+    "channel_resolved": {
+      "type": "object",
+      "description": "Canal resuelto exitosamente",
+      "properties": {
+        "channel_type": { "type": "string" },
+        "external_id": { "type": "string" },
+        "project_id": { "type": "string" },
+        "purpose": { "type": "string" },
+        "label": { "type": ["string", "null"] },
+        "metadata": { "type": "object" },
+        "correlationId": { "type": "string" },
+        "duration": { "type": "number", "description": "Duracion de resolucion en ms" }
+      },
+      "required": ["channel_type", "external_id", "project_id", "purpose"]
+    },
+
+    "channel_resolve_response": {
+      "type": "object",
+      "description": "Respuesta a channel.resolve.request",
+      "properties": {
+        "found": { "type": "boolean" },
+        "channel_type": { "type": "string" },
+        "external_id": { "type": "string" },
+        "project_id": { "type": "string" },
+        "purpose": { "type": "string" },
+        "label": { "type": ["string", "null"] },
+        "metadata": { "type": "object" },
+        "correlationId": { "type": "string" }
+      },
+      "required": ["found", "channel_type", "external_id"]
+    }
+  }
+}

@@ -1,0 +1,149 @@
+{
+  "id": "procesar-factura",
+  "name": "Procesar Factura Individual",
+  "description": "Procesa una factura con OCR y extrae datos estructurados",
+  "version": "1.0.0",
+  "enabled": false,
+  "trigger": {
+    "event": "factura.procesar",
+    "filter": {
+      "projectId": "{{ project.id }}"
+    }
+  },
+  "steps": [
+    {
+      "id": "log-inicio",
+      "type": "log",
+      "level": "info",
+      "message": "Procesando factura {{ trigger.id }}: {{ trigger.archivo.nombre }}"
+    },
+    {
+      "id": "{{ trigger.id }}",
+      "type": "service",
+      "service": "local.facturas-db",
+      "action": "actualizar",
+      "proyecto": "{{ project.id }}",
+      "datos": {
+        "estado": "procesando",
+        "procesado_at": "{{ new Date().toISOString() }}"
+      },
+      "timeout": 10000
+    },
+    {
+      "id": "ejecutar-ocr",
+      "type": "service",
+      "service": "{{ config.ocr.provider }}",
+      "action": "extractText",
+      "imagePath": "{{ trigger.archivo.path }}",
+      "languages": "{{ config.ocr.languages }}",
+      "hint": "{{ config.ocr.hint }}",
+      "timeout": 120000,
+      "onError": "marcar-error"
+    },
+    {
+      "id": "extraer-datos",
+      "type": "agent",
+      "model": "claude-3-haiku",
+      "system": "Eres un extractor de datos de facturas. Analiza el texto OCR y extrae los datos estructurados.",
+      "prompt": "Analiza el siguiente texto OCR de una factura y extrae los datos en formato JSON:\n\n{{ steps.ejecutar-ocr.data.text }}\n\nExtrae:\n- numero_factura: número de la factura\n- fecha_factura: fecha en formato YYYY-MM-DD\n- nif_proveedor: NIF/CIF del proveedor\n- nombre_proveedor: nombre del proveedor\n- concepto: descripción o concepto\n- base_imponible: importe sin IVA (número)\n- porcentaje_iva: porcentaje de IVA (número)\n- cuota_iva: importe del IVA (número)\n- total: importe total (número)\n- categoria: categoría sugerida (suministros, servicios, material, etc.)\n\nResponde SOLO con el JSON, sin explicaciones.",
+      "responseFormat": "json",
+      "timeout": 60000,
+      "onError": "marcar-error"
+    },
+    {
+      "id": "crear-directorio-procesadas",
+      "type": "service",
+      "service": "fs",
+      "action": "mkdir",
+      "path": "@/projects/{{ project.id }}/{{ config.storage.procesadas }}/originales",
+      "onError": "continue"
+    },
+    {
+      "id": "crear-directorio-ocr",
+      "type": "service",
+      "service": "fs",
+      "action": "mkdir",
+      "path": "@/projects/{{ project.id }}/{{ config.storage.procesadas }}/ocr",
+      "onError": "continue"
+    },
+    {
+      "id": "mover-original",
+      "type": "service",
+      "service": "fs",
+      "action": "move",
+      "source": "{{ trigger.archivo.path }}",
+      "destination": "@/projects/{{ project.id }}/{{ config.storage.procesadas }}/originales/{{ trigger.archivo.nombre }}",
+      "timeout": 30000
+    },
+    {
+      "id": "guardar-ocr",
+      "type": "service",
+      "service": "fs",
+      "action": "write",
+      "path": "@/projects/{{ project.id }}/{{ config.storage.procesadas }}/ocr/{{ trigger.id }}_ocr.json",
+      "content": {
+        "facturaId": "{{ trigger.id }}",
+        "archivo": "{{ trigger.archivo.nombre }}",
+        "procesadoAt": "{{ new Date().toISOString() }}",
+        "ocrText": "{{ steps.ejecutar-ocr.data.text }}",
+        "ocrConfidence": "{{ steps.ejecutar-ocr.data.confidence }}",
+        "datosExtraidos": "{{ steps.extraer-datos.data }}"
+      },
+      "timeout": 10000
+    },
+    {
+      "id": "{{ trigger.id }}",
+      "type": "service",
+      "service": "local.facturas-db",
+      "action": "actualizar",
+      "proyecto": "{{ project.id }}",
+      "datos": {
+        "estado": "procesada",
+        "numero_factura": "{{ steps.extraer-datos.data.numero_factura }}",
+        "fecha_factura": "{{ steps.extraer-datos.data.fecha_factura }}",
+        "nif_proveedor": "{{ steps.extraer-datos.data.nif_proveedor }}",
+        "nombre_proveedor": "{{ steps.extraer-datos.data.nombre_proveedor }}",
+        "concepto": "{{ steps.extraer-datos.data.concepto }}",
+        "base_imponible": "{{ steps.extraer-datos.data.base_imponible }}",
+        "porcentaje_iva": "{{ steps.extraer-datos.data.porcentaje_iva }}",
+        "cuota_iva": "{{ steps.extraer-datos.data.cuota_iva }}",
+        "total": "{{ steps.extraer-datos.data.total }}",
+        "categoria": "{{ steps.extraer-datos.data.categoria }}",
+        "path_procesada": "@/projects/{{ project.id }}/{{ config.storage.procesadas }}/originales/{{ trigger.archivo.nombre }}",
+        "path_ocr": "@/projects/{{ project.id }}/{{ config.storage.procesadas }}/ocr/{{ trigger.id }}_ocr.json",
+        "ocr_confidence": "{{ steps.ejecutar-ocr.data.confidence }}"
+      },
+      "timeout": 10000
+    },
+    {
+      "id": "log-completado",
+      "type": "log",
+      "level": "info",
+      "message": "Factura procesada: {{ trigger.id }} - {{ steps.extraer-datos.data.nombre_proveedor }} - {{ steps.extraer-datos.data.total }}€"
+    },
+    {
+      "id": "emitir-procesada",
+      "type": "emit",
+      "event": "factura.procesada",
+      "data": {
+        "projectId": "{{ project.id }}",
+        "id": "{{ trigger.id }}",
+        "datos": "{{ steps.extraer-datos.data }}",
+        "archivo": "{{ trigger.archivo.nombre }}"
+      }
+    },
+    {
+      "id": "{{ trigger.id }}",
+      "type": "service",
+      "service": "local.facturas-db",
+      "action": "actualizar",
+      "proyecto": "{{ project.id }}",
+      "datos": {
+        "estado": "error",
+        "error_mensaje": "{{ error.message }}",
+        "error_at": "{{ new Date().toISOString() }}"
+      },
+      "timeout": 10000
+    }
+  ]
+}

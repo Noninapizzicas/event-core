@@ -1,0 +1,158 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://pizzepos.com/schemas/producto.json",
+  "title": "Producto Schema",
+  "description": "Esquemas de datos para productos",
+
+  "definitions": {
+    "producto": {
+      "type": "object",
+      "required": ["id", "nombre", "categoria", "precio", "activo"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^prod_[a-z0-9_]+$",
+          "description": "ID del producto"
+        },
+        "nombre": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Nombre del producto"
+        },
+        "emoji": {
+          "type": "string",
+          "description": "Emoji representativo"
+        },
+        "categoria": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Categoría del producto"
+        },
+        "categoria_emoji": {
+          "type": "string",
+          "description": "Emoji de la categoría"
+        },
+        "descripcion": {
+          "type": "string",
+          "description": "Descripción del producto"
+        },
+        "precio": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Precio base"
+        },
+        "ingredientes_base": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {"type": "string"},
+              "nombre": {"type": "string"},
+              "emoji": {"type": "string"},
+              "tipo": {"type": "string"},
+              "es_alergeno": {"type": "boolean"},
+              "alergenos": {"type": "array", "items": {"type": "string"}}
+            }
+          },
+          "description": "Ingredientes base del producto"
+        },
+        "alergenos": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["gluten", "lactosa", "huevo", "pescado", "marisco", "frutos_secos", "soja", "apio", "mostaza", "sesamo", "sulfitos", "altramuces"]
+          },
+          "description": "Alérgenos presentes"
+        },
+        "variaciones": {
+          "type": "object",
+          "properties": {
+            "permite_quitar": {
+              "type": "array",
+              "items": {"type": "string"}
+            },
+            "permite_anadir": {"type": "boolean"},
+            "extras_sugeridos": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "ingrediente_id": {"type": "string"},
+                  "precio_extra": {"type": "number"}
+                }
+              }
+            }
+          }
+        },
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "popularidad": {
+              "type": "string",
+              "enum": ["baja", "media", "alta"]
+            },
+            "tiempo_preparacion": {"type": "integer"},
+            "vegano": {"type": "boolean"},
+            "vegetariano": {"type": "boolean"}
+          }
+        },
+        "activo": {
+          "type": "boolean",
+          "description": "Producto disponible para venta"
+        },
+        "menu_source_id": {
+          "type": "string",
+          "description": "ID del menú del que proviene"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "categoria": {
+      "type": "object",
+      "required": ["id", "nombre"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^cat_[a-z0-9_]+$"
+        },
+        "nombre": {
+          "type": "string",
+          "minLength": 1
+        },
+        "emoji": {
+          "type": "string"
+        },
+        "orden": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "activa": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "update_request": {
+      "type": "object",
+      "properties": {
+        "nombre": {"type": "string", "minLength": 1},
+        "precio": {"type": "number", "minimum": 0},
+        "descripcion": {"type": "string"},
+        "activo": {"type": "boolean"},
+        "metadata": {"type": "object"}
+      },
+      "additionalProperties": false,
+      "minProperties": 1
+    }
+  }
+}

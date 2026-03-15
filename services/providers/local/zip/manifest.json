@@ -1,0 +1,27 @@
+{
+  "$schema": "../../../schemas/provider-manifest.schema.json",
+  "name": "local.zip",
+  "version": "1.0.0",
+  "description": "Servicio local para crear archivos ZIP",
+  "type": "provider",
+  "generatedBy": "local.context-sync",
+  "generatedAt": "2026-02-05T12:03:21.149Z",
+  "requires": {
+    "credentials": [],
+    "npm": []
+  },
+  "functions": {
+    "create": {
+      "event": "local.zip.create.request",
+      "description": "Ejecutar create"
+    },
+    "createFromFiles": {
+      "event": "local.zip.createFromFiles.request",
+      "description": "Ejecutar createFromFiles"
+    },
+    "addDirectory": {
+      "event": "local.zip.addDirectory.request",
+      "description": "Ejecutar addDirectory"
+    }
+  }
+}

@@ -1,0 +1,179 @@
+# Default values for event-core Helm chart
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Number of event-core replicas
+replicaCount: 2
+
+image:
+  repository: event-core
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "1.0.0"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext:
+  fsGroup: 2000
+
+securityContext:
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false
+  runAsNonRoot: true
+  runAsUser: 1000
+
+service:
+  type: ClusterIP
+  httpPort: 3000
+  mqttPort: 1883
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: event-core.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  #  - secretName: event-core-tls
+  #    hosts:
+  #      - event-core.local
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# Event-core specific configuration
+eventCore:
+  coreId: "core-k8s"
+  logLevel: "info"
+
+  # MQTT Configuration
+  mqtt:
+    enabled: true
+    # Use external MQTT broker or embedded
+    external:
+      enabled: false
+      url: "mqtt://mosquitto:1883"
+    # Embedded broker (StatefulSet)
+    embedded:
+      enabled: true
+      persistence:
+        enabled: true
+        size: 1Gi
+        storageClass: ""
+
+  # HTTP API Gateway
+  http:
+    port: 3000
+    enableCors: true
+
+  # Modules to enable
+  modules:
+    - name: "echo"
+      enabled: true
+    - name: "file-watcher"
+      enabled: false
+    - name: "security-p2p"
+      enabled: true
+    - name: "observability"
+      enabled: true
+    - name: "prompt-manager"
+      enabled: true
+    - name: "ai-gateway"
+      enabled: true
+    - name: "ai-agent-framework"
+      enabled: true
+
+  # AI Provider configuration (stored as secrets)
+  ai:
+    providers:
+      deepseek:
+        enabled: true
+        # API key should be set via secret
+        apiKeySecret: "event-core-ai-secrets"
+        apiKeySecretKey: "deepseek-api-key"
+      anthropic:
+        enabled: true
+        apiKeySecret: "event-core-ai-secrets"
+        apiKeySecretKey: "anthropic-api-key"
+      openai:
+        enabled: false
+        apiKeySecret: "event-core-ai-secrets"
+        apiKeySecretKey: "openai-api-key"
+      ollama:
+        enabled: false
+        url: "http://ollama:11434"
+
+# Health checks
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /ready
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+# Environment variables
+env: []
+  # - name: CUSTOM_VAR
+  #   value: "custom-value"
+
+# Secrets (create manually or via external-secrets)
+secrets:
+  # Create a secret with AI provider API keys
+  # kubectl create secret generic event-core-ai-secrets \
+  #   --from-literal=deepseek-api-key=YOUR_KEY \
+  #   --from-literal=anthropic-api-key=YOUR_KEY \
+  #   --from-literal=openai-api-key=YOUR_KEY
+  create: false
+  name: "event-core-ai-secrets"
+  data: {}
+    # deepseek-api-key: ""
+    # anthropic-api-key: ""
+    # openai-api-key: ""

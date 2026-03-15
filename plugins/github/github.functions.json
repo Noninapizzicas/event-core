@@ -1,0 +1,165 @@
+{
+  "metadata": {
+    "name": "github",
+    "version": "1.0.0",
+    "description": "GitHub API integration for repository management, issues, and pull requests",
+    "base_url": "https://api.github.com",
+    "auth_type": "bearer",
+    "auth_header_name": "Authorization",
+    "documentation": "https://docs.github.com/en/rest"
+  },
+  "functions": {
+    "create_issue": {
+      "method": "POST",
+      "endpoint": "/repos/{owner}/{repo}/issues",
+      "description": "Create a new issue in a GitHub repository",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "type": "string",
+            "description": "Repository owner (username or organization)"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          },
+          "title": {
+            "type": "string",
+            "description": "Issue title"
+          },
+          "body": {
+            "type": "string",
+            "description": "Issue description body"
+          },
+          "labels": {
+            "type": "array",
+            "description": "Labels to add to the issue",
+            "items": {
+              "type": "string"
+            }
+          },
+          "assignees": {
+            "type": "array",
+            "description": "Users to assign to the issue",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["owner", "repo", "title"]
+      }
+    },
+    "create_comment": {
+      "method": "POST",
+      "endpoint": "/repos/{owner}/{repo}/issues/{issue_number}/comments",
+      "description": "Add a comment to an existing issue or pull request",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "type": "string",
+            "description": "Repository owner"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          },
+          "issue_number": {
+            "type": "integer",
+            "description": "Issue or PR number"
+          },
+          "body": {
+            "type": "string",
+            "description": "Comment body"
+          }
+        },
+        "required": ["owner", "repo", "issue_number", "body"]
+      }
+    },
+    "get_repository": {
+      "method": "GET",
+      "endpoint": "/repos/{owner}/{repo}",
+      "description": "Get repository information",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "type": "string",
+            "description": "Repository owner"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          }
+        },
+        "required": ["owner", "repo"]
+      }
+    },
+    "list_issues": {
+      "method": "GET",
+      "endpoint": "/repos/{owner}/{repo}/issues",
+      "description": "List issues in a repository",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "type": "string",
+            "description": "Repository owner"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          },
+          "state": {
+            "type": "string",
+            "enum": ["open", "closed", "all"],
+            "description": "Filter by state",
+            "default": "open"
+          },
+          "labels": {
+            "type": "string",
+            "description": "Comma-separated list of label names"
+          }
+        },
+        "required": ["owner", "repo"]
+      }
+    },
+    "create_pull_request": {
+      "method": "POST",
+      "endpoint": "/repos/{owner}/{repo}/pulls",
+      "description": "Create a new pull request",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "type": "string",
+            "description": "Repository owner"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          },
+          "title": {
+            "type": "string",
+            "description": "Pull request title"
+          },
+          "body": {
+            "type": "string",
+            "description": "Pull request description"
+          },
+          "head": {
+            "type": "string",
+            "description": "The name of the branch where your changes are"
+          },
+          "base": {
+            "type": "string",
+            "description": "The name of the branch you want to merge into",
+            "default": "main"
+          }
+        },
+        "required": ["owner", "repo", "title", "head", "base"]
+      }
+    }
+  }
+}

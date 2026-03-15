@@ -1,0 +1,27 @@
+apiVersion: v2
+name: event-core
+description: Event-driven microservices architecture with AI integration
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+
+keywords:
+  - event-driven
+  - mqtt
+  - microservices
+  - ai
+  - modular
+
+maintainers:
+  - name: event-core team
+    email: dev@event-core.local
+
+home: https://github.com/Noninapizzicas/event-core
+sources:
+  - https://github.com/Noninapizzicas/event-core
+
+icon: https://raw.githubusercontent.com/Noninapizzicas/event-core/main/docs/logo.png
+
+annotations:
+  category: Infrastructure
+  licenses: MIT

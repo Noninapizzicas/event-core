@@ -1,0 +1,183 @@
+{
+  "name": "cuentas-canales",
+  "version": "3.0.0",
+  "description": "Sistema unificado de canales de venta con patrón Strategy: mesa, teléfono, llevar, glovo, whatsapp",
+  "author": "Pizzepos Team",
+
+  "replaces": ["cuentas-mesa", "cuentas-telefono", "cuentas-llevar"],
+
+  "provides": {
+    "events": [
+      "mesa.abierta",
+      "mesa.camarero_asignado",
+      "mesa.cerrada",
+      "mesa.renombrada",
+      "telefono.llamada_detectada",
+      "telefono.contacto_identificado",
+      "telefono.pedido_creado",
+      "telefono.listo_para_recoger",
+      "llevar.ticket_creado",
+      "llevar.ticket_listo",
+      "llevar.ticket_entregado",
+      "glovo.pedido_recibido",
+      "glovo.pedido_aceptado",
+      "glovo.pedido_rechazado",
+      "glovo.pedido_listo",
+      "glovo.pedido_recogido",
+      "whatsapp.mensaje_recibido",
+      "whatsapp.pedido_creado",
+      "whatsapp.pedido_confirmado",
+      "whatsapp.pedido_listo",
+      "cuenta.creada",
+      "cuenta.cerrada"
+    ],
+    "queries": [
+      "mesas.activas",
+      "canales.list",
+      "canales.health",
+      "canales.metrics"
+    ]
+  },
+
+  "events": {
+    "publishes": [
+      {
+        "event": "cuenta.creada",
+        "description": "Cuenta creada en cualquier canal (mesa/telefono/llevar/glovo/whatsapp)",
+        "schema": { "type": "object", "required": ["cuenta_id", "tipo", "origen"] }
+      },
+      {
+        "event": "cuenta.cerrada",
+        "description": "Cuenta cerrada en cualquier canal",
+        "schema": { "type": "object", "required": ["cuenta_id", "tipo", "total"] }
+      },
+      {
+        "event": "mesa.abierta",
+        "description": "Mesa abierta para servicio",
+        "schema": { "$ref": "./schemas/mesa-events.json#/definitions/mesa_abierta" }
+      },
+      {
+        "event": "mesa.cerrada",
+        "description": "Mesa cerrada y liberada",
+        "schema": { "$ref": "./schemas/mesa-events.json#/definitions/mesa_cerrada" }
+      },
+      {
+        "event": "telefono.pedido_creado",
+        "description": "Pedido telefónico creado",
+        "schema": { "$ref": "./schemas/telefono-events.json#/definitions/telefono_pedido_creado" }
+      },
+      {
+        "event": "llevar.ticket_creado",
+        "description": "Ticket para llevar creado",
+        "schema": { "$ref": "./schemas/llevar-events.json#/definitions/llevar_ticket_creado" }
+      },
+      {
+        "event": "glovo.pedido_recibido",
+        "description": "Pedido Glovo recibido desde la plataforma",
+        "schema": { "$ref": "./schemas/glovo-events.json#/definitions/glovo_pedido_recibido" }
+      },
+      {
+        "event": "glovo.pedido_aceptado",
+        "description": "Pedido Glovo aceptado por el restaurante",
+        "schema": { "$ref": "./schemas/glovo-events.json#/definitions/glovo_pedido_aceptado" }
+      },
+      {
+        "event": "glovo.pedido_listo",
+        "description": "Pedido Glovo listo para rider",
+        "schema": { "$ref": "./schemas/glovo-events.json#/definitions/glovo_pedido_listo" }
+      },
+      {
+        "event": "whatsapp.pedido_creado",
+        "description": "Pedido creado desde conversación WhatsApp",
+        "schema": { "$ref": "./schemas/whatsapp-events.json#/definitions/whatsapp_pedido_creado" }
+      },
+      {
+        "event": "whatsapp.pedido_listo",
+        "description": "Pedido WhatsApp listo, cliente notificado",
+        "schema": { "$ref": "./schemas/whatsapp-events.json#/definitions/whatsapp_pedido_listo" }
+      }
+    ],
+    "subscribes": [
+      {
+        "event": "cobro.procesado",
+        "description": "Cobro completado — cierra cuenta en el canal correspondiente por prefijo",
+        "handler": "onCobroProcesado"
+      },
+      {
+        "event": "pedido.creado",
+        "description": "Pedido creado para mesa — actualiza total",
+        "handler": "MesaStrategy.onPedidoCreado"
+      },
+      {
+        "event": "cocina.pedido_listo",
+        "description": "Pedido listo en cocina — notifica canal telefono/llevar/glovo/whatsapp",
+        "handler": "TelefonoStrategy/LlevarStrategy/GlovoStrategy/WhatsAppStrategy.onCocinaPedidoListo"
+      }
+    ]
+  },
+
+  "strategies": {
+    "mesa": {
+      "description": "Servicio en mesa — mesas dinámicas, nombre libre, métricas de tiempo",
+      "prefijo": "mesa_",
+      "ui_domain": "mesa",
+      "actions": ["abrir", "cerrar", "renombrar", "asignar_camarero", "get", "activas", "list", "health", "metrics"]
+    },
+    "telefono": {
+      "description": "Pedidos telefónicos — caller ID, CRM, WhatsApp notification",
+      "prefijo": "tel_",
+      "ui_domain": "telefono",
+      "actions": ["llamada", "crear_pedido", "pendientes", "get", "marcar_listo", "contactos", "guardar_contacto", "health", "metrics"]
+    },
+    "llevar": {
+      "description": "Pedidos para llevar — tickets con display SSE",
+      "prefijo": "llevar_",
+      "ui_domain": "llevar",
+      "actions": ["crear", "marcar_listo", "entregar", "activos", "listos", "get", "health", "metrics"]
+    },
+    "glovo": {
+      "description": "Delivery via Glovo — aceptar/rechazar, notificar rider",
+      "prefijo": "glovo_",
+      "ui_domain": "glovo",
+      "actions": ["recibir", "aceptar", "rechazar", "marcar_listo", "activos", "get", "historial", "health", "metrics"]
+    },
+    "whatsapp": {
+      "description": "Pedidos vía WhatsApp Business API — conversaciones, auto-reply, confirmación",
+      "prefijo": "wa_",
+      "ui_domain": "whatsapp",
+      "actions": ["mensaje", "crear_pedido", "confirmar", "marcar_listo", "activos", "get", "conversaciones", "enviar", "health", "metrics"]
+    }
+  },
+
+  "config": {
+    "mesas": {
+      "auto_nombre_prefijo": "Mesa",
+      "descripcion": "Mesas dinámicas — sin config fija, nombre libre en tiempo de ejecución"
+    },
+    "whatsapp": {
+      "enabled": false,
+      "template_listo": "¡Hola {{nombre}}! Tu pedido #{{numero}} está listo para recoger. Te esperamos."
+    },
+    "whatsapp_bot": {
+      "auto_reply": true,
+      "phone_number_id": "",
+      "access_token": "",
+      "saludo": "Hola! Bienvenido a nuestra pizzería. Puedes hacernos tu pedido por aquí.",
+      "template_confirmacion": "Hemos recibido tu pedido #{{numero}}. Total estimado: {{total}}EUR. Te confirmaremos en breve.",
+      "template_confirmado": "Tu pedido #{{numero}} ha sido confirmado! Total: {{total}}EUR. Te avisamos cuando esté listo.",
+      "template_listo": "Tu pedido #{{numero}} está listo! {{modo}} Total: {{total}}EUR",
+      "template_gracias": "Gracias por tu pedido! Esperamos que lo disfrutes."
+    },
+    "glovo": {
+      "api_key": "",
+      "store_id": ""
+    },
+    "display": {
+      "max_numeros_mostrar": 10
+    },
+    "reseteo_diario": true,
+    "caller_id": {
+      "enabled": false
+    }
+  }
+}

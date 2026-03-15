@@ -1,0 +1,85 @@
+{
+  "name": "log-manager",
+  "version": "2.0.0",
+  "description": "Sistema centralizado de logs por sesión. Cada arranque crea una nueva sesión con logs organizados por módulo. Configurable para trackear módulos específicos.",
+  "provides": ["logging", "observability", "sessions", "log-storage"],
+  "subscribes": ["core/+/logs/#", "activity.logged", "activity.batch"],
+  "apis": [
+    {
+      "method": "GET",
+      "path": "/session",
+      "handler": "getSession",
+      "description": "Info de la sesión actual"
+    },
+    {
+      "method": "GET",
+      "path": "/session/modules",
+      "handler": "getSessionModules",
+      "description": "Módulos con logs en la sesión actual"
+    },
+    {
+      "method": "GET",
+      "path": "/session/modules/*/logs",
+      "handler": "getSessionModuleLogs",
+      "description": "Logs de un módulo en la sesión actual"
+    },
+    {
+      "method": "PUT",
+      "path": "/session/track",
+      "handler": "setTrackedModules",
+      "description": "Configurar qué módulos trackear"
+    },
+    {
+      "method": "POST",
+      "path": "/session/track/add",
+      "handler": "addTrackedModules",
+      "description": "Añadir módulos al tracking"
+    },
+    {
+      "method": "GET",
+      "path": "/sessions",
+      "handler": "getSessions",
+      "description": "Listar todas las sesiones"
+    },
+    {
+      "method": "GET",
+      "path": "/sessions/*",
+      "handler": "getSessionById",
+      "description": "Info de una sesión específica"
+    },
+    {
+      "method": "GET",
+      "path": "/sessions/*/logs",
+      "handler": "getSessionLogs",
+      "description": "Logs de una sesión (con filtro opcional de módulo)"
+    },
+    {
+      "method": "GET",
+      "path": "/logs",
+      "handler": "getLogs",
+      "description": "Obtener logs consolidados con filtros"
+    },
+    {
+      "method": "POST",
+      "path": "/logs",
+      "handler": "addLog",
+      "description": "Agregar log (desde frontend u otros sistemas)"
+    },
+    {
+      "method": "GET",
+      "path": "/stats",
+      "handler": "getStats",
+      "description": "Estadísticas de logs y sesión actual"
+    }
+  ],
+  "config": {
+    "logsPath": "./data/logs",
+    "trackedModules": ["*"],
+    "excludedModules": ["log-manager"],
+    "maxFileSize": 10485760,
+    "retentionDays": 30,
+    "sessionRetentionDays": 7,
+    "rotateDaily": true
+  },
+  "tags": ["observability", "logging", "sessions", "ai-friendly", "jsonl"]
+}

@@ -1,0 +1,57 @@
+{
+  "name": "context-manager",
+  "version": "1.0.0",
+  "description": "Shared context between entities. Import/export conversations, discover context sources, assemble full context for AI.",
+  "author": "Aichat Team",
+  "main": "index.js",
+
+  "provides": {
+    "events": [
+      "context.response",
+      "context.imported",
+      "context.removed",
+      "context.full.response"
+    ]
+  },
+
+  "events": {
+    "publishes": [
+      { "event": "context.response", "description": "Response to context.request (request/response pattern)" },
+      { "event": "context.imported", "description": "Conversation shared between entities" },
+      { "event": "context.removed", "description": "Shared context removed" },
+      { "event": "context.full.response", "description": "Full entity context for AI prompt composition" }
+    ],
+    "subscribes": [
+      { "event": "context.request", "description": "Request/response entry point for other modules", "handler": "onContextRequest" },
+      { "event": "context.full.request", "description": "Request full entity context for AI (backward-compat with prompt-composer)", "handler": "onContextFullRequest" },
+      { "event": "db.query.response", "description": "Database query responses", "handler": "onDbQueryResponse" },
+      { "event": "composition.response", "description": "Responses from composition-manager", "handler": "onCompositionResponse" }
+    ]
+  },
+
+  "ui_handlers": [
+    { "domain": "context", "action": "import", "handler": "handleUIContextImport" },
+    { "domain": "context", "action": "remove", "handler": "handleUIContextRemove" },
+    { "domain": "context", "action": "getShared", "handler": "handleUIContextGetShared" },
+    { "domain": "context", "action": "getExported", "handler": "handleUIContextGetExported" },
+    { "domain": "context", "action": "getSources", "handler": "handleUIContextGetSources" },
+    { "domain": "context", "action": "getFull", "handler": "handleUIContextGetFull" }
+  ],
+
+  "observability": {
+    "logging": { "level": "info", "structured": true, "correlation_id": true },
+    "metrics": {
+      "enabled": true,
+      "counters": [
+        "context.imported.total",
+        "context.removed.total",
+        "context.full.requests.total"
+      ]
+    }
+  },
+
+  "config": {
+    "dbTimeout": 10000,
+    "compositionTimeout": 10000
+  }
+}

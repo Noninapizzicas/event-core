@@ -1,0 +1,250 @@
+{
+  "name": "database-manager",
+  "version": "2.0.0",
+  "description": "SQLite database manager using sql.js (JavaScript-only, no native compilation)",
+  "author": "Aichat Team",
+  "main": "index.js",
+
+  "provides": {
+    "events": [
+      "db.created",
+      "db.deleted",
+      "db.query.executed",
+      "db.schema.initialized"
+    ],
+    "queries": [
+      "db.query.request",
+      "db.schema.init.request"
+    ]
+  },
+
+  "events": {
+    "publishes": [
+      {
+        "event": "db.created",
+        "description": "Database created for a project",
+        "schema": { "$ref": "./schemas/events.json#/definitions/db_created" }
+      },
+      {
+        "event": "db.deleted",
+        "description": "Database deleted for a project",
+        "schema": { "$ref": "./schemas/events.json#/definitions/db_deleted" }
+      },
+      {
+        "event": "db.query.executed",
+        "description": "SQL query executed successfully",
+        "schema": { "$ref": "./schemas/events.json#/definitions/db_query_executed" }
+      },
+      {
+        "event": "db.schema.initialized",
+        "description": "Database schema initialized",
+        "schema": { "$ref": "./schemas/events.json#/definitions/db_schema_initialized" }
+      },
+      {
+        "event": "db.query.response",
+        "description": "Response to a query request event",
+        "schema": { "$ref": "./schemas/events.json#/definitions/db_query_response" }
+      },
+      {
+        "event": "db.schema.init.response",
+        "description": "Response to a schema init request event",
+        "schema": { "$ref": "./schemas/events.json#/definitions/db_schema_init_response" }
+      }
+    ],
+    "subscribes": [
+      {
+        "event": "db.query.request",
+        "description": "Handle SQL query requests from other modules",
+        "handler": "onQueryRequest"
+      },
+      {
+        "event": "db.schema.init.request",
+        "description": "Handle schema initialization requests from other modules",
+        "handler": "onSchemaInitRequest"
+      }
+    ]
+  },
+
+  "apis": [
+    {
+      "method": "GET",
+      "path": "/databases",
+      "handler": "handleListDatabases",
+      "description": "List all available databases",
+      "response_schema": { "$ref": "./schemas/database.json#/definitions/list_response" }
+    },
+    {
+      "method": "POST",
+      "path": "/databases/:projectId/query",
+      "handler": "handleExecuteQuery",
+      "description": "Execute SQL query (publishes db.query.executed)",
+      "request_schema": { "$ref": "./schemas/database.json#/definitions/query_request" },
+      "response_schema": { "$ref": "./schemas/database.json#/definitions/query_response" }
+    },
+    {
+      "method": "GET",
+      "path": "/databases/:projectId/schema",
+      "handler": "handleGetSchema",
+      "description": "Get database schema",
+      "response_schema": { "$ref": "./schemas/database.json#/definitions/schema_response" }
+    },
+    {
+      "method": "POST",
+      "path": "/databases/:projectId/init",
+      "handler": "handleInitSchema",
+      "description": "Initialize database schema (publishes db.schema.initialized)",
+      "request_schema": { "$ref": "./schemas/database.json#/definitions/init_request" },
+      "response_schema": { "$ref": "./schemas/database.json#/definitions/init_response" }
+    },
+    {
+      "method": "DELETE",
+      "path": "/databases/:projectId",
+      "handler": "handleDeleteDatabase",
+      "description": "Delete project database (publishes db.deleted)",
+      "response_schema": { "$ref": "./schemas/database.json#/definitions/delete_response" }
+    },
+    {
+      "method": "GET",
+      "path": "/databases/:projectId/tables",
+      "handler": "handleListTables",
+      "description": "List tables in database",
+      "response_schema": { "$ref": "./schemas/database.json#/definitions/tables_response" }
+    },
+    {
+      "method": "GET",
+      "path": "/health",
+      "handler": "handleHealthCheck",
+      "description": "Health check endpoint"
+    },
+    {
+      "method": "GET",
+      "path": "/metrics",
+      "handler": "handleGetMetrics",
+      "description": "Module metrics"
+    }
+  ],
+
+  "tools": [
+    {
+      "name": "db.query",
+      "description": "Ejecuta consulta SQL de solo lectura (SELECT). Retorna resultados de la query.",
+      "handler": "handleToolQuery",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "description": "ID del proyecto"
+          },
+          "query": {
+            "type": "string",
+            "description": "Consulta SQL SELECT"
+          },
+          "params": {
+            "type": "array",
+            "description": "Parámetros para la query (opcional)",
+            "items": { "type": ["string", "number", "boolean", "null"] }
+          }
+        },
+        "required": ["projectId", "query"]
+      }
+    },
+    {
+      "name": "db.tables",
+      "description": "Lista todas las tablas de la base de datos del proyecto.",
+      "handler": "handleToolTables",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "description": "ID del proyecto"
+          }
+        },
+        "required": ["projectId"]
+      }
+    },
+    {
+      "name": "db.schema",
+      "description": "Obtiene el esquema de una tabla específica (columnas, tipos, constraints).",
+      "handler": "handleToolSchema",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "description": "ID del proyecto"
+          },
+          "tableName": {
+            "type": "string",
+            "description": "Nombre de la tabla"
+          }
+        },
+        "required": ["projectId", "tableName"]
+      }
+    },
+    {
+      "name": "db.execute",
+      "description": "Ejecuta consulta SQL modificadora (INSERT, UPDATE, DELETE). REQUIERE CONFIRMACIÓN del usuario.",
+      "handler": "handleToolExecute",
+      "requires_confirmation": true,
+      "permissions": ["write"],
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "description": "ID del proyecto"
+          },
+          "query": {
+            "type": "string",
+            "description": "Consulta SQL (INSERT, UPDATE, DELETE, CREATE, ALTER, DROP)"
+          },
+          "params": {
+            "type": "array",
+            "description": "Parámetros para la query (opcional)",
+            "items": { "type": ["string", "number", "boolean", "null"] }
+          }
+        },
+        "required": ["projectId", "query"]
+      }
+    }
+  ],
+
+  "observability": {
+    "logging": {
+      "level": "info",
+      "structured": true,
+      "correlation_id": true
+    },
+    "metrics": {
+      "enabled": true,
+      "counters": [
+        "db.created.total",
+        "db.deleted.total",
+        "db.query.total",
+        "db.query.errors",
+        "db.schema.init.total",
+        "db.schema.init.errors",
+        "db.saved.total",
+        "db.save.errors"
+      ],
+      "gauges": [
+        "db.loaded.count",
+        "db.projects.count"
+      ],
+      "timings": [
+        "db.query.duration",
+        "db.save.duration",
+        "db.load.duration"
+      ]
+    }
+  },
+
+  "config": {
+    "projectsPath": "./data/projects",
+    "autoSave": true,
+    "maxDatabases": 100,
+    "queryTimeout": 10000
+  }
+}

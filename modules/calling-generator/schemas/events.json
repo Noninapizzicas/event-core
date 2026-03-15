@@ -1,0 +1,176 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://aichat.com/schemas/calling-generator/events.json",
+
+  "definitions": {
+    "event_envelope": {
+      "type": "object",
+      "required": ["event_id", "event_type", "correlation_id", "occurred_at", "producer", "schema_version", "payload"],
+      "properties": {
+        "event_id": { "type": "string", "format": "uuid" },
+        "event_type": { "type": "string" },
+        "correlation_id": { "type": "string", "format": "uuid" },
+        "occurred_at": { "type": "string", "format": "date-time" },
+        "producer": { "type": "string", "const": "calling-generator" },
+        "schema_version": { "type": "string" },
+        "payload": { "type": "object" }
+      },
+      "additionalProperties": false
+    },
+
+    "function_generated": {
+      "allOf": [
+        { "$ref": "#/definitions/event_envelope" },
+        {
+          "properties": {
+            "event_type": { "const": "function.generated" },
+            "payload": {
+              "type": "object",
+              "required": ["full_name", "plugin_name", "function_name", "type"],
+              "properties": {
+                "full_name": { "type": "string" },
+                "plugin_name": { "type": "string" },
+                "function_name": { "type": "string" },
+                "type": { "type": "string" },
+                "generated_at": { "type": "string", "format": "date-time" }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+
+    "function_executed": {
+      "allOf": [
+        { "$ref": "#/definitions/event_envelope" },
+        {
+          "properties": {
+            "event_type": { "const": "function.executed" },
+            "payload": {
+              "type": "object",
+              "required": ["full_name", "duration"],
+              "properties": {
+                "full_name": { "type": "string" },
+                "duration": { "type": "integer" },
+                "has_result": { "type": "boolean" },
+                "executed_at": { "type": "string", "format": "date-time" }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+
+    "function_failed": {
+      "allOf": [
+        { "$ref": "#/definitions/event_envelope" },
+        {
+          "properties": {
+            "event_type": { "const": "function.failed" },
+            "payload": {
+              "type": "object",
+              "required": ["full_name", "error", "reason"],
+              "properties": {
+                "full_name": { "type": "string" },
+                "error": { "type": "string" },
+                "reason": { "type": "string", "enum": ["timeout", "http_error", "network_error", "module_error", "validation_error"] },
+                "failed_at": { "type": "string", "format": "date-time" }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+
+    "function_generation_error": {
+      "allOf": [
+        { "$ref": "#/definitions/event_envelope" },
+        {
+          "properties": {
+            "event_type": { "const": "function.generation.error" },
+            "payload": {
+              "type": "object",
+              "required": ["plugin_name", "function_name", "error"],
+              "properties": {
+                "plugin_name": { "type": "string" },
+                "function_name": { "type": "string" },
+                "error": { "type": "string" }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+
+    "function_get_response": {
+      "allOf": [
+        { "$ref": "#/definitions/event_envelope" },
+        {
+          "properties": {
+            "event_type": { "const": "function.get.response" },
+            "payload": {
+              "type": "object",
+              "required": ["request_id", "success"],
+              "properties": {
+                "request_id": { "type": "string" },
+                "success": { "type": "boolean" },
+                "function": { "type": "object" },
+                "error": { "type": "string" }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+
+    "function_list_response": {
+      "allOf": [
+        { "$ref": "#/definitions/event_envelope" },
+        {
+          "properties": {
+            "event_type": { "const": "function.list.response" },
+            "payload": {
+              "type": "object",
+              "required": ["request_id", "success", "functions", "count"],
+              "properties": {
+                "request_id": { "type": "string" },
+                "success": { "type": "boolean" },
+                "functions": { "type": "array" },
+                "count": { "type": "integer" }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+
+    "function_execute_response": {
+      "allOf": [
+        { "$ref": "#/definitions/event_envelope" },
+        {
+          "properties": {
+            "event_type": { "const": "function.execute.response" },
+            "payload": {
+              "type": "object",
+              "required": ["request_id", "success"],
+              "properties": {
+                "request_id": { "type": "string" },
+                "success": { "type": "boolean" },
+                "result": {},
+                "duration": { "type": "integer" },
+                "error": { "type": "string" }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    }
+  }
+}

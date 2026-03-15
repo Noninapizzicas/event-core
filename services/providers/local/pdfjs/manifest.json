@@ -1,0 +1,150 @@
+{
+  "$schema": "../../../schemas/provider-manifest.schema.json",
+  "name": "local.pdfjs",
+  "version": "1.0.0",
+  "description": "Servicio avanzado de PDF con pdfjs-dist",
+  "type": "provider",
+  "requires": {
+    "credentials": [],
+    "npm": [
+      "canvas"
+    ]
+  },
+  "functions": {
+    "extract": {
+      "event": "local.pdfjs.extract.request",
+      "description": "Extraer texto de PDF con posicionamiento opcional",
+      "input": {
+        "pdf": {
+          "type": "string",
+          "description": "PDF en base64 o path al archivo",
+          "required": true
+        },
+        "pages": {
+          "type": "string",
+          "description": "Páginas a extraer: \"all\", \"1-5\", \"1,3,5\" (default: all)",
+          "default": "all"
+        },
+        "includePositions": {
+          "type": "boolean",
+          "description": "Incluir posiciones x,y de cada texto",
+          "default": false
+        }
+      },
+      "output": {
+        "success": {
+          "type": "boolean",
+          "description": "Si la operacion fue exitosa"
+        },
+        "data": {
+          "type": "object",
+          "description": "Datos extraidos (NOTA: acceder via steps.ID.data.text)",
+          "properties": {
+            "text": {
+              "type": "string",
+              "description": "Texto completo extraido"
+            },
+            "pages": {
+              "type": "number",
+              "description": "Numero de paginas"
+            },
+            "pageTexts": {
+              "type": "array",
+              "description": "Texto por pagina"
+            },
+            "metadata": {
+              "type": "object",
+              "description": "Metadata del PDF"
+            }
+          }
+        },
+        "error": {
+          "type": "string",
+          "description": "Mensaje de error si success=false"
+        }
+      }
+    },
+    "render": {
+      "event": "local.pdfjs.render.request",
+      "description": "Renderizar página de PDF a imagen",
+      "input": {
+        "pdf": {
+          "type": "string",
+          "description": "PDF en base64 o path al archivo",
+          "required": true
+        },
+        "page": {
+          "type": "number",
+          "description": "Número de página a renderizar (1-based)",
+          "default": 1
+        },
+        "scale": {
+          "type": "number",
+          "description": "Escala de renderizado (1.0 = 100%)",
+          "default": 1.5
+        }
+      },
+      "output": {
+        "success": {
+          "type": "boolean"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "image": {
+              "type": "string",
+              "description": "Imagen PNG en base64"
+            },
+            "width": {
+              "type": "number",
+              "description": "Ancho en pixels"
+            },
+            "height": {
+              "type": "number",
+              "description": "Alto en pixels"
+            }
+          }
+        },
+        "error": {
+          "type": "string"
+        }
+      }
+    },
+    "info": {
+      "event": "local.pdfjs.info.request",
+      "description": "Obtener información y metadata del PDF",
+      "input": {
+        "pdf": {
+          "type": "string",
+          "description": "PDF en base64 o path al archivo",
+          "required": true
+        }
+      },
+      "output": {
+        "success": {
+          "type": "boolean"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "pages": {
+              "type": "number",
+              "description": "Número de páginas"
+            },
+            "metadata": {
+              "type": "object",
+              "description": "Metadata del documento"
+            },
+            "outline": {
+              "type": "array",
+              "description": "Índice/bookmarks del PDF"
+            }
+          }
+        },
+        "error": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

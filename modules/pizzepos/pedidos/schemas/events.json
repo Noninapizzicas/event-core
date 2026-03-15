@@ -1,0 +1,199 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://pizzepos.com/schemas/pedido-events.json",
+  "title": "Pedido Events Schema",
+  "description": "Esquemas de eventos del módulo pedidos",
+
+  "definitions": {
+    "event_envelope": {
+      "type": "object",
+      "required": ["event_id", "event_type", "correlation_id", "occurred_at", "producer", "schema_version", "payload"],
+      "properties": {
+        "event_id": {"type": "string", "format": "uuid"},
+        "event_type": {"type": "string", "pattern": "^[a-z]+\\.[a-z_]+$"},
+        "correlation_id": {"type": "string", "format": "uuid"},
+        "occurred_at": {"type": "string", "format": "date-time"},
+        "producer": {"type": "string", "minLength": 1},
+        "schema_version": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$"},
+        "payload": {"type": "object"}
+      },
+      "additionalProperties": false
+    },
+
+    "pedido_creado": {
+      "allOf": [
+        {"$ref": "#/definitions/event_envelope"},
+        {
+          "properties": {
+            "event_type": {"const": "pedido.creado"},
+            "payload": {
+              "type": "object",
+              "required": ["pedido_id", "cuenta_id", "estado"],
+              "properties": {
+                "pedido_id": {"type": "string"},
+                "cuenta_id": {"type": "string"},
+                "canal": {"type": "string", "enum": ["mesa", "telefono", "llevar", "glovo", "whatsapp"]},
+                "estado": {"type": "string"},
+                "created_at": {"type": "string", "format": "date-time"}
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+
+    "pedido_item_agregado": {
+      "allOf": [
+        {"$ref": "#/definitions/event_envelope"},
+        {
+          "properties": {
+            "event_type": {"const": "pedido.item_agregado"},
+            "payload": {
+              "type": "object",
+              "required": ["pedido_id", "item_id", "producto_id", "cantidad", "precio_unitario"],
+              "properties": {
+                "pedido_id": {"type": "string"},
+                "item_id": {"type": "string"},
+                "producto_id": {"type": "string"},
+                "nombre": {"type": "string"},
+                "cantidad": {"type": "integer"},
+                "precio_unitario": {"type": "number"},
+                "precio_total": {"type": "number"},
+                "variaciones": {"type": "object"},
+                "notas": {"type": "string"}
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+
+    "pedido_item_actualizado": {
+      "allOf": [
+        {"$ref": "#/definitions/event_envelope"},
+        {
+          "properties": {
+            "event_type": {"const": "pedido.item_actualizado"},
+            "payload": {
+              "type": "object",
+              "required": ["pedido_id", "item_id", "cambios"],
+              "properties": {
+                "pedido_id": {"type": "string"},
+                "item_id": {"type": "string"},
+                "cambios": {"type": "object"}
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+
+    "pedido_item_eliminado": {
+      "allOf": [
+        {"$ref": "#/definitions/event_envelope"},
+        {
+          "properties": {
+            "event_type": {"const": "pedido.item_eliminado"},
+            "payload": {
+              "type": "object",
+              "required": ["pedido_id", "item_id"],
+              "properties": {
+                "pedido_id": {"type": "string"},
+                "item_id": {"type": "string"},
+                "motivo": {"type": "string"}
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+
+    "pedido_enviado_cocina": {
+      "allOf": [
+        {"$ref": "#/definitions/event_envelope"},
+        {
+          "properties": {
+            "event_type": {"const": "pedido.enviado_cocina"},
+            "payload": {
+              "type": "object",
+              "required": ["pedido_id", "items_count", "enviado_at"],
+              "properties": {
+                "pedido_id": {"type": "string"},
+                "cuenta_id": {"type": "string"},
+                "canal": {"type": "string", "enum": ["mesa", "telefono", "llevar", "glovo", "whatsapp"]},
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "item_id": {"type": "string"},
+                      "producto_id": {"type": "string"},
+                      "nombre": {"type": "string"},
+                      "cantidad": {"type": "integer"},
+                      "variaciones": {"type": "object"},
+                      "notas": {"type": "string"}
+                    }
+                  }
+                },
+                "items_count": {"type": "integer"},
+                "notas_generales": {"type": "string"},
+                "enviado_at": {"type": "string", "format": "date-time"}
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+
+    "pedido_completado": {
+      "allOf": [
+        {"$ref": "#/definitions/event_envelope"},
+        {
+          "properties": {
+            "event_type": {"const": "pedido.completado"},
+            "payload": {
+              "type": "object",
+              "required": ["pedido_id", "total", "completado_at"],
+              "properties": {
+                "pedido_id": {"type": "string"},
+                "cuenta_id": {"type": "string"},
+                "total": {"type": "number"},
+                "items_count": {"type": "integer"},
+                "completado_at": {"type": "string", "format": "date-time"},
+                "duracion_minutos": {"type": "integer"}
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+
+    "pedido_cancelado": {
+      "allOf": [
+        {"$ref": "#/definitions/event_envelope"},
+        {
+          "properties": {
+            "event_type": {"const": "pedido.cancelado"},
+            "payload": {
+              "type": "object",
+              "required": ["pedido_id", "motivo"],
+              "properties": {
+                "pedido_id": {"type": "string"},
+                "cuenta_id": {"type": "string"},
+                "motivo": {"type": "string"},
+                "cancelado_at": {"type": "string", "format": "date-time"}
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    }
+  }
+}

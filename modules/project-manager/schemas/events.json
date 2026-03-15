@@ -1,0 +1,195 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://aichat.com/schemas/project-manager/events.json",
+
+  "definitions": {
+    "event_envelope": {
+      "type": "object",
+      "required": ["event_id", "event_type", "correlation_id", "occurred_at", "producer", "schema_version", "payload"],
+      "properties": {
+        "event_id": { "type": "string", "format": "uuid" },
+        "event_type": { "type": "string" },
+        "correlation_id": { "type": "string", "format": "uuid" },
+        "occurred_at": { "type": "string", "format": "date-time" },
+        "producer": { "type": "string", "const": "project-manager" },
+        "schema_version": { "type": "string" },
+        "payload": { "type": "object" }
+      },
+      "additionalProperties": false
+    },
+
+    "project_created": {
+      "allOf": [
+        { "$ref": "#/definitions/event_envelope" },
+        {
+          "properties": {
+            "event_type": { "const": "project.created" },
+            "payload": {
+              "type": "object",
+              "required": ["project_id", "name"],
+              "properties": {
+                "project_id": { "type": "string" },
+                "name": { "type": "string" },
+                "description": { "type": "string" },
+                "created_at": { "type": "string", "format": "date-time" }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+
+    "project_updated": {
+      "allOf": [
+        { "$ref": "#/definitions/event_envelope" },
+        {
+          "properties": {
+            "event_type": { "const": "project.updated" },
+            "payload": {
+              "type": "object",
+              "required": ["project_id"],
+              "properties": {
+                "project_id": { "type": "string" },
+                "updated_fields": { "type": "array" },
+                "updated_at": { "type": "string", "format": "date-time" }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+
+    "project_deleted": {
+      "allOf": [
+        { "$ref": "#/definitions/event_envelope" },
+        {
+          "properties": {
+            "event_type": { "const": "project.deleted" },
+            "payload": {
+              "type": "object",
+              "required": ["project_id"],
+              "properties": {
+                "project_id": { "type": "string" },
+                "name": { "type": "string" },
+                "deleted_at": { "type": "string", "format": "date-time" }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+
+    "project_activated": {
+      "allOf": [
+        { "$ref": "#/definitions/event_envelope" },
+        {
+          "properties": {
+            "event_type": { "const": "project.activated" },
+            "payload": {
+              "type": "object",
+              "required": ["project_id"],
+              "properties": {
+                "project_id": { "type": "string" },
+                "name": { "type": "string" },
+                "activated_at": { "type": "string", "format": "date-time" }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+
+    "project_deactivated": {
+      "allOf": [
+        { "$ref": "#/definitions/event_envelope" },
+        {
+          "properties": {
+            "event_type": { "const": "project.deactivated" },
+            "payload": {
+              "type": "object",
+              "required": ["project_id"],
+              "properties": {
+                "project_id": { "type": "string" },
+                "name": { "type": "string" },
+                "deactivated_at": { "type": "string", "format": "date-time" }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+
+    "project_get_response": {
+      "allOf": [
+        { "$ref": "#/definitions/event_envelope" },
+        {
+          "properties": {
+            "event_type": { "const": "project.get.response" },
+            "payload": {
+              "type": "object",
+              "required": ["request_id", "success"],
+              "properties": {
+                "request_id": { "type": "string" },
+                "success": { "type": "boolean" },
+                "project": { "type": "object" },
+                "error": { "type": "string" }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+
+    "project_list_response": {
+      "allOf": [
+        { "$ref": "#/definitions/event_envelope" },
+        {
+          "properties": {
+            "event_type": { "const": "project.list.response" },
+            "payload": {
+              "type": "object",
+              "required": ["request_id", "success", "projects", "count"],
+              "properties": {
+                "request_id": { "type": "string" },
+                "success": { "type": "boolean" },
+                "projects": { "type": "array" },
+                "count": { "type": "integer" },
+                "active_project_id": { "type": "string" },
+                "error": { "type": "string" }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+
+    "project_active_response": {
+      "allOf": [
+        { "$ref": "#/definitions/event_envelope" },
+        {
+          "properties": {
+            "event_type": { "const": "project.active.response" },
+            "payload": {
+              "type": "object",
+              "required": ["request_id", "success"],
+              "properties": {
+                "request_id": { "type": "string" },
+                "success": { "type": "boolean" },
+                "active_project_id": { "type": "string" },
+                "error": { "type": "string" }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    }
+  }
+}

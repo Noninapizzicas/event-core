@@ -1,0 +1,55 @@
+{
+  "$schema": "provider-manifest-v1",
+  "name": "local.yahoo-finance",
+  "version": "1.0.0",
+  "description": "Consultas Yahoo Finance — cotizaciones, historial, noticias bursátiles",
+  "type": "local",
+  "requires": {
+    "npm": [],
+    "credentials": []
+  },
+  "functions": {
+    "quote": {
+      "event": "local.yahoo-finance.quote.request",
+      "description": "Cotización actual de uno o varios símbolos",
+      "input": {
+        "symbols": { "type": "string", "required": true, "description": "Símbolos separados por coma (AAPL,MSFT,GOOGL)" }
+      },
+      "output": {
+        "quotes": { "type": "array", "description": "Cotizaciones con precio, cambio, volumen" }
+      }
+    },
+    "history": {
+      "event": "local.yahoo-finance.history.request",
+      "description": "Histórico de precios de un símbolo",
+      "input": {
+        "symbol": { "type": "string", "required": true, "description": "Símbolo (AAPL)" },
+        "range": { "type": "string", "required": false, "description": "Rango: 1d|5d|1mo|3mo|6mo|1y|5y|max (default: 1mo)" },
+        "interval": { "type": "string", "required": false, "description": "Intervalo: 1m|5m|15m|1d|1wk|1mo (default: 1d)" }
+      },
+      "output": {
+        "prices": { "type": "array", "description": "Array de {date, open, high, low, close, volume}" }
+      }
+    },
+    "search": {
+      "event": "local.yahoo-finance.search.request",
+      "description": "Busca símbolos/empresas por nombre",
+      "input": {
+        "query": { "type": "string", "required": true, "description": "Texto a buscar (nombre o símbolo)" }
+      },
+      "output": {
+        "results": { "type": "array", "description": "Resultados con symbol, name, type, exchange" }
+      }
+    },
+    "news": {
+      "event": "local.yahoo-finance.news.request",
+      "description": "Noticias de un símbolo o del mercado",
+      "input": {
+        "symbol": { "type": "string", "required": false, "description": "Símbolo (opcional, sin él devuelve noticias generales)" }
+      },
+      "output": {
+        "articles": { "type": "array", "description": "Noticias con title, link, publisher, date" }
+      }
+    }
+  }
+}

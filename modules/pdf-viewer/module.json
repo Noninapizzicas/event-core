@@ -1,0 +1,238 @@
+{
+  "name": "pdf-viewer",
+  "version": "1.0.0",
+  "description": "PDF viewer and text extraction module",
+  "author": "Aichat Team",
+  "main": "index.js",
+
+  "ui": {
+    "enabled": true,
+    "title": "Visor PDF",
+    "icon": "📄",
+    "description": "Visualizador y extractor de texto de PDFs",
+    "views": {
+      "viewer": {
+        "title": "Visor PDF",
+        "description": "Visualizador de documentos PDF",
+        "layout": "fullscreen"
+      }
+    }
+  },
+
+  "apis": [
+    {
+      "method": "GET",
+      "path": "/pdf/view",
+      "handler": "viewPdf",
+      "description": "Get PDF file for viewing",
+      "query_params": {
+        "project_id": {
+          "type": "string",
+          "required": true
+        },
+        "file_path": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/pdf/extract-text",
+      "handler": "extractText",
+      "description": "Extract text from PDF",
+      "query_params": {
+        "project_id": {
+          "type": "string",
+          "required": true
+        },
+        "file_path": {
+          "type": "string",
+          "required": true
+        },
+        "page": {
+          "type": "number",
+          "required": false,
+          "description": "Specific page number (1-indexed). If not provided, extracts all pages."
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/pdf/metadata",
+      "handler": "getMetadata",
+      "description": "Get PDF metadata",
+      "query_params": {
+        "project_id": {
+          "type": "string",
+          "required": true
+        },
+        "file_path": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/pdf/list",
+      "handler": "listPdfs",
+      "description": "List all PDF files in project",
+      "query_params": {
+        "project_id": {
+          "type": "string",
+          "required": true
+        }
+      }
+    }
+  ],
+
+  "events": {
+    "subscribes": [
+      { "event": "pdf.view.request", "handler": "handleViewRequest" },
+      { "event": "pdf.extract.request", "handler": "handleExtractRequest" },
+      { "event": "pdf.metadata.request", "handler": "handleMetadataRequest" },
+      { "event": "pdf.list.request", "handler": "handleListRequest" }
+    ],
+    "publishes": [
+      "pdf.view.response",
+      "pdf.extract.response",
+      "pdf.metadata.response",
+      "pdf.list.response",
+      "pdf.error"
+    ]
+  },
+
+  "ui_handlers": [
+    { "domain": "pdf", "action": "view", "handler": "handleUIView" },
+    { "domain": "pdf", "action": "metadata", "handler": "handleUIMetadata" },
+    { "domain": "pdf", "action": "list", "handler": "handleUIListPdfs" }
+  ],
+
+  "dependencies": {
+    "modules": ["filesystem", "project-manager"]
+  },
+
+  "tools": [
+    {
+      "name": "pdf.create",
+      "description": "Crea un archivo PDF desde texto plano. IMPORTANTE: usa texto plano corto (máx 3000 caracteres). NO envíes HTML largo ni contenido extenso — el JSON se truncará y fallará. Si el contenido es largo, resúmelo antes de llamar a esta tool. Usa el campo 'title' para el encabezado.",
+      "handler": "handleToolCreate",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "filename": {
+            "type": "string",
+            "description": "Nombre del archivo PDF (ej: 'informe.pdf'). Requerido."
+          },
+          "content": {
+            "type": "string",
+            "description": "Texto plano del documento. Máximo 3000 caracteres. NO usar HTML largo."
+          },
+          "title": {
+            "type": "string",
+            "description": "Título centrado al inicio del PDF (opcional)"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["from_text"],
+            "description": "Siempre 'from_text'. No usar from_html."
+          },
+          "orientation": {
+            "type": "string",
+            "enum": ["portrait", "landscape"],
+            "description": "Orientación: portrait (por defecto) o landscape"
+          },
+          "format": {
+            "type": "string",
+            "enum": ["A4", "letter", "legal"],
+            "description": "Formato de página: A4 (por defecto), letter o legal"
+          },
+          "project_id": {
+            "type": "string",
+            "description": "ID del proyecto (opcional)"
+          }
+        },
+        "required": ["filename", "content"]
+      }
+    },
+    {
+      "name": "pdf.list",
+      "description": "Lista todos los archivos PDF en un proyecto.",
+      "handler": "handleToolList",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "description": "ID del proyecto"
+          }
+        },
+        "required": ["projectId"]
+      }
+    },
+    {
+      "name": "pdf.metadata",
+      "description": "Obtiene metadata de un archivo PDF (tamaño, fecha, etc.).",
+      "handler": "handleToolMetadata",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "description": "ID del proyecto"
+          },
+          "filePath": {
+            "type": "string",
+            "description": "Ruta al archivo PDF"
+          }
+        },
+        "required": ["projectId", "filePath"]
+      }
+    },
+    {
+      "name": "pdf.extract",
+      "description": "Extrae texto de un archivo PDF. Puede extraer una página específica o todo el documento.",
+      "handler": "handleToolExtract",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "description": "ID del proyecto"
+          },
+          "filePath": {
+            "type": "string",
+            "description": "Ruta al archivo PDF"
+          },
+          "page": {
+            "type": "number",
+            "description": "Número de página (1-indexed). Si no se especifica, extrae todo."
+          }
+        },
+        "required": ["projectId", "filePath"]
+      }
+    }
+  ],
+
+  "config": {
+    "max_pdf_size": 52428800,
+    "cache_enabled": true,
+    "cache_ttl": 3600000
+  },
+
+  "observability": {
+    "logging": {
+      "level": "info",
+      "structured": true
+    },
+    "metrics": {
+      "enabled": true,
+      "custom": [
+        "pdfs_viewed_total",
+        "text_extractions_total",
+        "pdf_errors_total"
+      ]
+    }
+  }
+}

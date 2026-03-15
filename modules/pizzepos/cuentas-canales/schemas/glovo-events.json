@@ -1,0 +1,143 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://pizzepos.com/schemas/glovo-events.json",
+  "title": "Glovo Events Schema",
+  "description": "Esquemas de eventos de pedidos Glovo",
+
+  "definitions": {
+    "glovo_pedido_recibido": {
+      "type": "object",
+      "required": ["event_type", "payload"],
+      "properties": {
+        "event_type": { "const": "glovo.pedido_recibido" },
+        "payload": {
+          "type": "object",
+          "required": ["cuenta_id", "glovo_order_id", "total"],
+          "properties": {
+            "cuenta_id": { "type": "string" },
+            "glovo_order_id": { "type": "string" },
+            "total": { "type": "number" },
+            "items": { "type": "array" },
+            "cliente_nombre": { "type": "string" },
+            "hora_recibido": { "type": "string", "format": "date-time" }
+          }
+        },
+        "correlation_id": { "type": "string" }
+      }
+    },
+
+    "glovo_pedido_aceptado": {
+      "type": "object",
+      "required": ["event_type", "payload"],
+      "properties": {
+        "event_type": { "const": "glovo.pedido_aceptado" },
+        "payload": {
+          "type": "object",
+          "required": ["cuenta_id", "glovo_order_id"],
+          "properties": {
+            "cuenta_id": { "type": "string" },
+            "glovo_order_id": { "type": "string" },
+            "tiempo_preparacion_estimado": { "type": "integer" },
+            "hora_aceptado": { "type": "string", "format": "date-time" }
+          }
+        },
+        "correlation_id": { "type": "string" }
+      }
+    },
+
+    "glovo_pedido_rechazado": {
+      "type": "object",
+      "required": ["event_type", "payload"],
+      "properties": {
+        "event_type": { "const": "glovo.pedido_rechazado" },
+        "payload": {
+          "type": "object",
+          "required": ["cuenta_id", "glovo_order_id", "motivo"],
+          "properties": {
+            "cuenta_id": { "type": "string" },
+            "glovo_order_id": { "type": "string" },
+            "motivo": { "type": "string" }
+          }
+        },
+        "correlation_id": { "type": "string" }
+      }
+    },
+
+    "glovo_pedido_listo": {
+      "type": "object",
+      "required": ["event_type", "payload"],
+      "properties": {
+        "event_type": { "const": "glovo.pedido_listo" },
+        "payload": {
+          "type": "object",
+          "required": ["cuenta_id", "glovo_order_id"],
+          "properties": {
+            "cuenta_id": { "type": "string" },
+            "glovo_order_id": { "type": "string" },
+            "hora_listo": { "type": "string", "format": "date-time" },
+            "tiempo_preparacion": { "type": "integer" }
+          }
+        },
+        "correlation_id": { "type": "string" }
+      }
+    },
+
+    "glovo_pedido_recogido": {
+      "type": "object",
+      "required": ["event_type", "payload"],
+      "properties": {
+        "event_type": { "const": "glovo.pedido_recogido" },
+        "payload": {
+          "type": "object",
+          "required": ["cuenta_id", "glovo_order_id", "total"],
+          "properties": {
+            "cuenta_id": { "type": "string" },
+            "glovo_order_id": { "type": "string" },
+            "total": { "type": "number" },
+            "hora_recogido": { "type": "string", "format": "date-time" }
+          }
+        },
+        "correlation_id": { "type": "string" }
+      }
+    },
+
+    "cuenta_creada": {
+      "type": "object",
+      "required": ["event_type", "payload"],
+      "properties": {
+        "event_type": { "const": "cuenta.creada" },
+        "payload": {
+          "type": "object",
+          "required": ["cuenta_id", "tipo", "origen"],
+          "properties": {
+            "cuenta_id": { "type": "string" },
+            "tipo": { "const": "glovo" },
+            "origen": { "const": "cuentas-canales:glovo" },
+            "total": { "type": "number" },
+            "metadata": { "type": "object" }
+          }
+        },
+        "correlation_id": { "type": "string" }
+      }
+    },
+
+    "cuenta_cerrada": {
+      "type": "object",
+      "required": ["event_type", "payload"],
+      "properties": {
+        "event_type": { "const": "cuenta.cerrada" },
+        "payload": {
+          "type": "object",
+          "required": ["cuenta_id", "tipo", "total"],
+          "properties": {
+            "cuenta_id": { "type": "string" },
+            "tipo": { "const": "glovo" },
+            "total": { "type": "number" },
+            "metadata": { "type": "object" }
+          }
+        },
+        "correlation_id": { "type": "string" }
+      }
+    }
+  }
+}

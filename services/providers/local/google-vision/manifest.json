@@ -1,0 +1,82 @@
+{
+  "$schema": "../../../schemas/provider-manifest.schema.json",
+  "name": "local.google-vision",
+  "version": "1.0.0",
+  "description": "OCR usando Google Cloud Vision API",
+  "type": "provider",
+  "requires": {
+    "credentials": [
+      "GOOGLE_API_KEY"
+    ],
+    "npm": []
+  },
+  "functions": {
+    "extract": {
+      "event": "local.google-vision.extract.request",
+      "description": "Extraer texto de imagen usando Google Vision OCR",
+      "input": {
+        "image": {
+          "type": "string",
+          "description": "Imagen en base64 o path al archivo",
+          "required": true
+        },
+        "hint": {
+          "type": "string",
+          "description": "Tipo de detección OCR",
+          "enum": [
+            "TEXT_DETECTION",
+            "DOCUMENT_TEXT_DETECTION",
+            "HANDWRITING"
+          ],
+          "default": "TEXT_DETECTION"
+        },
+        "languageHints": {
+          "type": "array",
+          "description": "Códigos de idioma para mejorar detección (es, en, etc.)",
+          "default": []
+        },
+        "account": {
+          "type": "string",
+          "description": "Cuenta de Google a usar (para multi-cuenta)",
+          "default": null
+        }
+      },
+      "output": {
+        "success": {
+          "type": "boolean",
+          "description": "Si la operación fue exitosa"
+        },
+        "data": {
+          "type": "object",
+          "description": "Datos extraídos (acceder via steps.ID.data.text)",
+          "properties": {
+            "text": {
+              "type": "string",
+              "description": "Texto extraído completo"
+            },
+            "confidence": {
+              "type": "number",
+              "description": "Confianza promedio 0-100"
+            },
+            "blocks": {
+              "type": "number",
+              "description": "Número de bloques de texto"
+            },
+            "pages": {
+              "type": "number",
+              "description": "Número de páginas"
+            },
+            "locale": {
+              "type": "string",
+              "description": "Idioma detectado"
+            }
+          }
+        },
+        "error": {
+          "type": "string",
+          "description": "Mensaje de error si success=false"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,207 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://pizzepos.com/schemas/cuenta-events.json",
+  "title": "Cuenta Events Schema",
+  "description": "Esquemas de eventos del módulo de cuentas",
+
+  "definitions": {
+    "event_envelope": {
+      "type": "object",
+      "required": ["event_id", "event_type", "correlation_id", "occurred_at", "producer", "schema_version", "payload"],
+      "properties": {
+        "event_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "ID único del evento"
+        },
+        "event_type": {
+          "type": "string",
+          "pattern": "^[a-z]+\\.[a-z_]+$",
+          "description": "Tipo de evento (ej: cuenta.creada)"
+        },
+        "correlation_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "ID de correlación para tracing"
+        },
+        "occurred_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp del evento"
+        },
+        "producer": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Módulo que produjo el evento"
+        },
+        "schema_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$",
+          "description": "Versión del schema"
+        },
+        "payload": {
+          "type": "object",
+          "description": "Datos del evento"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "cuenta_creada": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/event_envelope"
+        },
+        {
+          "properties": {
+            "event_type": {
+              "const": "cuenta.creada"
+            },
+            "payload": {
+              "type": "object",
+              "required": ["cuenta_id", "tipo", "nombre", "estado"],
+              "properties": {
+                "cuenta_id": {
+                  "type": "string",
+                  "pattern": "^cuenta_[a-z0-9]{8,16}$"
+                },
+                "tipo": {
+                  "type": "string",
+                  "enum": ["local", "delivery", "llevar"]
+                },
+                "nombre": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "estado": {
+                  "type": "string",
+                  "enum": ["pendiente"]
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+
+    "cuenta_actualizada": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/event_envelope"
+        },
+        {
+          "properties": {
+            "event_type": {
+              "const": "cuenta.actualizada"
+            },
+            "payload": {
+              "type": "object",
+              "required": ["cuenta_id", "cambios"],
+              "properties": {
+                "cuenta_id": {
+                  "type": "string",
+                  "pattern": "^cuenta_[a-z0-9]{8,16}$"
+                },
+                "cambios": {
+                  "type": "object",
+                  "minProperties": 1,
+                  "properties": {
+                    "items": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "total": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "alerta": {
+                      "type": "boolean"
+                    }
+                  }
+                },
+                "updated_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+
+    "cuenta_eliminada": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/event_envelope"
+        },
+        {
+          "properties": {
+            "event_type": {
+              "const": "cuenta.eliminada"
+            },
+            "payload": {
+              "type": "object",
+              "required": ["cuenta_id", "tipo"],
+              "properties": {
+                "cuenta_id": {
+                  "type": "string",
+                  "pattern": "^cuenta_[a-z0-9]{8,16}$"
+                },
+                "tipo": {
+                  "type": "string",
+                  "enum": ["local", "delivery", "llevar"]
+                },
+                "motivo": {
+                  "type": "string",
+                  "description": "Razón de eliminación"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+
+    "cuenta_estado_cambiado": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/event_envelope"
+        },
+        {
+          "properties": {
+            "event_type": {
+              "const": "cuenta.estado_cambiado"
+            },
+            "payload": {
+              "type": "object",
+              "required": ["cuenta_id", "estado_anterior", "estado_nuevo"],
+              "properties": {
+                "cuenta_id": {
+                  "type": "string",
+                  "pattern": "^cuenta_[a-z0-9]{8,16}$"
+                },
+                "estado_anterior": {
+                  "type": "string",
+                  "enum": ["pendiente", "con_pedido", "en_preparacion", "listo", "para_cobrar", "cobrado"]
+                },
+                "estado_nuevo": {
+                  "type": "string",
+                  "enum": ["pendiente", "con_pedido", "en_preparacion", "listo", "para_cobrar", "cobrado"]
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    }
+  }
+}

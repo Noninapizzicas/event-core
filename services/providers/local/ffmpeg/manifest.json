@@ -1,0 +1,75 @@
+{
+  "$schema": "provider-manifest-v1",
+  "name": "local.ffmpeg",
+  "version": "1.0.0",
+  "description": "Procesamiento audio/video con ffmpeg — convertir, recortar, fusionar",
+  "type": "local",
+  "requires": {
+    "npm": [],
+    "credentials": [],
+    "system": ["ffmpeg"]
+  },
+  "functions": {
+    "convert": {
+      "event": "local.ffmpeg.convert.request",
+      "description": "Convierte formato de audio/video (mp3→wav, mp4→mp3, etc.)",
+      "input": {
+        "input": { "type": "string", "required": true, "description": "Ruta del archivo origen" },
+        "format": { "type": "string", "required": true, "description": "Formato destino (mp3, wav, ogg, mp4, webm)" },
+        "options": { "type": "object", "required": false, "description": "{ bitrate, sampleRate, channels } (opcional)" }
+      },
+      "output": {
+        "path": { "type": "string", "description": "Ruta del archivo convertido" }
+      }
+    },
+    "trim": {
+      "event": "local.ffmpeg.trim.request",
+      "description": "Recorta audio/video por tiempo (start/end)",
+      "input": {
+        "input": { "type": "string", "required": true, "description": "Ruta del archivo" },
+        "start": { "type": "string", "required": false, "description": "Tiempo inicio (HH:MM:SS o segundos)" },
+        "end": { "type": "string", "required": false, "description": "Tiempo fin" },
+        "duration": { "type": "string", "required": false, "description": "Duración desde start" }
+      },
+      "output": {
+        "path": { "type": "string", "description": "Ruta del archivo recortado" }
+      }
+    },
+    "merge": {
+      "event": "local.ffmpeg.merge.request",
+      "description": "Une varios archivos de audio/video",
+      "input": {
+        "inputs": { "type": "array", "required": true, "description": "Array de rutas de archivos" },
+        "format": { "type": "string", "required": false, "description": "Formato de salida (default: mismo que input)" }
+      },
+      "output": {
+        "path": { "type": "string", "description": "Ruta del archivo unido" }
+      }
+    },
+    "info": {
+      "event": "local.ffmpeg.info.request",
+      "description": "Información detallada de un archivo multimedia",
+      "input": {
+        "input": { "type": "string", "required": true, "description": "Ruta del archivo" }
+      },
+      "output": {
+        "duration": { "type": "number", "description": "Duración en segundos" },
+        "format": { "type": "string", "description": "Formato del contenedor" },
+        "streams": { "type": "array", "description": "Streams de audio/video" }
+      }
+    },
+    "waveform": {
+      "event": "local.ffmpeg.waveform.request",
+      "description": "Genera imagen de waveform de un archivo de audio",
+      "input": {
+        "input": { "type": "string", "required": true, "description": "Ruta del audio" },
+        "width": { "type": "number", "required": false, "description": "Ancho en px (default: 800)" },
+        "height": { "type": "number", "required": false, "description": "Alto en px (default: 200)" },
+        "color": { "type": "string", "required": false, "description": "Color de la onda (default: #0066ff)" }
+      },
+      "output": {
+        "path": { "type": "string", "description": "Ruta de la imagen PNG" }
+      }
+    }
+  }
+}

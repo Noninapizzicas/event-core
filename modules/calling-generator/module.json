@@ -1,0 +1,158 @@
+{
+  "name": "calling-generator",
+  "version": "2.0.0",
+  "description": "Generates executable JavaScript functions from plugin definitions with HTTP and event-based execution",
+  "author": "Aichat Team",
+  "main": "index.js",
+
+  "provides": {
+    "events": [
+      "function.generated",
+      "function.executed",
+      "function.failed",
+      "function.generation.error"
+    ],
+    "queries": [
+      "function.get.request",
+      "function.list.request",
+      "function.execute.request"
+    ]
+  },
+
+  "events": {
+    "publishes": [
+      {
+        "event": "function.generated",
+        "description": "Function generated from plugin",
+        "schema": { "$ref": "./schemas/events.json#/definitions/function_generated" }
+      },
+      {
+        "event": "function.executed",
+        "description": "Function executed successfully",
+        "schema": { "$ref": "./schemas/events.json#/definitions/function_executed" }
+      },
+      {
+        "event": "function.failed",
+        "description": "Function execution failed",
+        "schema": { "$ref": "./schemas/events.json#/definitions/function_failed" }
+      },
+      {
+        "event": "function.generation.error",
+        "description": "Error generating function",
+        "schema": { "$ref": "./schemas/events.json#/definitions/function_generation_error" }
+      },
+      {
+        "event": "function.get.response",
+        "description": "Response with function metadata",
+        "schema": { "$ref": "./schemas/events.json#/definitions/function_get_response" }
+      },
+      {
+        "event": "function.list.response",
+        "description": "Response with function list",
+        "schema": { "$ref": "./schemas/events.json#/definitions/function_list_response" }
+      },
+      {
+        "event": "function.execute.response",
+        "description": "Response with execution result",
+        "schema": { "$ref": "./schemas/events.json#/definitions/function_execute_response" }
+      }
+    ],
+    "subscribes": [
+      {
+        "event": "plugin.loaded",
+        "description": "Generate functions when plugin loads",
+        "handler": "onPluginLoaded"
+      },
+      {
+        "event": "function.get.request",
+        "description": "Get function metadata",
+        "handler": "onGetFunctionRequest"
+      },
+      {
+        "event": "function.list.request",
+        "description": "List all functions",
+        "handler": "onListFunctionsRequest"
+      },
+      {
+        "event": "function.execute.request",
+        "description": "Execute a generated function",
+        "handler": "onExecuteFunctionRequest"
+      }
+    ]
+  },
+
+  "apis": [
+    {
+      "method": "GET",
+      "path": "/functions",
+      "handler": "handleListFunctions",
+      "description": "List all generated functions",
+      "response_schema": { "$ref": "./schemas/function.json#/definitions/list_response" }
+    },
+    {
+      "method": "GET",
+      "path": "/functions/:name",
+      "handler": "handleGetFunction",
+      "description": "Get function metadata",
+      "response_schema": { "$ref": "./schemas/function.json#/definitions/get_response" }
+    },
+    {
+      "method": "POST",
+      "path": "/functions/:name/execute",
+      "handler": "handleExecuteFunction",
+      "description": "Execute function (publishes function.executed/failed)",
+      "request_schema": { "$ref": "./schemas/function.json#/definitions/execute_request" },
+      "response_schema": { "$ref": "./schemas/function.json#/definitions/execute_response" }
+    },
+    {
+      "method": "GET",
+      "path": "/health",
+      "handler": "handleHealthCheck",
+      "description": "Health check endpoint"
+    },
+    {
+      "method": "GET",
+      "path": "/metrics",
+      "handler": "handleGetMetrics",
+      "description": "Module metrics"
+    }
+  ],
+
+  "observability": {
+    "logging": {
+      "level": "info",
+      "structured": true,
+      "correlation_id": true
+    },
+    "metrics": {
+      "enabled": true,
+      "counters": [
+        "function.generated.total",
+        "function.executed.total",
+        "function.failed.total",
+        "function.http_call.total",
+        "function.http_call.success",
+        "function.http_call.error",
+        "function.local_call.total",
+        "function.local_call.success",
+        "function.local_call.error"
+      ],
+      "gauges": [
+        "function.count",
+        "function.plugins.count"
+      ],
+      "timings": [
+        "function.generation.duration",
+        "function.execution.duration",
+        "function.http_call.duration"
+      ]
+    }
+  },
+
+  "config": {
+    "localFunctionTimeout": 5000,
+    "httpTimeout": 30000,
+    "maxRetries": 3,
+    "retryDelay": 1000
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "id": "procesar-lote",
+  "name": "Procesar Facturas - Lote Semanal",
+  "description": "Procesa todas las facturas pendientes con OCR en lote",
+  "version": "1.0.0",
+  "enabled": false,
+  "schedule": {
+    "cron": "{{ config.schedule.procesamiento }}",
+    "timezone": "{{ config.schedule.timezone }}"
+  },
+  "trigger": {
+    "event": "flow.trigger",
+    "filter": {
+      "flowId": {
+        "$endsWith": ":procesar-lote"
+      }
+    }
+  },
+  "steps": [
+    {
+      "id": "log-inicio",
+      "type": "log",
+      "level": "info",
+      "message": "Iniciando procesamiento semanal de facturas - {{ project.id }} - {{ date }}"
+    },
+    {
+      "id": "obtener-pendientes",
+      "type": "service",
+      "service": "local.facturas-db",
+      "action": "pendientes",
+      "proyecto": "{{ project.id }}",
+      "timeout": 30000
+    },
+    {
+      "id": "verificar-pendientes",
+      "type": "condition",
+      "if": "{{ steps.obtener-pendientes.data.total > 0 }}",
+      "then": "log-procesando",
+      "else": "log-sin-pendientes"
+    },
+    {
+      "id": "log-sin-pendientes",
+      "type": "log",
+      "level": "info",
+      "message": "No hay facturas pendientes de procesar"
+    },
+    {
+      "id": "log-procesando",
+      "type": "log",
+      "level": "info",
+      "message": "Procesando {{ steps.obtener-pendientes.data.total }} facturas pendientes"
+    },
+    {
+      "id": "procesar-facturas",
+      "type": "parallel",
+      "forEach": "{{ steps.obtener-pendientes.data.facturas }}",
+      "as": "factura",
+      "maxConcurrency": 3,
+      "steps": [
+        {
+          "id": "emitir-procesar",
+          "type": "emit",
+          "event": "factura.procesar",
+          "data": {
+            "projectId": "{{ project.id }}",
+            "id": "{{ factura.id }}",
+            "archivo": {
+              "nombre": "{{ factura.nombre_archivo }}",
+              "path": "{{ factura.path_original }}",
+              "mimeType": "{{ factura.mime_type }}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "log-completado",
+      "type": "log",
+      "level": "info",
+      "message": "Lote de procesamiento iniciado para {{ steps.obtener-pendientes.data.total }} facturas"
+    }
+  ]
+}

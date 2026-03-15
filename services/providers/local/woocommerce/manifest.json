@@ -1,0 +1,83 @@
+{
+  "$schema": "provider-manifest-v1",
+  "name": "local.woocommerce",
+  "version": "1.0.0",
+  "description": "Integración WooCommerce REST API — productos, pedidos, stock, estadísticas",
+  "type": "local",
+  "requires": {
+    "npm": [],
+    "credentials": ["WOOCOMMERCE_URL", "WOOCOMMERCE_KEY", "WOOCOMMERCE_SECRET"]
+  },
+  "functions": {
+    "create-product": {
+      "event": "local.woocommerce.create-product.request",
+      "description": "Crea un producto en WooCommerce",
+      "input": {
+        "name": { "type": "string", "required": true, "description": "Nombre del producto" },
+        "regular_price": { "type": "string", "required": true, "description": "Precio regular (ej: \"12.50\")" },
+        "description": { "type": "string", "required": false, "description": "Descripción HTML del producto" },
+        "short_description": { "type": "string", "required": false, "description": "Descripción corta" },
+        "categories": { "type": "array", "required": false, "description": "Array de { id: number }" },
+        "images": { "type": "array", "required": false, "description": "Array de { src: url }" },
+        "sku": { "type": "string", "required": false, "description": "SKU del producto" },
+        "stock_quantity": { "type": "number", "required": false, "description": "Cantidad en stock" }
+      },
+      "output": {
+        "productId": { "type": "number", "description": "ID del producto creado" },
+        "permalink": { "type": "string", "description": "URL del producto" }
+      }
+    },
+    "list-products": {
+      "event": "local.woocommerce.list-products.request",
+      "description": "Lista productos de la tienda",
+      "input": {
+        "per_page": { "type": "number", "required": false, "description": "Resultados por página (default: 10)" },
+        "category": { "type": "number", "required": false, "description": "Filtrar por categoría ID" },
+        "search": { "type": "string", "required": false, "description": "Buscar por nombre" },
+        "status": { "type": "string", "required": false, "description": "Estado: publish, draft, pending" }
+      },
+      "output": {
+        "products": { "type": "array", "description": "Lista de productos" },
+        "total": { "type": "number", "description": "Total devuelto" }
+      }
+    },
+    "update-stock": {
+      "event": "local.woocommerce.update-stock.request",
+      "description": "Actualiza stock de un producto",
+      "input": {
+        "productId": { "type": "number", "required": true, "description": "ID del producto" },
+        "stock_quantity": { "type": "number", "required": true, "description": "Nueva cantidad" },
+        "manage_stock": { "type": "boolean", "required": false, "description": "Activar gestión de stock (default: true)" }
+      },
+      "output": {
+        "productId": { "type": "number", "description": "ID del producto" },
+        "stock_quantity": { "type": "number", "description": "Stock actualizado" }
+      }
+    },
+    "orders": {
+      "event": "local.woocommerce.orders.request",
+      "description": "Lista pedidos de la tienda",
+      "input": {
+        "per_page": { "type": "number", "required": false, "description": "Resultados por página (default: 10)" },
+        "status": { "type": "string", "required": false, "description": "Estado: pending, processing, completed, etc." },
+        "after": { "type": "string", "required": false, "description": "Pedidos después de esta fecha ISO" }
+      },
+      "output": {
+        "orders": { "type": "array", "description": "Lista de pedidos" },
+        "total": { "type": "number", "description": "Total devuelto" }
+      }
+    },
+    "stats": {
+      "event": "local.woocommerce.stats.request",
+      "description": "Estadísticas de ventas de la tienda",
+      "input": {
+        "period": { "type": "string", "required": false, "description": "Período: week, month, year (default: month)" }
+      },
+      "output": {
+        "total_sales": { "type": "string", "description": "Ventas totales" },
+        "total_orders": { "type": "number", "description": "Pedidos totales" },
+        "total_customers": { "type": "number", "description": "Clientes nuevos" }
+      }
+    }
+  }
+}

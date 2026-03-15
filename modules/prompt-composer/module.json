@@ -1,0 +1,125 @@
+{
+  "name": "prompt-composer",
+  "version": "1.1.0",
+  "description": "Composición de system prompts con contexto de proyecto, integración con prompt-manager para templates persistidos",
+  "author": "Event Core Team",
+
+  "events": {
+    "publishes": [
+      "prompt.compose.response",
+      "prompt.context.loaded"
+    ],
+    "subscribes": [
+      { "event": "prompt.compose.request", "handler": "onComposeRequest" },
+      { "event": "project.get.response", "handler": "onProjectGetResponse" },
+      { "event": "storage.info.response", "handler": "onStorageInfoResponse" },
+      { "event": "prompt.get.response", "handler": "onPromptManagerGetResponse" },
+      { "event": "prompt.list.response", "handler": "onPromptManagerListResponse" },
+      { "event": "context.full.response", "handler": "onInheritedContextResponse" },
+      { "event": "project.activated", "handler": "onProjectActivated" },
+      { "event": "project.deactivated", "handler": "onProjectDeactivated" }
+    ]
+  },
+
+  "ui_handlers": [
+    { "domain": "prompt", "action": "compose", "handler": "handleUICompose" },
+    { "domain": "prompt", "action": "templates", "handler": "handleUITemplates" },
+    { "domain": "prompt", "action": "context", "handler": "handleUIContext" }
+  ],
+
+  "apis": [
+    {
+      "method": "POST",
+      "path": "/compose",
+      "handler": "handleComposePrompt",
+      "description": "Componer system prompt con contexto"
+    },
+    {
+      "method": "GET",
+      "path": "/templates",
+      "handler": "handleListTemplates",
+      "description": "Listar templates disponibles (locales + prompt-manager)"
+    },
+    {
+      "method": "GET",
+      "path": "/context/:projectId",
+      "handler": "handleGetContext",
+      "description": "Obtener contexto de un proyecto"
+    },
+    {
+      "method": "GET",
+      "path": "/health",
+      "handler": "handleHealthCheck",
+      "description": "Health check del módulo"
+    }
+  ],
+
+  "tools": [
+    {
+      "name": "prompt.compose",
+      "description": "Componer un system prompt con contexto del proyecto",
+      "handler": "toolComposePrompt",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "project_id": {
+            "type": "string",
+            "description": "ID del proyecto"
+          },
+          "base_prompt": {
+            "type": "string",
+            "description": "Prompt base opcional"
+          },
+          "prompt_name": {
+            "type": "string",
+            "description": "Nombre del prompt en prompt-manager (alternativa a base_prompt)"
+          },
+          "include_tools": {
+            "type": "boolean",
+            "description": "Incluir descripción de tools disponibles"
+          },
+          "include_storage": {
+            "type": "boolean",
+            "description": "Incluir info del storage"
+          }
+        },
+        "required": ["project_id"]
+      }
+    },
+    {
+      "name": "prompt.get_context",
+      "description": "Obtener contexto de un proyecto para composición de prompts",
+      "handler": "toolGetContext",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "project_id": {
+            "type": "string",
+            "description": "ID del proyecto"
+          }
+        },
+        "required": ["project_id"]
+      }
+    }
+  ],
+
+  "ui": {
+    "zone": "chat-config",
+    "icon": "📝"
+  },
+
+  "dependencies": [
+    "project-manager",
+    "prompt-manager"
+  ],
+
+  "config": {
+    "includeProjectContext": true,
+    "includeStorageInfo": false,
+    "includeTools": true,
+    "defaultSystemPrompt": "You are a helpful AI assistant.",
+    "usePromptManager": true,
+    "defaultPromptName": "assistant-default",
+    "requestTimeout": 10000
+  }
+}

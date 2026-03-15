@@ -1,0 +1,64 @@
+{
+  "$schema": "../../../schemas/provider-manifest.schema.json",
+  "name": "local.context-sync",
+  "version": "1.0.0",
+  "description": "Auditor del sistema — compara contexto (fuente de verdad) contra código real",
+  "type": "provider",
+  "requires": {
+    "credentials": [],
+    "npm": []
+  },
+  "functions": {
+    "audit": {
+      "event": "local.context-sync.audit.request",
+      "description": "Auditoría completa: providers + módulos",
+      "input": {},
+      "output": {
+        "providers": { "type": "object", "description": "Resultado audit de providers" },
+        "modules": { "type": "object", "description": "Resultado audit de módulos" },
+        "summary": { "type": "object", "description": "Resumen de issues" }
+      }
+    },
+    "audit-providers": {
+      "event": "local.context-sync.audit-providers.request",
+      "description": "Audita providers: contexto vs código real",
+      "input": {},
+      "output": {
+        "documented": { "type": "array" },
+        "existing": { "type": "array" },
+        "issues": { "type": "array" }
+      }
+    },
+    "audit-modules": {
+      "event": "local.context-sync.audit-modules.request",
+      "description": "Audita módulos: contexto vs código real",
+      "input": {},
+      "output": {
+        "documented": { "type": "array" },
+        "existing": { "type": "array" },
+        "issues": { "type": "array" }
+      }
+    },
+    "fix-manifests": {
+      "event": "local.context-sync.fix-manifests.request",
+      "description": "Genera manifest.json faltantes para providers documentados",
+      "input": {
+        "dryRun": { "type": "boolean", "description": "Solo reportar sin crear", "default": false }
+      },
+      "output": {
+        "fixed": { "type": "array" },
+        "skipped": { "type": "array" }
+      }
+    },
+    "report": {
+      "event": "local.context-sync.report.request",
+      "description": "Genera reporte legible del estado de sincronización",
+      "input": {},
+      "output": {
+        "report": { "type": "string", "description": "Reporte en texto plano" },
+        "score": { "type": "number", "description": "Score 0-100" },
+        "issues": { "type": "number", "description": "Total issues" }
+      }
+    }
+  }
+}

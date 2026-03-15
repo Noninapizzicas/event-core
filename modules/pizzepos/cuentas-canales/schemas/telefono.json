@@ -1,0 +1,192 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://pizzepos.com/schemas/telefono.json",
+  "title": "Telefono Schema",
+  "description": "Esquemas de datos para cuentas telefónicas",
+
+  "definitions": {
+    "estado_pedido_telefono": {
+      "type": "string",
+      "enum": ["pendiente", "preparando", "listo", "recogido", "cancelado"],
+      "description": "Estado del pedido telefónico"
+    },
+
+    "contacto": {
+      "type": "object",
+      "required": ["telefono", "nombre"],
+      "properties": {
+        "telefono": {
+          "type": "string",
+          "pattern": "^\\+?[1-9]\\d{1,14}$",
+          "description": "Teléfono en formato E.164"
+        },
+        "nombre": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "direccion": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Dirección guardada para delivery futuro"
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "notas": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "Preferencias del cliente"
+        },
+        "pedidos_anteriores": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Número de pedidos históricos"
+        },
+        "ultima_compra": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+
+    "pedido_telefono": {
+      "type": "object",
+      "required": ["cuenta_id", "numero_pedido", "telefono", "estado", "total", "hora_pedido"],
+      "properties": {
+        "cuenta_id": {
+          "type": "string",
+          "pattern": "^tel_\\d{8}_\\d{3}$",
+          "description": "ID único: tel_{YYYYMMDD}_{secuencial}"
+        },
+        "numero_pedido": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Número secuencial del día para decir al cliente"
+        },
+        "telefono": {
+          "type": "string",
+          "pattern": "^\\+?[1-9]\\d{1,14}$"
+        },
+        "caller_id_detectado": {
+          "type": "boolean",
+          "default": false
+        },
+        "contacto": {
+          "$ref": "#/definitions/contacto"
+        },
+        "estado": {
+          "$ref": "#/definitions/estado_pedido_telefono"
+        },
+        "total": {
+          "type": "number",
+          "minimum": 0,
+          "multipleOf": 0.01
+        },
+        "hora_pedido": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "hora_recogida_estimada": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "hora_recogida_real": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "whatsapp_enviado": {
+          "type": "boolean",
+          "default": false
+        },
+        "whatsapp_enviado_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "pedidos": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "notas": {
+          "type": "string",
+          "maxLength": 500
+        }
+      }
+    },
+
+    "llamada_entrante_request": {
+      "type": "object",
+      "required": ["telefono"],
+      "properties": {
+        "telefono": {
+          "type": "string",
+          "pattern": "^\\+?[1-9]\\d{1,14}$"
+        },
+        "caller_name": {
+          "type": "string",
+          "description": "Nombre del caller ID si está disponible"
+        }
+      }
+    },
+
+    "crear_pedido_request": {
+      "type": "object",
+      "required": ["telefono"],
+      "properties": {
+        "telefono": {
+          "type": "string",
+          "pattern": "^\\+?[1-9]\\d{1,14}$"
+        },
+        "nombre": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "hora_recogida_estimada": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "tiempo_preparacion": {
+          "type": "integer",
+          "minimum": 5,
+          "maximum": 120,
+          "default": 20,
+          "description": "Minutos estimados de preparación"
+        },
+        "notas": {
+          "type": "string",
+          "maxLength": 500
+        }
+      }
+    },
+
+    "guardar_contacto_request": {
+      "type": "object",
+      "required": ["telefono", "nombre"],
+      "properties": {
+        "telefono": {
+          "type": "string",
+          "pattern": "^\\+?[1-9]\\d{1,14}$"
+        },
+        "nombre": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "direccion": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "notas": {
+          "type": "string",
+          "maxLength": 500
+        }
+      }
+    }
+  }
+}

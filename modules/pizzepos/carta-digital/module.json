@@ -1,0 +1,188 @@
+{
+  "name": "carta-digital",
+  "version": "1.1.0",
+  "description": "Carta digital para clientes — config, sesiones, pedidos, media serving y carta enriquecida",
+  "author": "Pizzepos Team",
+
+  "provides": {
+    "events": ["carta-digital.sesion_creada", "carta-digital.pedido_recibido"],
+    "queries": ["carta-digital.config", "carta-digital.sesion"]
+  },
+
+  "events": {
+    "publishes": [
+      {
+        "event": "carta-digital.sesion_creada",
+        "description": "Nueva sesión de cliente viendo la carta"
+      },
+      {
+        "event": "carta-digital.pedido_recibido",
+        "description": "Pedido recibido desde la carta digital (via WhatsApp o directo)"
+      }
+    ],
+    "subscribes": [
+      {
+        "event": "project.activated",
+        "description": "Cache base_path del proyecto y cargar config",
+        "handler": "onProjectActivated"
+      }
+    ]
+  },
+
+  "ui_handlers": [
+    { "domain": "carta-digital", "action": "config", "handler": "handleGetConfig" },
+    { "domain": "carta-digital", "action": "update-config", "handler": "handleUpdateConfig" },
+    { "domain": "carta-digital", "action": "create-session", "handler": "handleCreateSession" },
+    { "domain": "carta-digital", "action": "register-pedido", "handler": "handleRegisterPedido" },
+    { "domain": "carta-digital", "action": "stats", "handler": "handleGetStats" },
+    { "domain": "carta-digital", "action": "health", "handler": "handleHealthCheck" },
+    { "domain": "carta-digital", "action": "carta-completa", "handler": "handleCartaDigitalCompleta" },
+    { "domain": "carta-digital", "action": "export-static", "handler": "handleExportStatic" },
+    { "domain": "carta-digital", "action": "deploy-cf-worker", "handler": "handleDeployCFWorker" },
+    { "domain": "carta-digital", "action": "ofertas", "handler": "handleGetOfertas" },
+    { "domain": "carta-digital", "action": "create-oferta", "handler": "handleCreateOferta" },
+    { "domain": "carta-digital", "action": "update-oferta", "handler": "handleUpdateOferta" },
+    { "domain": "carta-digital", "action": "delete-oferta", "handler": "handleDeleteOferta" },
+    { "domain": "carta-digital", "action": "track-event", "handler": "handleTrackEvent" },
+    { "domain": "carta-digital", "action": "funnel", "handler": "handleGetFunnel" },
+    { "domain": "carta-digital", "action": "resenas", "handler": "handleGetResenas" },
+    { "domain": "carta-digital", "action": "create-resena", "handler": "handleCreateResena" }
+  ],
+
+  "apis": [
+    {
+      "method": "GET",
+      "path": "/config",
+      "handler": "handleGetConfig",
+      "description": "Obtener configuración de la carta digital (WhatsApp, branding)"
+    },
+    {
+      "method": "PATCH",
+      "path": "/config",
+      "handler": "handleUpdateConfig",
+      "description": "Actualizar configuración de la carta digital"
+    },
+    {
+      "method": "POST",
+      "path": "/session",
+      "handler": "handleCreateSession",
+      "description": "Crear sesión de visualización (analytics)"
+    },
+    {
+      "method": "POST",
+      "path": "/pedido",
+      "handler": "handleRegisterPedido",
+      "description": "Registrar pedido recibido desde la carta digital"
+    },
+    {
+      "method": "GET",
+      "path": "/stats",
+      "handler": "handleGetStats",
+      "description": "Estadísticas de uso de la carta digital"
+    },
+    {
+      "method": "GET",
+      "path": "/health",
+      "handler": "handleHealthCheck",
+      "description": "Health check"
+    },
+    {
+      "method": "GET",
+      "path": "/media/:path",
+      "handler": "handleServeMedia",
+      "description": "Servir imágenes y media del storage del proyecto"
+    },
+    {
+      "method": "GET",
+      "path": "/carta",
+      "handler": "handleCartaDigitalCompleta",
+      "description": "Carta completa enriquecida con config, descripciones, imágenes y tema"
+    },
+    {
+      "method": "POST",
+      "path": "/export-static",
+      "handler": "handleExportStatic",
+      "description": "Genera sitio estático auto-contenido para desplegar en GitHub Pages / Netlify"
+    },
+    {
+      "method": "POST",
+      "path": "/deploy-cf-worker",
+      "handler": "handleDeployCFWorker",
+      "description": "Deploy del Cloudflare Worker como proxy IA para el chat de la carta digital"
+    },
+    {
+      "method": "GET",
+      "path": "/ofertas",
+      "handler": "handleGetOfertas",
+      "description": "Listar ofertas y combos activos"
+    },
+    {
+      "method": "POST",
+      "path": "/ofertas",
+      "handler": "handleCreateOferta",
+      "description": "Crear nueva oferta o combo"
+    },
+    {
+      "method": "PATCH",
+      "path": "/ofertas/:oferta_id",
+      "handler": "handleUpdateOferta",
+      "description": "Actualizar oferta existente"
+    },
+    {
+      "method": "DELETE",
+      "path": "/ofertas/:oferta_id",
+      "handler": "handleDeleteOferta",
+      "description": "Eliminar oferta"
+    },
+    {
+      "method": "POST",
+      "path": "/track",
+      "handler": "handleTrackEvent",
+      "description": "Registrar evento de tracking (funnel: page_view, product_view, add_to_cart, order_sent, chat_open)"
+    },
+    {
+      "method": "GET",
+      "path": "/funnel",
+      "handler": "handleGetFunnel",
+      "description": "Análisis del funnel de conversión con tasas y top productos"
+    },
+    {
+      "method": "GET",
+      "path": "/resenas",
+      "handler": "handleGetResenas",
+      "description": "Listar reseñas aprobadas con resumen (media, distribución)"
+    },
+    {
+      "method": "POST",
+      "path": "/resenas",
+      "handler": "handleCreateResena",
+      "description": "Crear nueva reseña (nombre, rating 1-5, comentario opcional)"
+    }
+  ],
+
+  "observability": {
+    "logging": {
+      "level": "info",
+      "structured": true,
+      "correlation_id": true
+    },
+    "metrics": {
+      "enabled": true,
+      "counters": [
+        "carta-digital.sesion.total",
+        "carta-digital.pedido.total",
+        "carta-digital.page_view.total",
+        "carta-digital.product_view.total",
+        "carta-digital.add_to_cart.total",
+        "carta-digital.order_sent.total",
+        "carta-digital.chat_open.total",
+        "carta-digital.resena.total",
+        "carta-digital.media.served",
+        "carta-digital.export.completed"
+      ],
+      "gauges": [
+        "carta-digital.sesiones_activas.count"
+      ]
+    }
+  }
+}

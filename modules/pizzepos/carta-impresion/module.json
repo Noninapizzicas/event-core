@@ -1,0 +1,110 @@
+{
+  "name": "carta-impresion",
+  "version": "1.0.0",
+  "description": "Renderiza cartas del restaurante en HTML listo para imprimir o exportar a PDF desde el navegador",
+  "author": "Pizzepos Team",
+  "main": "index.js",
+
+  "provides": {
+    "events": ["carta.html.generada"]
+  },
+
+  "events": {
+    "publishes": [
+      {
+        "event": "carta.html.generada",
+        "description": "HTML de carta generado — incluye ruta al fichero para abrir en navegador"
+      }
+    ],
+    "subscribes": [
+      { "event": "project.activated", "handler": "onProjectActivated" },
+      { "event": "project.deactivated", "handler": "onProjectDeactivated" }
+    ]
+  },
+
+  "tools": [
+    {
+      "name": "carta.render",
+      "description": "Genera un HTML listo para imprimir a partir de una carta del POS. El usuario abre el archivo en el navegador y usa Ctrl+P para imprimir o exportar a PDF. Devuelve la ruta del HTML generado.",
+      "handler": "toolRender",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "carta_id": {
+            "type": "string",
+            "description": "ID de la carta a renderizar (ej: carta_m1abc23)"
+          },
+          "plantilla_id": {
+            "type": "string",
+            "description": "ID de la plantilla a usar. Si no se indica, usa 'a4-clasica'. Ver carta.plantillas para opciones disponibles."
+          }
+        },
+        "required": ["carta_id"]
+      }
+    },
+    {
+      "name": "carta.plantillas",
+      "description": "Lista las plantillas de impresión disponibles: las globales (incluidas con el sistema) y las del proyecto actual (personalizadas).",
+      "handler": "toolPlantillas",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "carta.plantilla_crear",
+      "description": "Crea una plantilla personalizada para el proyecto actual. Permite diseñar cartas con HTML y CSS propios.",
+      "handler": "toolPlantillaCrear",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "description": "Nombre descriptivo de la plantilla (ej: 'Carta Verano 2026')"
+          },
+          "html": {
+            "type": "string",
+            "description": "Contenido HTML completo de la plantilla. Usar {{nombre_carta}}, {{categorias}}, {{productos}} como marcadores."
+          },
+          "formato": {
+            "type": "string",
+            "enum": ["A4", "A5", "A6"],
+            "description": "Tamaño de papel objetivo (default: A4)"
+          },
+          "descripcion": {
+            "type": "string",
+            "description": "Descripción breve del diseño y cuándo usarlo"
+          }
+        },
+        "required": ["nombre", "html"]
+      }
+    },
+    {
+      "name": "carta.plantilla_eliminar",
+      "description": "Elimina una plantilla personalizada del proyecto. Solo se pueden eliminar plantillas del proyecto, no las globales.",
+      "handler": "toolPlantillaEliminar",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "plantilla_id": {
+            "type": "string",
+            "description": "ID de la plantilla a eliminar"
+          }
+        },
+        "required": ["plantilla_id"]
+      }
+    }
+  ],
+
+  "observability": {
+    "metrics": {
+      "counters": [
+        "carta.render.requested",
+        "carta.render.completed",
+        "carta.render.errors",
+        "carta.plantilla.creada",
+        "carta.plantilla.eliminada"
+      ]
+    }
+  }
+}

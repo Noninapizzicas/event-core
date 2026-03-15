@@ -1,0 +1,95 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://aichat.com/schemas/plugin-manager.json",
+
+  "definitions": {
+    "plugin_metadata": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "default": "1.0.0" },
+        "description": { "type": "string" },
+        "author": { "type": "string" }
+      }
+    },
+
+    "plugin_function": {
+      "type": "object",
+      "required": ["description", "parameters"],
+      "properties": {
+        "description": { "type": "string" },
+        "parameters": { "type": "object" },
+        "returns": { "type": "object" }
+      }
+    },
+
+    "plugin_definition": {
+      "type": "object",
+      "required": ["metadata", "functions"],
+      "properties": {
+        "metadata": { "$ref": "#/definitions/plugin_metadata" },
+        "functions": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/definitions/plugin_function" }
+        }
+      }
+    },
+
+    "plugin_summary": {
+      "type": "object",
+      "required": ["name", "functions", "function_count"],
+      "properties": {
+        "name": { "type": "string" },
+        "version": { "type": "string" },
+        "description": { "type": "string" },
+        "functions": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "function_count": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+
+    "get_response": {
+      "type": "object",
+      "required": ["success"],
+      "properties": {
+        "success": { "type": "boolean" },
+        "plugin": { "$ref": "#/definitions/plugin_definition" },
+        "error": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+
+    "list_response": {
+      "type": "object",
+      "required": ["success", "plugins", "count"],
+      "properties": {
+        "success": { "type": "boolean" },
+        "plugins": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/plugin_summary" }
+        },
+        "count": { "type": "integer", "minimum": 0 },
+        "total_functions": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+
+    "reload_response": {
+      "type": "object",
+      "required": ["success"],
+      "properties": {
+        "success": { "type": "boolean" },
+        "message": { "type": "string" },
+        "count": { "type": "integer", "minimum": 0 },
+        "loaded": { "type": "integer", "minimum": 0 },
+        "errors": { "type": "integer", "minimum": 0 },
+        "error": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

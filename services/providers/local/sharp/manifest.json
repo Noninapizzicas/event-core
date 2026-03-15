@@ -1,0 +1,121 @@
+{
+  "$schema": "../../../schemas/provider-manifest.schema.json",
+  "name": "local.sharp",
+  "version": "1.0.0",
+  "description": "Servicio local de procesamiento de imágenes usando Sharp",
+  "type": "provider",
+  "requires": {
+    "credentials": [],
+    "npm": ["sharp"]
+  },
+  "functions": {
+    "prepare-ocr": {
+      "event": "local.sharp.prepare-ocr.request",
+      "description": "Prepara imagen para OCR: grayscale, contraste, nitidez, binarización",
+      "input": {
+        "image": {
+          "type": "string",
+          "description": "Imagen en base64 o path al archivo",
+          "required": true
+        },
+        "options": {
+          "type": "object",
+          "description": "Opciones de procesamiento",
+          "properties": {
+            "grayscale": { "type": "boolean", "default": true },
+            "normalize": { "type": "boolean", "default": true },
+            "sharpen": { "type": "boolean", "default": true },
+            "threshold": { "type": "number", "description": "Umbral binarización 0-255" },
+            "denoise": { "type": "boolean", "default": false }
+          }
+        },
+        "output": {
+          "type": "string",
+          "description": "Path donde guardar resultado (opcional)"
+        }
+      },
+      "output": {
+        "image": { "type": "string", "description": "Imagen procesada" },
+        "width": { "type": "number" },
+        "height": { "type": "number" }
+      }
+    },
+    "resize": {
+      "event": "local.sharp.resize.request",
+      "description": "Redimensionar imagen",
+      "input": {
+        "image": { "type": "string", "required": true },
+        "width": { "type": "number" },
+        "height": { "type": "number" },
+        "fit": { "type": "string", "default": "inside" },
+        "output": { "type": "string" }
+      },
+      "output": {
+        "image": { "type": "string" },
+        "width": { "type": "number" },
+        "height": { "type": "number" }
+      }
+    },
+    "convert": {
+      "event": "local.sharp.convert.request",
+      "description": "Convertir formato de imagen",
+      "input": {
+        "image": { "type": "string", "required": true },
+        "format": { "type": "string", "required": true },
+        "quality": { "type": "number", "default": 80 },
+        "output": { "type": "string" }
+      },
+      "output": {
+        "image": { "type": "string" },
+        "format": { "type": "string" },
+        "size": { "type": "number" }
+      }
+    },
+    "info": {
+      "event": "local.sharp.info.request",
+      "description": "Obtener información de imagen",
+      "input": {
+        "image": { "type": "string", "required": true }
+      },
+      "output": {
+        "width": { "type": "number" },
+        "height": { "type": "number" },
+        "format": { "type": "string" },
+        "channels": { "type": "number" },
+        "size": { "type": "number" }
+      }
+    },
+    "crop": {
+      "event": "local.sharp.crop.request",
+      "description": "Recortar imagen con coordenadas específicas",
+      "input": {
+        "image": { "type": "string", "required": true },
+        "left": { "type": "number", "required": true },
+        "top": { "type": "number", "required": true },
+        "width": { "type": "number", "required": true },
+        "height": { "type": "number", "required": true },
+        "output": { "type": "string" }
+      },
+      "output": {
+        "image": { "type": "string" },
+        "width": { "type": "number" },
+        "height": { "type": "number" }
+      }
+    },
+    "trim": {
+      "event": "local.sharp.trim.request",
+      "description": "Recortar bordes automáticamente (elimina fondo uniforme)",
+      "input": {
+        "image": { "type": "string", "required": true },
+        "threshold": { "type": "number", "default": 10 },
+        "output": { "type": "string" }
+      },
+      "output": {
+        "image": { "type": "string" },
+        "width": { "type": "number" },
+        "height": { "type": "number" },
+        "trimmed": { "type": "object" }
+      }
+    }
+  }
+}

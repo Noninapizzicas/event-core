@@ -1,0 +1,102 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://pizzepos.com/schemas/variacion.json",
+  "title": "Variacion Schema",
+  "description": "Esquemas de datos para variaciones de productos",
+
+  "definitions": {
+    "variacion_config": {
+      "type": "object",
+      "required": ["producto_id", "permite_quitar", "permite_anadir"],
+      "properties": {
+        "producto_id": {
+          "type": "string",
+          "pattern": "^prod_[a-z0-9_]+$"
+        },
+        "permite_quitar": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^ing_[a-z0-9_]+$"
+          },
+          "description": "IDs de ingredientes que se pueden quitar"
+        },
+        "permite_anadir": {
+          "type": "boolean",
+          "description": "Permite añadir ingredientes extras"
+        },
+        "extras_sugeridos": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "ingrediente_id": {"type": "string"},
+              "precio_extra": {"type": "number", "minimum": 0}
+            }
+          }
+        },
+        "max_ingredientes_extra": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Máximo de ingredientes que se pueden añadir"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "variacion_request": {
+      "type": "object",
+      "required": ["producto_id"],
+      "properties": {
+        "producto_id": {
+          "type": "string"
+        },
+        "ingredientes_quitar": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "ingredientes_anadir": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "ingrediente_id": {"type": "string"},
+              "cantidad": {"type": "integer", "minimum": 1, "maximum": 3}
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "variacion_response": {
+      "type": "object",
+      "required": ["valida", "producto_id"],
+      "properties": {
+        "valida": {
+          "type": "boolean"
+        },
+        "producto_id": {
+          "type": "string"
+        },
+        "precio_base": {
+          "type": "number"
+        },
+        "precio_extras": {
+          "type": "number"
+        },
+        "precio_total": {
+          "type": "number"
+        },
+        "motivo_rechazo": {
+          "type": "string",
+          "description": "Si no es válida, por qué"
+        },
+        "ingredientes_finales": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      }
+    }
+  }
+}

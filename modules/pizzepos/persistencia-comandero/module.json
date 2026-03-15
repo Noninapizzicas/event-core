@@ -1,0 +1,272 @@
+{
+  "name": "persistencia-comandero",
+  "version": "3.0.0",
+  "description": "Persistencia diaria del comandero - Eventos, cuentas y cierre de caja",
+  "author": "Pizzepos Team",
+
+  "provides": {
+    "events": ["caja.cerrada", "cuenta.cerrada_forzada", "dia.iniciado"],
+    "queries": ["persistencia.eventos", "persistencia.ventas", "persistencia.cuadre_caja"]
+  },
+
+  "events": {
+    "publishes": [
+      {
+        "event": "caja.cerrada",
+        "description": "Cierre de caja completado - comandero debe resetear",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "fecha": { "type": "string" },
+            "arqueo": { "type": "object" },
+            "totales": { "type": "object" },
+            "diferencia": { "type": "number" }
+          }
+        }
+      },
+      {
+        "event": "cuenta.cerrada_forzada",
+        "description": "Cuenta cerrada automáticamente durante cierre de caja",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "cuenta_id": { "type": "string" },
+            "motivo": { "type": "string" },
+            "cuenta_snapshot": { "type": "object" }
+          }
+        }
+      },
+      {
+        "event": "dia.iniciado",
+        "description": "Nuevo día iniciado - sistema reseteado",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "fecha": { "type": "string" },
+            "hora_inicio": { "type": "string" }
+          }
+        }
+      }
+    ],
+    "subscribes": [
+      {
+        "event": "boton.pulsado",
+        "description": "Registrar todas las pulsaciones de botón",
+        "handler": "onEvento"
+      },
+      {
+        "event": "ui.accion",
+        "description": "Registrar acciones de UI",
+        "handler": "onEvento"
+      },
+      {
+        "event": "cuenta.creada",
+        "description": "Guardar evento de cuenta creada y registrar cuenta activa",
+        "handler": "onCuentaCreada"
+      },
+      {
+        "event": "cuenta.cerrada",
+        "description": "Guardar evento y crear venta",
+        "handler": "onCuentaCerrada"
+      },
+      {
+        "event": "cuenta.eliminada",
+        "description": "Eliminar cuenta de cache cuando se elimina (safety net tras cobro)",
+        "handler": "onCuentaEliminada"
+      },
+      {
+        "event": "cuenta.estado_cambiado",
+        "description": "Actualizar estado real de cuenta activa en cache y disco",
+        "handler": "onCuentaEstadoCambiado"
+      },
+      {
+        "event": "cuenta.actualizada",
+        "description": "Actualizar campos de cuenta activa (pagado, servido, etc)",
+        "handler": "onCuentaActualizada"
+      },
+      {
+        "event": "cobro.iniciado",
+        "description": "Guardar evento de cobro iniciado",
+        "handler": "onEvento"
+      },
+      {
+        "event": "cobro.procesado",
+        "description": "Guardar evento de cobro procesado",
+        "handler": "onEvento"
+      },
+      {
+        "event": "cobro.reembolsado",
+        "description": "Guardar evento de reembolso",
+        "handler": "onEvento"
+      },
+      {
+        "event": "pedido.creado",
+        "description": "Guardar evento de pedido creado",
+        "handler": "onPedidoCreado"
+      },
+      {
+        "event": "pedido.enviado_cocina",
+        "description": "Guardar evento de pedido enviado a cocina",
+        "handler": "onEvento"
+      },
+      {
+        "event": "pedido.completado",
+        "description": "Guardar evento de pedido completado",
+        "handler": "onEvento"
+      },
+      {
+        "event": "mesa.abierta",
+        "description": "Guardar evento de mesa abierta",
+        "handler": "onEvento"
+      },
+      {
+        "event": "mesa.cerrada",
+        "description": "Guardar evento de mesa cerrada",
+        "handler": "onEvento"
+      },
+      {
+        "event": "mesa.renombrada",
+        "description": "Actualizar nombre de mesa en cuentas activas",
+        "handler": "onMesaRenombrada"
+      },
+      {
+        "event": "telefono.pedido_creado",
+        "description": "Guardar evento de pedido telefónico",
+        "handler": "onEvento"
+      },
+      {
+        "event": "llevar.ticket_creado",
+        "description": "Guardar evento de ticket",
+        "handler": "onEvento"
+      },
+      {
+        "event": "comandero.item_agregado",
+        "description": "Guardar evento de item agregado al buffer del comandero",
+        "handler": "onEvento"
+      },
+      {
+        "event": "comandero.item_eliminado",
+        "description": "Guardar evento de item eliminado del buffer del comandero",
+        "handler": "onEvento"
+      },
+      {
+        "event": "comandero.enviar_cocina",
+        "description": "Guardar evento de comandero solicitando envío a cocina",
+        "handler": "onEvento"
+      },
+      {
+        "event": "catalogo.actualizado",
+        "description": "Guardar evento de catálogo actualizado",
+        "handler": "onEvento"
+      }
+    ]
+  },
+
+  "apis": [
+    {
+      "method": "GET",
+      "path": "/cuentas-activas",
+      "handler": "handleGetCuentasActivas",
+      "description": "Listar cuentas activas (abiertas)"
+    },
+    {
+      "method": "GET",
+      "path": "/eventos",
+      "handler": "handleGetEventos",
+      "description": "Listar eventos del día"
+    },
+    {
+      "method": "GET",
+      "path": "/eventos/:fecha",
+      "handler": "handleGetEventosFecha",
+      "description": "Eventos de una fecha específica"
+    },
+    {
+      "method": "GET",
+      "path": "/ventas",
+      "handler": "handleGetVentas",
+      "description": "Listar ventas del día"
+    },
+    {
+      "method": "GET",
+      "path": "/ventas/:fecha",
+      "handler": "handleGetVentasFecha",
+      "description": "Ventas de una fecha específica"
+    },
+    {
+      "method": "GET",
+      "path": "/cuadre-caja",
+      "handler": "handleCuadreCaja",
+      "description": "Cuadre de caja del día actual"
+    },
+    {
+      "method": "GET",
+      "path": "/cuadre-caja/:fecha",
+      "handler": "handleCuadreCajaFecha",
+      "description": "Cuadre de caja de fecha específica"
+    },
+    {
+      "method": "POST",
+      "path": "/cierre-caja",
+      "handler": "handleCierreCaja",
+      "description": "Realizar cierre de caja con arqueo"
+    },
+    {
+      "method": "POST",
+      "path": "/iniciar-dia",
+      "handler": "handleIniciarDia",
+      "description": "Iniciar nuevo día - resetea sistema"
+    },
+    {
+      "method": "POST",
+      "path": "/backup",
+      "handler": "handleBackup",
+      "description": "Crear backup de datos"
+    },
+    {
+      "method": "GET",
+      "path": "/health",
+      "handler": "handleHealthCheck",
+      "description": "Health check"
+    },
+    {
+      "method": "GET",
+      "path": "/metrics",
+      "handler": "handleGetMetrics",
+      "description": "Métricas del módulo"
+    }
+  ],
+
+  "observability": {
+    "logging": {
+      "level": "info",
+      "structured": true,
+      "correlation_id": true
+    },
+    "metrics": {
+      "enabled": true,
+      "counters": [
+        "persistencia.eventos_guardados.total",
+        "persistencia.ventas_guardadas.total",
+        "persistencia.errores_escritura.total"
+      ],
+      "gauges": [
+        "persistencia.eventos_dia.count",
+        "persistencia.ventas_dia.count"
+      ],
+      "timings": [
+        "persistencia.escritura.duration"
+      ]
+    }
+  },
+
+  "config": {
+    "data_dir": "./data",
+    "eventos_dir": "./data/eventos",
+    "ventas_dir": "./data/ventas",
+    "current_dir": "./data/current",
+    "backup_dir": "./data/backups",
+    "rotacion_diaria": true,
+    "rotacion_hora": "00:00"
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "name": "bot-manager",
+  "version": "1.0.0",
+  "description": "Gestión de bots y almacenamiento. Descarga archivos, guarda en carpetas, publica eventos. NO sabe de agentes.",
+  "author": "Event Core Team",
+
+  "provides": [
+    "bot-management",
+    "file-storage",
+    "auto-responses"
+  ],
+
+  "events": {
+    "subscribes": [
+      { "event": "telegram.document.received", "handler": "onFileReceived" },
+      { "event": "telegram.photo.received", "handler": "onFileReceived" },
+      { "event": "telegram.video.received", "handler": "onFileReceived" },
+      { "event": "telegram.audio.received", "handler": "onFileReceived" },
+      { "event": "telegram.voice.received", "handler": "onFileReceived" },
+      { "event": "telegram.text.received", "handler": "onTextReceived" },
+      { "event": "telegram.command.received", "handler": "onCommandReceived" },
+      { "event": "credential.saved", "handler": "onCredentialSaved" }
+    ],
+    "publishes": [
+      "bot.file.stored",
+      "bot.message.received",
+      "bot.command.received",
+      "bot.registered",
+      "bot.unregistered",
+      "bot.enabled",
+      "bot.disabled"
+    ]
+  },
+
+  "config": {
+    "storagePath": "./data/bots"
+  },
+
+  "dependencies": [
+    "telegram-service",
+    "credential-manager"
+  ],
+
+  "tags": [
+    "bots",
+    "storage",
+    "telegram",
+    "files"
+  ]
+}

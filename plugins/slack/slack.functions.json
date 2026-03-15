@@ -1,0 +1,133 @@
+{
+  "metadata": {
+    "name": "slack",
+    "version": "1.0.0",
+    "description": "Slack API integration for sending messages, creating channels, and managing workspaces",
+    "base_url": "https://slack.com/api",
+    "auth_type": "bearer",
+    "auth_header_name": "Authorization",
+    "documentation": "https://api.slack.com/methods"
+  },
+  "functions": {
+    "send_message": {
+      "method": "POST",
+      "endpoint": "/chat.postMessage",
+      "description": "Send a message to a Slack channel or user",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "channel": {
+            "type": "string",
+            "description": "Channel ID or name (e.g., #general or C1234567890)"
+          },
+          "text": {
+            "type": "string",
+            "description": "Message text"
+          },
+          "blocks": {
+            "type": "array",
+            "description": "Array of structured blocks for rich formatting"
+          },
+          "thread_ts": {
+            "type": "string",
+            "description": "Timestamp of parent message to reply in thread"
+          },
+          "username": {
+            "type": "string",
+            "description": "Bot username to display"
+          },
+          "icon_emoji": {
+            "type": "string",
+            "description": "Emoji to use as icon (e.g., :robot_face:)"
+          }
+        },
+        "required": ["channel", "text"]
+      }
+    },
+    "create_channel": {
+      "method": "POST",
+      "endpoint": "/conversations.create",
+      "description": "Create a new Slack channel",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Channel name (lowercase, no spaces)"
+          },
+          "is_private": {
+            "type": "boolean",
+            "description": "Create a private channel",
+            "default": false
+          }
+        },
+        "required": ["name"]
+      }
+    },
+    "invite_user": {
+      "method": "POST",
+      "endpoint": "/conversations.invite",
+      "description": "Invite a user to a channel",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "channel": {
+            "type": "string",
+            "description": "Channel ID"
+          },
+          "users": {
+            "type": "string",
+            "description": "Comma-separated list of user IDs"
+          }
+        },
+        "required": ["channel", "users"]
+      }
+    },
+    "upload_file": {
+      "method": "POST",
+      "endpoint": "/files.upload",
+      "description": "Upload a file to Slack",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "channels": {
+            "type": "string",
+            "description": "Comma-separated list of channel IDs"
+          },
+          "content": {
+            "type": "string",
+            "description": "File content (text)"
+          },
+          "filename": {
+            "type": "string",
+            "description": "Filename"
+          },
+          "title": {
+            "type": "string",
+            "description": "File title"
+          },
+          "filetype": {
+            "type": "string",
+            "description": "File type (e.g., text, json, csv)"
+          }
+        },
+        "required": ["channels", "content", "filename"]
+      }
+    },
+    "get_channel_info": {
+      "method": "GET",
+      "endpoint": "/conversations.info",
+      "description": "Get information about a channel",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "channel": {
+            "type": "string",
+            "description": "Channel ID"
+          }
+        },
+        "required": ["channel"]
+      }
+    }
+  }
+}

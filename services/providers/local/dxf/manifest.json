@@ -1,0 +1,61 @@
+{
+  "$schema": "provider-manifest-v1",
+  "name": "local.dxf",
+  "version": "1.0.0",
+  "description": "Parseo y generación de archivos DXF — planos técnicos, capas, export SVG",
+  "type": "local",
+  "requires": {
+    "npm": [],
+    "credentials": []
+  },
+  "functions": {
+    "parse": {
+      "event": "local.dxf.parse.request",
+      "description": "Parsea un archivo DXF y extrae entidades y capas",
+      "input": {
+        "file": { "type": "string", "required": true, "description": "Ruta del archivo DXF a parsear" }
+      },
+      "output": {
+        "entities": { "type": "array", "description": "Entidades encontradas en el DXF" },
+        "layers": { "type": "object", "description": "Capas del archivo DXF" },
+        "total": { "type": "number", "description": "Total de entidades" }
+      }
+    },
+    "create": {
+      "event": "local.dxf.create.request",
+      "description": "Crea un archivo DXF a partir de entidades",
+      "input": {
+        "entities": { "type": "array", "required": true, "description": "Entidades a incluir en el DXF" },
+        "filename": { "type": "string", "required": false, "description": "Nombre del archivo de salida" }
+      },
+      "output": {
+        "path": { "type": "string", "description": "Ruta del archivo generado" },
+        "entities": { "type": "number", "description": "Total de entidades creadas" }
+      }
+    },
+    "layers": {
+      "event": "local.dxf.layers.request",
+      "description": "Lista las capas de un archivo DXF",
+      "input": {
+        "file": { "type": "string", "required": true, "description": "Ruta del archivo DXF" }
+      },
+      "output": {
+        "layers": { "type": "object", "description": "Capas del archivo DXF" },
+        "total": { "type": "number", "description": "Total de capas" }
+      }
+    },
+    "export-svg": {
+      "event": "local.dxf.export-svg.request",
+      "description": "Exporta un archivo DXF a formato SVG",
+      "input": {
+        "file": { "type": "string", "required": true, "description": "Ruta del archivo DXF a convertir" },
+        "width": { "type": "number", "required": false, "description": "Ancho del SVG de salida" },
+        "height": { "type": "number", "required": false, "description": "Alto del SVG de salida" },
+        "filename": { "type": "string", "required": false, "description": "Nombre del archivo SVG de salida" }
+      },
+      "output": {
+        "path": { "type": "string", "description": "Ruta del archivo SVG generado" }
+      }
+    }
+  }
+}

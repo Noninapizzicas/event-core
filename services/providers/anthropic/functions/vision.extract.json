@@ -1,0 +1,67 @@
+{
+  "name": "vision.extract",
+  "description": "OCR con analisis - Extrae texto y entiende estructura usando Claude Vision",
+  "event": "anthropic.vision.extract.request",
+  "method": "POST",
+  "endpoint": "/messages",
+  "headers": {
+    "Content-Type": "application/json",
+    "anthropic-version": "2023-06-01"
+  },
+  "input": {
+    "image": {
+      "type": "string",
+      "description": "Imagen en base64",
+      "required": true
+    },
+    "media_type": {
+      "type": "string",
+      "description": "Tipo de imagen (image/jpeg, image/png, image/webp, image/gif)",
+      "default": "image/jpeg"
+    },
+    "prompt": {
+      "type": "string",
+      "description": "Instrucciones adicionales para la extraccion",
+      "default": "Extrae todo el texto visible en esta imagen. Devuelve solo el texto, sin explicaciones."
+    },
+    "model": {
+      "type": "string",
+      "description": "Modelo a usar",
+      "default": "claude-3-5-sonnet-20241022"
+    }
+  },
+  "request_template": {
+    "model": "{{model}}",
+    "max_tokens": 4096,
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "image",
+            "source": {
+              "type": "base64",
+              "media_type": "{{media_type}}",
+              "data": "{{image}}"
+            }
+          },
+          {
+            "type": "text",
+            "text": "{{prompt}}"
+          }
+        ]
+      }
+    ]
+  },
+  "output": {
+    "text": {
+      "type": "string",
+      "description": "Texto extraido"
+    },
+    "analysis": {
+      "type": "object",
+      "description": "Analisis estructurado si se pidio"
+    }
+  },
+  "response_path": "content[0].text"
+}

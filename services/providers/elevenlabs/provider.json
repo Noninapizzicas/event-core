@@ -1,0 +1,11 @@
+{
+  "name": "elevenlabs",
+  "version": "1.0.0",
+  "description": "ElevenLabs Text-to-Speech premium",
+  "credential": "ELEVENLABS_API_KEY",
+  "base_url": "https://api.elevenlabs.io/v1",
+  "auth": {
+    "type": "header",
+    "header_name": "xi-api-key"
+  }
+}

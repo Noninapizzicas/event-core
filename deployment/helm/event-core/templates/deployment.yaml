@@ -1,0 +1,111 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "event-core.fullname" . }}
+  labels:
+    {{- include "event-core.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "event-core.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "event-core.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "event-core.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+      - name: {{ .Chart.Name }}
+        securityContext:
+          {{- toYaml .Values.securityContext | nindent 12 }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.eventCore.http.port }}
+          protocol: TCP
+        livenessProbe:
+          {{- toYaml .Values.livenessProbe | nindent 12 }}
+        readinessProbe:
+          {{- toYaml .Values.readinessProbe | nindent 12 }}
+        resources:
+          {{- toYaml .Values.resources | nindent 12 }}
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: CORE_CONFIG
+          value: "/config/config.json"
+        - name: AI_CONFIG
+          value: "/config/ai-config.json"
+        {{- if .Values.eventCore.ai.providers.deepseek.enabled }}
+        - name: DEEPSEEK_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.eventCore.ai.providers.deepseek.apiKeySecret }}
+              key: {{ .Values.eventCore.ai.providers.deepseek.apiKeySecretKey }}
+              optional: true
+        {{- end }}
+        {{- if .Values.eventCore.ai.providers.anthropic.enabled }}
+        - name: ANTHROPIC_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.eventCore.ai.providers.anthropic.apiKeySecret }}
+              key: {{ .Values.eventCore.ai.providers.anthropic.apiKeySecretKey }}
+              optional: true
+        {{- end }}
+        {{- if .Values.eventCore.ai.providers.openai.enabled }}
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.eventCore.ai.providers.openai.apiKeySecret }}
+              key: {{ .Values.eventCore.ai.providers.openai.apiKeySecretKey }}
+              optional: true
+        {{- end }}
+        {{- with .Values.env }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        volumeMounts:
+        - name: config
+          mountPath: /config
+          readOnly: true
+        - name: modules
+          mountPath: /app/modules
+          readOnly: true
+        - name: prompts
+          mountPath: /app/prompts
+          readOnly: true
+      volumes:
+      - name: config
+        configMap:
+          name: {{ include "event-core.fullname" . }}-config
+      - name: modules
+        emptyDir: {}
+      - name: prompts
+        emptyDir: {}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      terminationGracePeriodSeconds: 30

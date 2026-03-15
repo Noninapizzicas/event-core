@@ -1,0 +1,30 @@
+# Event Core - Caddyfile para desarrollo local / LAN
+#
+# HTTP sin certificados. Útil para probar la config de Caddy
+# sin necesitar un dominio real.
+#
+# Uso:
+#   caddy run --config Caddyfile.local
+
+:8080 {
+	# Frontend
+	root * /srv/event-core/frontend/build
+	file_server
+
+	# API REST
+	handle /modules/* {
+		reverse_proxy localhost:3000
+	}
+
+	handle /health {
+		reverse_proxy localhost:3000
+	}
+
+	# MQTT WebSocket
+	handle /mqtt {
+		reverse_proxy localhost:9001
+	}
+
+	# SPA fallback
+	try_files {path} /index.html
+}

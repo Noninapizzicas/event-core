@@ -1,0 +1,156 @@
+{
+  "name": "certificate-authority",
+  "version": "1.0.0",
+  "description": "Internal Certificate Authority with mTLS authentication for client portal and device management",
+  "author": "Event Core Team",
+  "routeCode": "3333",
+
+  "apis": [
+    {
+      "method": "GET",
+      "path": "/status",
+      "handler": "handleStatus",
+      "description": "Get CA status, certificate stats, and mTLS middleware stats"
+    },
+    {
+      "method": "GET",
+      "path": "/ca-cert",
+      "handler": "handleGetCACert",
+      "description": "Download CA root certificate (public - for client/device installation)"
+    },
+    {
+      "method": "POST",
+      "path": "/issue",
+      "handler": "handleIssueCertificate",
+      "description": "Issue a new client or device certificate"
+    },
+    {
+      "method": "POST",
+      "path": "/revoke",
+      "handler": "handleRevokeCertificate",
+      "description": "Revoke a certificate by serial number"
+    },
+    {
+      "method": "POST",
+      "path": "/renew",
+      "handler": "handleRenewCertificate",
+      "description": "Renew a certificate (revokes old, issues new)"
+    },
+    {
+      "method": "GET",
+      "path": "/list",
+      "handler": "handleListCertificates",
+      "description": "List all issued certificates with optional filters"
+    },
+    {
+      "method": "POST",
+      "path": "/verify",
+      "handler": "handleVerifyCertificate",
+      "description": "Verify a certificate against the CA"
+    },
+    {
+      "method": "GET",
+      "path": "/crl",
+      "handler": "handleGetCRL",
+      "description": "Get Certificate Revocation List"
+    },
+    {
+      "method": "GET",
+      "path": "/download-p12",
+      "handler": "handleDownloadP12",
+      "description": "Download .p12 bundle for a certificate"
+    },
+    {
+      "method": "GET",
+      "path": "/nginx-config",
+      "handler": "handleGetNginxConfig",
+      "description": "Get nginx mTLS configuration template"
+    },
+    {
+      "method": "GET",
+      "path": "/health",
+      "handler": "handleHealthCheck",
+      "description": "Health check"
+    }
+  ],
+
+  "provides": {
+    "hooks": ["beforeRequest"]
+  },
+
+  "events": {
+    "publishes": [
+      {
+        "event": "certificate.issued",
+        "description": "New certificate issued for client or device"
+      },
+      {
+        "event": "certificate.revoked",
+        "description": "Certificate revoked (compromised, lost device, etc.)"
+      },
+      {
+        "event": "certificate.renewed",
+        "description": "Certificate renewed (old revoked, new issued)"
+      },
+      {
+        "event": "certificate.expired",
+        "description": "Certificate reached expiration date"
+      }
+    ],
+    "subscribes": []
+  },
+
+  "ui_handlers": [
+    { "domain": "certificate-authority", "action": "status", "handler": "handleStatus" },
+    { "domain": "certificate-authority", "action": "ca-cert", "handler": "handleGetCACert" },
+    { "domain": "certificate-authority", "action": "issue", "handler": "handleIssueCertificate" },
+    { "domain": "certificate-authority", "action": "revoke", "handler": "handleRevokeCertificate" },
+    { "domain": "certificate-authority", "action": "renew", "handler": "handleRenewCertificate" },
+    { "domain": "certificate-authority", "action": "list", "handler": "handleListCertificates" },
+    { "domain": "certificate-authority", "action": "verify", "handler": "handleVerifyCertificate" },
+    { "domain": "certificate-authority", "action": "crl", "handler": "handleGetCRL" },
+    { "domain": "certificate-authority", "action": "download-p12", "handler": "handleDownloadP12" },
+    { "domain": "certificate-authority", "action": "stats", "handler": "handleStatus" },
+    { "domain": "certificate-authority", "action": "nginx-config", "handler": "handleGetNginxConfig" },
+    { "domain": "certificate-authority", "action": "health", "handler": "handleHealthCheck" }
+  ],
+
+  "ui": {
+    "enabled": true,
+    "title": "Certificate Authority",
+    "icon": "🔐",
+    "description": "Gestionar certificados de clientes y dispositivos"
+  },
+
+  "config": {
+    "mtls_enabled": false,
+    "mtls_mode": "proxy",
+    "cert_header": "x-client-cert",
+    "allow_unauthenticated": true,
+    "ca_cn": "Event Core Internal CA",
+    "ca_org": "Event Core",
+    "ca_validity_days": 3650,
+    "cert_validity_days": 365,
+    "key_size": 2048
+  },
+
+  "observability": {
+    "logging": {
+      "level": "info",
+      "structured": true
+    },
+    "metrics": {
+      "enabled": true,
+      "counters": [
+        "ca.certificates_issued",
+        "ca.certificates_revoked",
+        "ca.certificates_renewed",
+        "ca.verification_requests",
+        "mtls.authenticated",
+        "mtls.rejected",
+        "mtls.bypassed",
+        "mtls.errors"
+      ]
+    }
+  }
+}

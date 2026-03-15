@@ -1,0 +1,67 @@
+{
+  "$schema": "provider-manifest-v1",
+  "name": "local.coingecko",
+  "version": "1.0.0",
+  "description": "Consultas CoinGecko API — precios, historial, conversión crypto",
+  "type": "local",
+  "requires": {
+    "npm": [],
+    "credentials": []
+  },
+  "functions": {
+    "price": {
+      "event": "local.coingecko.price.request",
+      "description": "Precio actual de una o varias criptomonedas",
+      "input": {
+        "ids": { "type": "string", "required": true, "description": "IDs separados por coma (bitcoin,ethereum,solana)" },
+        "currencies": { "type": "string", "required": false, "description": "Monedas fiat separadas por coma (default: usd,eur)" }
+      },
+      "output": {
+        "prices": { "type": "object", "description": "Precios por moneda" }
+      }
+    },
+    "history": {
+      "event": "local.coingecko.history.request",
+      "description": "Histórico de precios (1-365 días)",
+      "input": {
+        "id": { "type": "string", "required": true, "description": "ID de la crypto (bitcoin, ethereum...)" },
+        "days": { "type": "number", "required": false, "description": "Días de histórico (default: 30)" },
+        "currency": { "type": "string", "required": false, "description": "Moneda fiat (default: usd)" }
+      },
+      "output": {
+        "prices": { "type": "array", "description": "Array de [timestamp, price]" }
+      }
+    },
+    "list": {
+      "event": "local.coingecko.list.request",
+      "description": "Top criptomonedas por market cap",
+      "input": {
+        "limit": { "type": "number", "required": false, "description": "Cantidad (default: 20, max: 250)" },
+        "currency": { "type": "string", "required": false, "description": "Moneda fiat (default: usd)" }
+      },
+      "output": {
+        "coins": { "type": "array", "description": "Lista de monedas con precio, market_cap, cambio 24h" }
+      }
+    },
+    "convert": {
+      "event": "local.coingecko.convert.request",
+      "description": "Convierte entre crypto y fiat",
+      "input": {
+        "from": { "type": "string", "required": true, "description": "ID crypto origen (bitcoin)" },
+        "to": { "type": "string", "required": true, "description": "Moneda destino (usd, eur, bitcoin)" },
+        "amount": { "type": "number", "required": true, "description": "Cantidad a convertir" }
+      },
+      "output": {
+        "result": { "type": "number", "description": "Resultado de la conversión" }
+      }
+    },
+    "trending": {
+      "event": "local.coingecko.trending.request",
+      "description": "Criptomonedas trending (más buscadas)",
+      "input": {},
+      "output": {
+        "coins": { "type": "array", "description": "Top trending coins" }
+      }
+    }
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://aichat.com/schemas/calling-generator.json",
+
+  "definitions": {
+    "function_metadata": {
+      "type": "object",
+      "required": ["full_name", "plugin_name", "function_name", "type"],
+      "properties": {
+        "full_name": { "type": "string" },
+        "plugin_name": { "type": "string" },
+        "function_name": { "type": "string" },
+        "type": { "type": "string", "enum": ["http", "local_event", "unsupported"] },
+        "description": { "type": "string" },
+        "parameters": { "type": "object" },
+        "method": { "type": "string" },
+        "endpoint": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+
+    "list_response": {
+      "type": "object",
+      "required": ["success", "functions", "count"],
+      "properties": {
+        "success": { "type": "boolean" },
+        "functions": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/function_metadata" }
+        },
+        "count": { "type": "integer" }
+      },
+      "additionalProperties": false
+    },
+
+    "get_response": {
+      "type": "object",
+      "required": ["success"],
+      "properties": {
+        "success": { "type": "boolean" },
+        "function": { "$ref": "#/definitions/function_metadata" },
+        "error": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+
+    "execute_request": {
+      "type": "object",
+      "required": ["args"],
+      "properties": {
+        "args": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "execute_response": {
+      "type": "object",
+      "required": ["success"],
+      "properties": {
+        "success": { "type": "boolean" },
+        "result": {},
+        "duration": { "type": "integer" },
+        "error": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

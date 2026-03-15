@@ -1,0 +1,223 @@
+{
+  "name": "prompt-manager",
+  "version": "2.0.0",
+  "description": "Sistema de gestión de prompts con versionado, slots, presets y analytics. Usa database-manager para persistencia.",
+  "author": "Event Core Team",
+  "provides": [
+    "prompt-management",
+    "slot-management",
+    "preset-management",
+    "template-rendering",
+    "analytics"
+  ],
+  "subscribes": [
+    { "event": "db.query.response", "handler": "onQueryResponse" },
+    { "event": "db.schema.init.response", "handler": "onSchemaInitResponse" },
+    { "event": "prompt.get.request", "handler": "onPromptGetRequest" },
+    { "event": "prompt.list.request", "handler": "onPromptListRequest" },
+    "ai.completion.completed",
+    "ai.request.started"
+  ],
+  "ui_handlers": [
+    { "domain": "prompt", "action": "list", "handler": "handleUIList" },
+    { "domain": "prompt", "action": "get", "handler": "handleUIGet" },
+    { "domain": "prompt", "action": "create", "handler": "handleUICreate" },
+    { "domain": "prompt", "action": "update", "handler": "handleUIUpdate" },
+    { "domain": "prompt", "action": "delete", "handler": "handleUIDelete" },
+    { "domain": "prompt", "action": "versions", "handler": "handleUIVersions" },
+    { "domain": "preset", "action": "list", "handler": "handleUIPresetList" },
+    { "domain": "preset", "action": "get", "handler": "handleUIPresetGet" },
+    { "domain": "preset", "action": "create", "handler": "handleUIPresetCreate" },
+    { "domain": "preset", "action": "delete", "handler": "handleUIPresetDelete" },
+    { "domain": "preset", "action": "apply", "handler": "handleUIPresetApply" },
+    { "domain": "composer", "action": "render", "handler": "handleUIComposerRender" },
+    { "domain": "prompt", "action": "analytics", "handler": "handleUIAnalytics" }
+  ],
+
+  "tools": [
+    {
+      "name": "prompt.list",
+      "description": "Lista prompts disponibles por slot type, categoría o tags. Útil para conocer qué prompts hay configurados en el sistema.",
+      "handler": "handleToolPromptList",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "slot_type": {
+            "type": "string",
+            "enum": ["system", "context", "prefix", "suffix", "format"],
+            "description": "Filtrar por tipo de slot (opcional)"
+          },
+          "tag": {
+            "type": "string",
+            "description": "Filtrar por tag (opcional)"
+          },
+          "search": {
+            "type": "string",
+            "description": "Buscar por nombre o descripción (opcional)"
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "name": "prompt.get",
+      "description": "Obtiene el contenido completo de un prompt específico por ID o nombre.",
+      "handler": "handleToolPromptGet",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID del prompt"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nombre del prompt (alternativa al ID)"
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "name": "prompt.render",
+      "description": "Renderiza un prompt con variables interpoladas. Las variables en el template usan formato {{variable}}.",
+      "handler": "handleToolPromptRender",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID del prompt a renderizar"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nombre del prompt (alternativa al ID)"
+          },
+          "variables": {
+            "type": "object",
+            "description": "Variables para interpolar en el template"
+          }
+        },
+        "required": []
+      }
+    }
+  ],
+
+  "publishes": [
+    "prompt.created",
+    "prompt.updated",
+    "prompt.deleted",
+    "prompt.get.response",
+    "prompt.list.response",
+    "preset.created",
+    "preset.deleted"
+  ],
+  "apis": [
+    {
+      "method": "GET",
+      "path": "/ui/state",
+      "description": "Estado UI-ready con prompts agrupados por slot, presets y stats",
+      "handler": "handleGetUIState"
+    },
+    {
+      "method": "POST",
+      "path": "/prompts",
+      "description": "Crear un nuevo prompt",
+      "handler": "handleCreatePrompt"
+    },
+    {
+      "method": "GET",
+      "path": "/prompts",
+      "description": "Listar todos los prompts (filtrar por slot_type, tag, search)",
+      "handler": "handleListPrompts"
+    },
+    {
+      "method": "GET",
+      "path": "/prompts/:id",
+      "description": "Obtener un prompt específico",
+      "handler": "handleGetPrompt"
+    },
+    {
+      "method": "PUT",
+      "path": "/prompts/:id",
+      "description": "Actualizar un prompt existente",
+      "handler": "handleUpdatePrompt"
+    },
+    {
+      "method": "DELETE",
+      "path": "/prompts/:id",
+      "description": "Eliminar un prompt",
+      "handler": "handleDeletePrompt"
+    },
+    {
+      "method": "GET",
+      "path": "/prompts/:id/versions",
+      "description": "Listar versiones de un prompt",
+      "handler": "handleListVersions"
+    },
+    {
+      "method": "POST",
+      "path": "/prompts/:id/render",
+      "description": "Renderizar template de prompt con variables",
+      "handler": "handleRenderTemplate"
+    },
+    {
+      "method": "POST",
+      "path": "/presets",
+      "description": "Crear un nuevo preset de slots",
+      "handler": "handleCreatePreset"
+    },
+    {
+      "method": "GET",
+      "path": "/presets",
+      "description": "Listar todos los presets",
+      "handler": "handleListPresets"
+    },
+    {
+      "method": "GET",
+      "path": "/presets/:id",
+      "description": "Obtener un preset específico con sus slots",
+      "handler": "handleGetPreset"
+    },
+    {
+      "method": "DELETE",
+      "path": "/presets/:id",
+      "description": "Eliminar un preset",
+      "handler": "handleDeletePreset"
+    },
+    {
+      "method": "GET",
+      "path": "/analytics",
+      "description": "Obtener analytics de prompts",
+      "handler": "handleGetAnalytics"
+    },
+    {
+      "method": "GET",
+      "path": "/health",
+      "description": "Health check del módulo",
+      "handler": "handleHealthCheck"
+    },
+    {
+      "method": "GET",
+      "path": "/metrics",
+      "description": "Métricas del módulo",
+      "handler": "handleGetMetrics"
+    }
+  ],
+  "config": {
+    "max_versions_per_prompt": 10,
+    "enable_analytics": true,
+    "analytics_retention_days": 90
+  },
+  "dependencies": [
+    "database-manager"
+  ],
+  "tags": [
+    "ai",
+    "prompts",
+    "slots",
+    "presets",
+    "templates",
+    "analytics"
+  ]
+}

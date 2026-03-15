@@ -1,0 +1,170 @@
+{
+  "id": "consolidar-excel",
+  "name": "Consolidar Facturas - Excel Semanal",
+  "description": "Genera Excel con facturas procesadas para enviar a asesoría",
+  "version": "1.0.0",
+  "enabled": false,
+  "schedule": {
+    "cron": "{{ config.schedule.exportacion }}",
+    "timezone": "{{ config.schedule.timezone }}"
+  },
+  "trigger": {
+    "event": "flow.trigger",
+    "filter": {
+      "flowId": {
+        "$endsWith": ":consolidar-excel"
+      }
+    }
+  },
+  "steps": [
+    {
+      "id": "log-inicio",
+      "type": "log",
+      "level": "info",
+      "message": "Iniciando consolidación semanal de facturas - {{ project.id }} - {{ date }}"
+    },
+    {
+      "id": "crear-directorio-exports",
+      "type": "service",
+      "service": "fs",
+      "action": "mkdir",
+      "path": "@/projects/{{ project.id }}/{{ config.storage.exports }}",
+      "onError": "continue"
+    },
+    {
+      "id": "obtener-semana",
+      "type": "set",
+      "variables": {
+        "semana": "{{ date.substring(0, 4) }}-W{{ Math.ceil((new Date(date) - new Date(date.substring(0, 4) + '-01-01')) / 604800000).toString().padStart(2, '0') }}"
+      }
+    },
+    {
+      "id": "exportar-datos",
+      "type": "service",
+      "service": "local.facturas-db",
+      "action": "exportar",
+      "proyecto": "{{ project.id }}",
+      "timeout": 60000
+    },
+    {
+      "id": "verificar-facturas",
+      "type": "condition",
+      "if": "{{ steps.exportar-datos.data.total > 0 }}",
+      "then": "generar-excel",
+      "else": "log-sin-facturas"
+    },
+    {
+      "id": "log-sin-facturas",
+      "type": "log",
+      "level": "info",
+      "message": "No hay facturas procesadas para exportar esta semana"
+    },
+    {
+      "id": "generar-excel",
+      "type": "service",
+      "service": "local.xlsx",
+      "action": "create",
+      "sheets": [
+        {
+          "name": "Facturas Recibidas",
+          "data": "{{ steps.exportar-datos.data.facturas }}",
+          "columns": [
+            "Nº Registro",
+            "Fecha Factura",
+            "Nº Factura",
+            "NIF Proveedor",
+            "Proveedor",
+            "Concepto",
+            "Categoría",
+            "Base Imponible",
+            "% IVA",
+            "Cuota IVA",
+            "Total",
+            "Estado Pago",
+            "Origen",
+            "Archivo"
+          ]
+        }
+      ],
+      "filename": "{{ project.id }}_facturas_{{ steps.exportar-datos.data.semana }}.xlsx",
+      "timeout": 60000
+    },
+    {
+      "id": "copiar-a-exports",
+      "type": "service",
+      "service": "fs",
+      "action": "copy",
+      "source": "{{ steps.generar-excel.path }}",
+      "destination": "@/projects/{{ project.id }}/{{ config.storage.exports }}/{{ project.id }}_facturas_{{ steps.exportar-datos.data.semana }}.xlsx",
+      "timeout": 30000
+    },
+    {
+      "id": "marcar-exportadas",
+      "type": "service",
+      "service": "local.facturas-db",
+      "action": "marcarExportadas",
+      "proyecto": "{{ project.id }}",
+      "ids": "{{ steps.exportar-datos.data.ids }}",
+      "semana": "{{ steps.exportar-datos.data.semana }}",
+      "timeout": 30000
+    },
+    {
+      "id": "log-completado",
+      "type": "log",
+      "level": "info",
+      "message": "Excel generado: {{ project.id }}_facturas_{{ steps.exportar-datos.data.semana }}.xlsx - {{ steps.exportar-datos.data.total }} facturas exportadas"
+    },
+    {
+      "id": "verificar-notificacion-telegram",
+      "type": "condition",
+      "if": "{{ config.notificaciones.telegram.enabled }}",
+      "then": "notificar-telegram",
+      "else": "verificar-notificacion-email"
+    },
+    {
+      "id": "notificar-telegram",
+      "type": "service",
+      "service": "telegram",
+      "action": "sendDocument",
+      "chatId": "{{ config.notificaciones.telegram.chatId }}",
+      "document": "@/projects/{{ project.id }}/{{ config.storage.exports }}/{{ project.id }}_facturas_{{ steps.exportar-datos.data.semana }}.xlsx",
+      "caption": "📊 Facturas semana {{ steps.exportar-datos.data.semana }}\n{{ steps.exportar-datos.data.total }} facturas procesadas",
+      "timeout": 60000,
+      "onError": "continue"
+    },
+    {
+      "id": "verificar-notificacion-email",
+      "type": "condition",
+      "if": "{{ config.notificaciones.email.enabled }}",
+      "then": "notificar-email",
+      "else": "emitir-completado"
+    },
+    {
+      "id": "notificar-email",
+      "type": "service",
+      "service": "local.gmail",
+      "action": "send",
+      "account": "{{ config.gmail.account }}",
+      "to": "{{ config.notificaciones.email.to }}",
+      "subject": "Facturas semana {{ steps.exportar-datos.data.semana }} - {{ project.id }}",
+      "body": "Adjunto el libro de registro con {{ steps.exportar-datos.data.total }} facturas de la semana {{ steps.exportar-datos.data.semana }}.",
+      "attachments": [
+        "@/projects/{{ project.id }}/{{ config.storage.exports }}/{{ project.id }}_facturas_{{ steps.exportar-datos.data.semana }}.xlsx"
+      ],
+      "timeout": 60000,
+      "onError": "continue"
+    },
+    {
+      "id": "emitir-completado",
+      "type": "emit",
+      "event": "factura.exportada",
+      "data": {
+        "projectId": "{{ project.id }}",
+        "tipo": "consolidacion-semanal",
+        "semana": "{{ steps.exportar-datos.data.semana }}",
+        "total": "{{ steps.exportar-datos.data.total }}",
+        "archivo": "@/projects/{{ project.id }}/{{ config.storage.exports }}/{{ project.id }}_facturas_{{ steps.exportar-datos.data.semana }}.xlsx"
+      }
+    }
+  ]
+}

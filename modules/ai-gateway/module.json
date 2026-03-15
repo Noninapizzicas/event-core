@@ -1,0 +1,260 @@
+{
+  "name": "ai-gateway",
+  "version": "1.0.0",
+  "description": "AI Gateway unificado para múltiples proveedores LLM (DeepSeek, Claude, OpenAI, Ollama)",
+  "author": "Event Core Team",
+  "provides": [
+    "ai-chat",
+    "ai-completion",
+    "streaming",
+    "cost-tracking",
+    "function-calling"
+  ],
+  "publishes": [
+    "ai.chat.response",
+    "ai.completion.completed"
+  ],
+  "subscribes": [
+    {
+      "event": "ai.chat.request",
+      "handler": "onAIChatRequest"
+    },
+    {
+      "event": "ai.request",
+      "handler": "onAIRequestCreated"
+    },
+    {
+      "event": "credential.resolve.response",
+      "handler": "onCredentialResponse"
+    }
+  ],
+  "apis": [
+    {
+      "method": "POST",
+      "path": "/chat",
+      "description": "Chat completion con proveedor específico o fallback automático",
+      "schema": "./schemas/chat-completion.json",
+      "handler": "handleChatCompletion"
+    },
+    {
+      "method": "POST",
+      "path": "/chat/stream",
+      "description": "Chat completion con streaming SSE",
+      "schema": "./schemas/chat-completion.json",
+      "handler": "handleChatStream"
+    },
+    {
+      "method": "GET",
+      "path": "/providers",
+      "description": "Listar proveedores disponibles y su estado",
+      "schema": "./schemas/list-providers.json",
+      "handler": "handleListProviders"
+    },
+    {
+      "method": "GET",
+      "path": "/models",
+      "description": "Listar modelos disponibles por proveedor",
+      "schema": "./schemas/list-models.json",
+      "handler": "handleListModels"
+    },
+    {
+      "method": "GET",
+      "path": "/usage",
+      "description": "Obtener estadísticas de uso y costos",
+      "schema": "./schemas/get-usage.json",
+      "handler": "handleGetUsage"
+    },
+    {
+      "method": "POST",
+      "path": "/providers/test",
+      "description": "Probar conectividad con un proveedor",
+      "schema": "./schemas/test-provider.json",
+      "handler": "handleTestProvider"
+    },
+    {
+      "method": "GET",
+      "path": "/ui/state",
+      "description": "Estado completo para UI (providers, modelos, selección actual)",
+      "handler": "handleUIState"
+    },
+    {
+      "method": "POST",
+      "path": "/ui/select",
+      "description": "Seleccionar provider y modelo activo",
+      "handler": "handleUISelect"
+    },
+    {
+      "method": "GET",
+      "path": "/ui/config",
+      "description": "Obtener configuración de parámetros LLM (temperature, tokens, etc.)",
+      "handler": "handleUIConfigGet"
+    },
+    {
+      "method": "POST",
+      "path": "/ui/config",
+      "description": "Actualizar configuración de parámetros LLM",
+      "handler": "handleUIConfigPost"
+    },
+    {
+      "method": "GET",
+      "path": "/tools",
+      "description": "Listar todas las tools disponibles para AI",
+      "handler": "handleListTools"
+    },
+    {
+      "method": "POST",
+      "path": "/tools/:name/execute",
+      "description": "Ejecutar una tool específica",
+      "handler": "handleExecuteTool"
+    }
+  ],
+  "hooks": {},
+  "config": {
+    "providers": {
+      "deepseek": {
+        "enabled": true,
+        "priority": 1,
+        "api_base": "https://api.deepseek.com/v1",
+        "models": [
+          "deepseek-chat",
+          "deepseek-coder",
+          "deepseek-reasoner"
+        ],
+        "default_model": "deepseek-chat",
+        "rate_limit": {
+          "requests_per_minute": 60,
+          "tokens_per_minute": 500000
+        },
+        "cost_per_1k_tokens": {
+          "input": 0.0001,
+          "output": 0.0002
+        }
+      },
+      "anthropic": {
+        "enabled": true,
+        "priority": 2,
+        "api_base": "https://api.anthropic.com/v1",
+        "models": [
+          "claude-3-5-sonnet-20241022",
+          "claude-3-opus-20240229",
+          "claude-3-haiku-20240307"
+        ],
+        "default_model": "claude-3-5-sonnet-20241022",
+        "rate_limit": {
+          "requests_per_minute": 50,
+          "tokens_per_minute": 80000
+        },
+        "cost_per_1k_tokens": {
+          "input": 0.003,
+          "output": 0.015
+        }
+      },
+      "openai": {
+        "enabled": true,
+        "priority": 3,
+        "api_base": "https://api.openai.com/v1",
+        "models": [
+          "gpt-4o",
+          "gpt-4o-mini",
+          "gpt-3.5-turbo"
+        ],
+        "default_model": "gpt-4o-mini",
+        "rate_limit": {
+          "requests_per_minute": 60,
+          "tokens_per_minute": 90000
+        },
+        "cost_per_1k_tokens": {
+          "input": 0.0015,
+          "output": 0.006
+        }
+      },
+      "groq": {
+        "enabled": true,
+        "priority": 4,
+        "api_base": "https://api.groq.com/openai/v1",
+        "models": [
+          "llama-3.3-70b-versatile",
+          "mixtral-8x7b-32768",
+          "gemma2-9b-it"
+        ],
+        "default_model": "llama-3.3-70b-versatile",
+        "rate_limit": {
+          "requests_per_minute": 30,
+          "tokens_per_minute": 60000
+        },
+        "cost_per_1k_tokens": {
+          "input": 0.00059,
+          "output": 0.00079
+        }
+      },
+      "gemini": {
+        "enabled": true,
+        "priority": 5,
+        "api_base": "https://generativelanguage.googleapis.com/v1beta",
+        "models": [
+          "gemini-2.5-flash",
+          "gemini-2.5-pro"
+        ],
+        "default_model": "gemini-2.5-flash",
+        "rate_limit": {
+          "requests_per_minute": 60,
+          "tokens_per_minute": 100000
+        },
+        "cost_per_1k_tokens": {
+          "input": 0.000075,
+          "output": 0.0003
+        }
+      },
+      "ollama": {
+        "enabled": true,
+        "priority": 6,
+        "api_base": "http://localhost:11434/api",
+        "models": [
+          "llama2",
+          "codellama",
+          "mistral",
+          "mixtral"
+        ],
+        "default_model": "llama2",
+        "rate_limit": {
+          "requests_per_minute": 120,
+          "tokens_per_minute": 200000
+        },
+        "cost_per_1k_tokens": {
+          "input": 0,
+          "output": 0
+        }
+      }
+    },
+    "retry": {
+      "max_attempts": 3,
+      "initial_delay_ms": 1000,
+      "max_delay_ms": 10000,
+      "backoff_multiplier": 2
+    },
+    "fallback": {
+      "enabled": true,
+      "strategy": "priority"
+    },
+    "streaming": {
+      "enabled": true,
+      "chunk_size": 1024
+    },
+    "analytics": {
+      "enabled": true,
+      "retention_days": 90
+    }
+  },
+  "dependencies": [],
+  "tags": [
+    "ai",
+    "llm",
+    "gateway",
+    "deepseek",
+    "claude",
+    "openai",
+    "groq",
+    "gemini",
+    "ollama"
+  ]
+}

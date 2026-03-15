@@ -1,0 +1,343 @@
+{
+  "name": "telegram-service",
+  "version": "3.0.0",
+  "description": "Multi-bot Telegram service - centralized management, credential-manager integration",
+  "author": "Event Core Team",
+  "main": "index.js",
+
+  "provides": {
+    "events": [
+      "telegram.text.received",
+      "telegram.photo.received",
+      "telegram.document.received",
+      "telegram.video.received",
+      "telegram.audio.received",
+      "telegram.voice.received",
+      "telegram.location.received",
+      "telegram.contact.received",
+      "telegram.command.received",
+      "telegram.callback.received",
+      "telegram.message.sent",
+      "telegram.send.failed",
+      "telegram.bot.started",
+      "telegram.bot.stopped",
+      "telegram.bot.error",
+      "telegram.queue.overflow"
+    ]
+  },
+
+  "events": {
+    "publishes": [
+      {
+        "event": "telegram.text.received",
+        "description": "Text message received",
+        "payload": "{ botName, chatId, messageId, from, text, timestamp }"
+      },
+      {
+        "event": "telegram.photo.received",
+        "description": "Photo received",
+        "payload": "{ botName, chatId, messageId, from, fileId, caption, sizes[], timestamp }"
+      },
+      {
+        "event": "telegram.document.received",
+        "description": "Document received",
+        "payload": "{ botName, chatId, messageId, from, fileId, fileName, mimeType, timestamp }"
+      },
+      {
+        "event": "telegram.video.received",
+        "description": "Video received",
+        "payload": "{ botName, chatId, messageId, from, fileId, duration, timestamp }"
+      },
+      {
+        "event": "telegram.audio.received",
+        "description": "Audio received",
+        "payload": "{ botName, chatId, messageId, from, fileId, duration, title, timestamp }"
+      },
+      {
+        "event": "telegram.voice.received",
+        "description": "Voice message received",
+        "payload": "{ botName, chatId, messageId, from, fileId, duration, timestamp }"
+      },
+      {
+        "event": "telegram.location.received",
+        "description": "Location received",
+        "payload": "{ botName, chatId, messageId, from, latitude, longitude, timestamp }"
+      },
+      {
+        "event": "telegram.contact.received",
+        "description": "Contact received",
+        "payload": "{ botName, chatId, messageId, from, phoneNumber, firstName, timestamp }"
+      },
+      {
+        "event": "telegram.command.received",
+        "description": "Bot command received",
+        "payload": "{ botName, chatId, messageId, from, command, args[], timestamp }"
+      },
+      {
+        "event": "telegram.callback.received",
+        "description": "Inline button callback",
+        "payload": "{ botName, chatId, messageId, from, callbackId, data, timestamp }"
+      },
+      {
+        "event": "telegram.message.sent",
+        "description": "Message sent successfully",
+        "payload": "{ botName, chatId, messageId, type }"
+      },
+      {
+        "event": "telegram.send.failed",
+        "description": "Message send failed",
+        "payload": "{ botName, chatId, reason, error }"
+      },
+      {
+        "event": "telegram.bot.started",
+        "description": "Bot started polling",
+        "payload": "{ botName, username }"
+      },
+      {
+        "event": "telegram.bot.stopped",
+        "description": "Bot stopped",
+        "payload": "{ botName }"
+      },
+      {
+        "event": "telegram.bot.error",
+        "description": "Bot error",
+        "payload": "{ botName, reason, error }"
+      },
+      {
+        "event": "telegram.queue.overflow",
+        "description": "Message queue overflow",
+        "payload": "{ botName, queueSize }"
+      }
+    ],
+    "subscribes": [
+      { "event": "credential.saved", "handler": "onCredentialSaved" },
+      { "event": "credential.deleted", "handler": "onCredentialDeleted" },
+      { "event": "telegram.send_message.request", "handler": "onSendMessageRequest" },
+      { "event": "telegram.get_file.request", "handler": "onGetFileRequest" },
+      { "event": "telegram.send_photo.request", "handler": "onSendPhotoRequest" },
+      { "event": "telegram.send_document.request", "handler": "onSendDocumentRequest" },
+      { "event": "telegram.send_video.request", "handler": "onSendVideoRequest" },
+      { "event": "telegram.send_location.request", "handler": "onSendLocationRequest" },
+      { "event": "telegram.edit_message.request", "handler": "onEditMessageRequest" },
+      { "event": "telegram.delete_message.request", "handler": "onDeleteMessageRequest" },
+      { "event": "telegram.answer_callback.request", "handler": "onAnswerCallbackRequest" },
+      { "event": "telegram.get_chat.request", "handler": "onGetChatRequest" },
+      { "event": "telegram.set_commands.request", "handler": "onSetCommandsRequest" },
+      { "event": "telegram.list_bots.request", "handler": "onListBotsRequest" }
+    ]
+  },
+
+  "tools": [
+    {
+      "name": "telegram.send_message",
+      "description": "Enviar mensaje de texto a Telegram",
+      "handler": "handleToolSendMessage",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "botName": { "type": "string", "description": "Nombre del bot (ej: facturas)" },
+          "chatId": { "type": "number", "description": "ID del chat" },
+          "text": { "type": "string", "description": "Texto del mensaje" },
+          "parseMode": { "type": "string", "enum": ["HTML", "Markdown"], "description": "Formato del texto" },
+          "replyMarkup": { "type": "object", "description": "Keyboard markup (inline_keyboard o keyboard)" }
+        },
+        "required": ["botName", "chatId", "text"]
+      }
+    },
+    {
+      "name": "telegram.send_photo",
+      "description": "Enviar foto a Telegram",
+      "handler": "handleToolSendPhoto",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "botName": { "type": "string", "description": "Nombre del bot" },
+          "chatId": { "type": "number", "description": "ID del chat" },
+          "photo": { "type": "string", "description": "URL o file_id de la foto" },
+          "caption": { "type": "string", "description": "Caption de la foto" }
+        },
+        "required": ["botName", "chatId", "photo"]
+      }
+    },
+    {
+      "name": "telegram.send_document",
+      "description": "Enviar documento a Telegram",
+      "handler": "handleToolSendDocument",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "botName": { "type": "string", "description": "Nombre del bot" },
+          "chatId": { "type": "number", "description": "ID del chat" },
+          "document": { "type": "string", "description": "URL o file_id del documento" },
+          "caption": { "type": "string", "description": "Caption del documento" }
+        },
+        "required": ["botName", "chatId", "document"]
+      }
+    },
+    {
+      "name": "telegram.send_video",
+      "description": "Enviar video a Telegram",
+      "handler": "handleToolSendVideo",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "botName": { "type": "string", "description": "Nombre del bot" },
+          "chatId": { "type": "number", "description": "ID del chat" },
+          "video": { "type": "string", "description": "URL o file_id del video" },
+          "caption": { "type": "string", "description": "Caption del video" }
+        },
+        "required": ["botName", "chatId", "video"]
+      }
+    },
+    {
+      "name": "telegram.send_location",
+      "description": "Enviar ubicacion a Telegram",
+      "handler": "handleToolSendLocation",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "botName": { "type": "string", "description": "Nombre del bot" },
+          "chatId": { "type": "number", "description": "ID del chat" },
+          "latitude": { "type": "number", "description": "Latitud" },
+          "longitude": { "type": "number", "description": "Longitud" }
+        },
+        "required": ["botName", "chatId", "latitude", "longitude"]
+      }
+    },
+    {
+      "name": "telegram.edit_message",
+      "description": "Editar mensaje existente",
+      "handler": "handleToolEditMessage",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "botName": { "type": "string", "description": "Nombre del bot" },
+          "chatId": { "type": "number", "description": "ID del chat" },
+          "messageId": { "type": "number", "description": "ID del mensaje" },
+          "text": { "type": "string", "description": "Nuevo texto" }
+        },
+        "required": ["botName", "chatId", "messageId", "text"]
+      }
+    },
+    {
+      "name": "telegram.delete_message",
+      "description": "Eliminar mensaje",
+      "handler": "handleToolDeleteMessage",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "botName": { "type": "string", "description": "Nombre del bot" },
+          "chatId": { "type": "number", "description": "ID del chat" },
+          "messageId": { "type": "number", "description": "ID del mensaje" }
+        },
+        "required": ["botName", "chatId", "messageId"]
+      }
+    },
+    {
+      "name": "telegram.answer_callback",
+      "description": "Responder a callback de boton inline",
+      "handler": "handleToolAnswerCallback",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "botName": { "type": "string", "description": "Nombre del bot" },
+          "callbackId": { "type": "string", "description": "ID del callback" },
+          "text": { "type": "string", "description": "Texto de respuesta (opcional)" },
+          "showAlert": { "type": "boolean", "description": "Mostrar como alerta" }
+        },
+        "required": ["botName", "callbackId"]
+      }
+    },
+    {
+      "name": "telegram.get_file",
+      "description": "Obtener info y descargar archivo",
+      "handler": "handleToolGetFile",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "botName": { "type": "string", "description": "Nombre del bot" },
+          "fileId": { "type": "string", "description": "ID del archivo" },
+          "download": { "type": "boolean", "description": "Descargar archivo a storage" }
+        },
+        "required": ["botName", "fileId"]
+      }
+    },
+    {
+      "name": "telegram.get_chat",
+      "description": "Obtener info de un chat",
+      "handler": "handleToolGetChat",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "botName": { "type": "string", "description": "Nombre del bot" },
+          "chatId": { "type": "number", "description": "ID del chat" }
+        },
+        "required": ["botName", "chatId"]
+      }
+    },
+    {
+      "name": "telegram.set_commands",
+      "description": "Configurar menu de comandos del bot",
+      "handler": "handleToolSetCommands",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "botName": { "type": "string", "description": "Nombre del bot" },
+          "commands": {
+            "type": "array",
+            "description": "Lista de comandos",
+            "items": {
+              "type": "object",
+              "properties": {
+                "command": { "type": "string" },
+                "description": { "type": "string" }
+              }
+            }
+          }
+        },
+        "required": ["botName", "commands"]
+      }
+    },
+    {
+      "name": "telegram.list_bots",
+      "description": "Listar bots activos",
+      "handler": "handleToolListBots",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  ],
+
+  "config": {
+    "pollingInterval": 1000,
+    "rateLimitPerSecond": 25,
+    "maxQueueSize": 100,
+    "storagePath": "./data/bots"
+  },
+
+  "dependencies": {
+    "modules": ["credential-manager", "filesystem"]
+  },
+
+  "observability": {
+    "logging": {
+      "level": "info",
+      "structured": true
+    },
+    "metrics": {
+      "enabled": true,
+      "counters": [
+        "telegram.messages.received.total",
+        "telegram.messages.sent.total",
+        "telegram.errors.total",
+        "telegram.bots.started.total",
+        "telegram.bots.stopped.total"
+      ],
+      "gauges": [
+        "telegram.bots.active",
+        "telegram.queue.size"
+      ]
+    }
+  }
+}

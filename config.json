@@ -1,0 +1,151 @@
+{
+  "core": {
+    "id": "core-a",
+    "version": "0.1.0",
+    "environment": "development"
+  },
+  "http": {
+    "port": 3000,
+    "host": "0.0.0.0",
+    "cors": {
+      "enabled": true,
+      "origins": ["*"]
+    },
+    "compression": {
+      "enabled": true,
+      "min_size": 1024,
+      "level": 6
+    },
+    "cache": {
+      "enabled": false,
+      "max_size": 100,
+      "default_ttl": 60000
+    }
+  },
+  "mqtt": {
+    "broker": {
+      "port": 1883,
+      "wsPort": 9001,
+      "host": "0.0.0.0"
+    },
+    "client": {
+      "reconnect_period": 5000,
+      "keep_alive": 60,
+      "clean_session": false
+    },
+    "pool": {
+      "enabled": false,
+      "min": 2,
+      "max": 10,
+      "idle_timeout": 30000,
+      "acquire_timeout": 5000,
+      "health_check_interval": 10000
+    }
+  },
+  "modules": {
+    "path": "./modules",
+    "auto_load": true,
+    "hot_reload": true,
+    "enabled": [
+      "credential-manager",
+      "database-manager",
+      "filesystem",
+      "plugin-manager",
+      "prompt-manager",
+      "prompt-composer",
+      "scheduler",
+      "project-manager",
+      "system-inspector",
+      "ai-gateway",
+      "ai-agent-framework",
+      "agent-manager",
+      "calling-generator",
+      "bot-manager",
+      "chat-ai-bridge",
+      "chat-session",
+      "code-executor",
+      "cuentas",
+      "cuentas-canales",
+      "pedidos",
+      "cobros",
+      "cocina",
+      "comandero",
+      "productos",
+      "categorias",
+      "ingredientes",
+      "variaciones",
+      "persistencia-comandero",
+      "admin-panel",
+      "pdf-viewer",
+      "pizzepos",
+      "telegram-service",
+      "text-editor",
+      "asesoria",
+      "fuentes",
+      "carta-digital",
+      "carta-impresion",
+      "certificate-authority",
+      "channel-manager",
+      "composition-manager",
+      "context-manager",
+      "facturas",
+      "impresion",
+      "menu-generator",
+      "recetas",
+      "escandallo",
+      "viabilidad"
+    ],
+    "disabled": [
+      "log-manager",
+      "conversation-manager",
+      "scratch-designer",
+      "ui-designer",
+      "dashboard",
+      "notas",
+      "metricas",
+      "security-p2p",
+      "staff-manager"
+    ]
+  },
+  "observability": {
+    "logging": {
+      "level": "info",
+      "outputs": ["console"],
+      "structured": true
+    },
+    "tracing": {
+      "enabled": true,
+      "sample_rate": 1.0
+    },
+    "metrics": {
+      "enabled": true,
+      "flush_interval": 60000
+    }
+  },
+  "security": {
+    "encryption": {
+      "enabled": true,
+      "algorithm": "aes-256-gcm"
+    },
+    "p2p": {
+      "key_rotation_days": 90,
+      "trust_on_first_use": false
+    }
+  },
+  "gmail": {
+    "cuentas": {},
+    "account": "Nonina"
+  },
+  "telegram": {
+    "botName": "Noninacloset",
+    "chatId": "1934798567"
+  },
+  "notificaciones": {
+    "cierre_caja": {
+      "telegram": {
+        "chatId": "1934798567",
+        "botName": "Noninacloset"
+      }
+    }
+  }
+}

@@ -1,0 +1,118 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://pizzepos.com/schemas/mesa.json",
+  "title": "Mesa Schema v4.0",
+  "description": "Esquemas de datos para mesas dinámicas — creadas en tiempo de ejecución",
+
+  "definitions": {
+    "estado_mesa": {
+      "type": "string",
+      "enum": ["ocupada", "cerrada"],
+      "description": "Estado de la mesa"
+    },
+
+    "mesa": {
+      "type": "object",
+      "required": ["cuenta_id", "nombre", "numero", "estado", "total", "hora_apertura"],
+      "properties": {
+        "cuenta_id": {
+          "type": "string",
+          "pattern": "^mesa_\\d+_\\d{8}_\\d{3}$",
+          "description": "ID único: mesa_{numero}_{YYYYMMDD}_{secuencial}"
+        },
+        "nombre": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "description": "Nombre libre: Mesa 1, Mesa de Manolo, etc."
+        },
+        "numero": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Secuencial diario auto-generado"
+        },
+        "comensales": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Número de comensales (opcional)"
+        },
+        "camarero": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 50,
+          "description": "Nombre del camarero asignado"
+        },
+        "estado": {
+          "$ref": "#/definitions/estado_mesa"
+        },
+        "total": {
+          "type": "number",
+          "minimum": 0,
+          "multipleOf": 0.01,
+          "description": "Total acumulado en euros"
+        },
+        "pedidos_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Número de pedidos en esta mesa"
+        },
+        "hora_apertura": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp de apertura"
+        },
+        "hora_cierre": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp de cierre"
+        },
+        "tiempo_ocupada": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Minutos que ha estado ocupada"
+        },
+        "notas": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "Notas especiales de la mesa"
+        }
+      }
+    },
+
+    "abrir_mesa_request": {
+      "type": "object",
+      "properties": {
+        "nombre": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Nombre libre (opcional, auto: Mesa N)"
+        },
+        "comensales": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "camarero": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 50
+        },
+        "notas": {
+          "type": "string",
+          "maxLength": 500
+        }
+      }
+    },
+
+    "asignar_camarero_request": {
+      "type": "object",
+      "required": ["camarero"],
+      "properties": {
+        "camarero": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 50
+        }
+      }
+    }
+  }
+}

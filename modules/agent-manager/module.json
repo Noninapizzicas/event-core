@@ -1,0 +1,48 @@
+{
+  "name": "agent-manager",
+  "version": "1.0.0",
+  "description": "Orquestación de agentes. Decide qué agente usar, construye contexto, gestiona pipelines. NO ejecuta agentes directamente.",
+  "author": "Event Core Team",
+
+  "provides": [
+    "agent-orchestration",
+    "trigger-management",
+    "pipeline-execution",
+    "context-building"
+  ],
+
+  "events": {
+    "subscribes": [
+      { "event": "bot.file.stored", "handler": "onBotFileStored" },
+      { "event": "bot.message.received", "handler": "onBotMessageReceived" },
+      { "event": "bot.command.received", "handler": "onBotCommandReceived" },
+      "agent.*.completed",
+      "agent.*.failed"
+    ],
+    "publishes": [
+      "agent.execute.request",
+      "pipeline.started",
+      "pipeline.step.completed",
+      "pipeline.completed",
+      "pipeline.failed"
+    ]
+  },
+
+  "config": {
+    "triggersPath": "./data/agent-manager/triggers",
+    "pipelineTimeout": 300000,
+    "maxConcurrentPipelines": 10
+  },
+
+  "dependencies": [
+    "bot-manager",
+    "ai-agent-framework"
+  ],
+
+  "tags": [
+    "agents",
+    "orchestration",
+    "pipelines",
+    "triggers"
+  ]
+}

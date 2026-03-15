@@ -1,0 +1,41 @@
+{
+  "id": "architect",
+  "name": "architect",
+  "description": "Meta-agente que crea y gestiona otros agentes del sistema",
+  "prompt_file": "prompts/architect-system.md",
+  "knowledge_file": "prompts/architect-knowledge.md",
+  "provider": "deepseek",
+  "model": "deepseek-chat",
+  "temperature": 0.3,
+  "max_tokens": 4000,
+  "subscribes": [],
+  "tools": [
+    "create_prompt",
+    "create_agent",
+    "list_agents",
+    "http_request"
+  ],
+  "context_enabled": true,
+  "context_window": 20,
+  "enabled": false,
+  "timeout_ms": 60000,
+  "max_retries": 3,
+  "metadata": {
+    "type": "meta-agent",
+    "version": "1.0.0",
+    "auto_load": true,
+    "created_at": "2026-01-04",
+    "author": "system"
+  },
+  "created_at": "2026-01-12T06:01:44.199Z",
+  "updated_at": "2026-01-12T06:01:44.199Z",
+  "stats": {
+    "executions": 0,
+    "successes": 0,
+    "failures": 0,
+    "total_tokens": 0,
+    "total_cost": 0,
+    "avg_latency_ms": 0,
+    "last_execution": null
+  }
+}

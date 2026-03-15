@@ -1,0 +1,160 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://aichat.com/schemas/database.json",
+
+  "definitions": {
+    "project_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100,
+      "pattern": "^[a-zA-Z0-9_-]+$",
+      "description": "Project identifier"
+    },
+
+    "database_info": {
+      "type": "object",
+      "required": ["project_id", "loaded", "exists"],
+      "properties": {
+        "project_id": { "$ref": "#/definitions/project_id" },
+        "loaded": { "type": "boolean" },
+        "exists": { "type": "boolean" },
+        "size": { "type": "integer", "minimum": 0 },
+        "last_modified": { "type": "string", "format": "date-time" }
+      },
+      "additionalProperties": false
+    },
+
+    "query_request": {
+      "type": "object",
+      "required": ["query"],
+      "properties": {
+        "query": {
+          "type": "string",
+          "minLength": 1,
+          "description": "SQL query to execute"
+        },
+        "params": {
+          "type": "array",
+          "description": "Query parameters for prepared statements",
+          "items": {}
+        },
+        "read_only": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, skip auto-save after query"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "query_response": {
+      "type": "object",
+      "required": ["success", "project_id"],
+      "properties": {
+        "success": { "type": "boolean" },
+        "project_id": { "$ref": "#/definitions/project_id" },
+        "results": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "count": { "type": "integer", "minimum": 0 },
+        "duration": { "type": "integer", "minimum": 0 },
+        "error": { "type": "string" },
+        "message": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+
+    "init_request": {
+      "type": "object",
+      "required": ["schema"],
+      "properties": {
+        "schema": {
+          "type": "string",
+          "minLength": 1,
+          "description": "SQL schema (CREATE TABLE statements)"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "init_response": {
+      "type": "object",
+      "required": ["success", "project_id"],
+      "properties": {
+        "success": { "type": "boolean" },
+        "project_id": { "$ref": "#/definitions/project_id" },
+        "message": { "type": "string" },
+        "error": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+
+    "list_response": {
+      "type": "object",
+      "required": ["success", "databases", "total"],
+      "properties": {
+        "success": { "type": "boolean" },
+        "databases": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/database_info" }
+        },
+        "total": { "type": "integer", "minimum": 0 },
+        "projects_path": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+
+    "schema_response": {
+      "type": "object",
+      "required": ["success", "project_id", "tables"],
+      "properties": {
+        "success": { "type": "boolean" },
+        "project_id": { "$ref": "#/definitions/project_id" },
+        "tables": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "sql": { "type": "string" }
+            }
+          }
+        },
+        "table_count": { "type": "integer", "minimum": 0 },
+        "error": { "type": "string" },
+        "message": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+
+    "tables_response": {
+      "type": "object",
+      "required": ["success", "project_id", "tables"],
+      "properties": {
+        "success": { "type": "boolean" },
+        "project_id": { "$ref": "#/definitions/project_id" },
+        "tables": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "count": { "type": "integer", "minimum": 0 },
+        "error": { "type": "string" },
+        "message": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+
+    "delete_response": {
+      "type": "object",
+      "required": ["success", "project_id"],
+      "properties": {
+        "success": { "type": "boolean" },
+        "project_id": { "$ref": "#/definitions/project_id" },
+        "message": { "type": "string" },
+        "error": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

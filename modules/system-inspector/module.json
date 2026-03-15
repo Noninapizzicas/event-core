@@ -1,0 +1,75 @@
+{
+  "name": "system-inspector",
+  "version": "1.0.0",
+  "description": "Captura estado del sistema (HTTP, MQTT, errores, logs) para consulta por IA",
+  "main": "index.js",
+  "dev_only": true,
+  "provides": {
+    "events": [],
+    "queries": ["system.status", "system.errors"]
+  },
+  "events": {
+    "publishes": [],
+    "subscribes": [
+      "core/+/events/#",
+      "core/+/errors/#"
+    ]
+  },
+  "apis": [
+    {
+      "method": "GET",
+      "path": "/status",
+      "handler": "handleGetStatus",
+      "description": "Retorna estado completo del sistema (como consola DevTools)"
+    },
+    {
+      "method": "GET",
+      "path": "/errors",
+      "handler": "handleGetErrors",
+      "description": "Retorna solo errores recientes"
+    },
+    {
+      "method": "GET",
+      "path": "/network",
+      "handler": "handleGetNetwork",
+      "description": "Retorna solo requests HTTP recientes"
+    },
+    {
+      "method": "DELETE",
+      "path": "/clear",
+      "handler": "handleClear",
+      "description": "Limpia el buffer de consola"
+    }
+  ],
+  "config": {
+    "buffer_size": 500,
+    "write_interval_ms": 2000,
+    "output_file": "./data/system-console.json",
+    "truncate_bodies": 1000,
+    "capture": {
+      "http": true,
+      "mqtt": true,
+      "errors": true,
+      "logs": true,
+      "validation": true
+    }
+  },
+  "observability": {
+    "logging": {
+      "level": "info",
+      "structured": true
+    },
+    "metrics": {
+      "enabled": true,
+      "counters": [
+        "system-inspector.entries.captured",
+        "system-inspector.errors.captured",
+        "system-inspector.http.captured",
+        "system-inspector.mqtt.captured"
+      ],
+      "gauges": [
+        "system-inspector.buffer.size"
+      ]
+    }
+  }
+}

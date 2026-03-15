@@ -1,0 +1,11 @@
+{
+  "name": "google",
+  "version": "1.0.0",
+  "description": "Google Cloud APIs (Vision, TTS, Translate)",
+  "credential": "GOOGLE_API_KEY",
+  "base_url": "https://vision.googleapis.com/v1",
+  "auth": {
+    "type": "query_param",
+    "param": "key"
+  }
+}

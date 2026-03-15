@@ -1,0 +1,160 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://pizzepos.com/schemas/carta-output.json",
+  "title": "Carta Generada - Output Schema",
+  "description": "Formato de salida del módulo menu-generator. Resultado mínimo viable de una carta generada por IA.",
+
+  "type": "object",
+  "required": ["meta", "categorias", "productos"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": ["id", "nombre", "generado_desde", "created_at"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^carta_[a-z0-9_]+$",
+          "description": "ID único de la carta generada"
+        },
+        "nombre": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Nombre de la carta o restaurante"
+        },
+        "generado_desde": {
+          "type": "string",
+          "enum": ["texto", "foto", "pdf"],
+          "description": "Tipo de fuente usada para generar"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "categorias": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "nombre", "orden"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$",
+            "description": "ID slug de la categoría"
+          },
+          "nombre": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Nombre original de la categoría"
+          },
+          "orden": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Orden de presentación"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+
+    "productos": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "nombre", "categoria", "precio", "ingredientes"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$",
+            "description": "ID: {categoria_id}_{nombre_slug}"
+          },
+          "nombre": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Nombre original del producto"
+          },
+          "categoria": {
+            "type": "string",
+            "description": "ID de la categoría a la que pertenece"
+          },
+          "precio": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Precio base. 0 si no fue detectado"
+          },
+          "ingredientes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["nombre"],
+              "properties": {
+                "nombre": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Nombre del ingrediente"
+                },
+                "emoji": {
+                  "type": "string",
+                  "description": "Emoji representativo"
+                }
+              },
+              "additionalProperties": false
+            },
+            "description": "Lista de ingredientes del producto"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false,
+
+  "examples": [
+    {
+      "meta": {
+        "id": "carta_m1abc23",
+        "nombre": "Carta Pizzicas",
+        "generado_desde": "texto",
+        "created_at": "2026-02-04T14:30:00.000Z"
+      },
+      "categorias": [
+        { "id": "pizzicas", "nombre": "Pizzicas", "orden": 1 },
+        { "id": "entrantes", "nombre": "Entrantes", "orden": 2 }
+      ],
+      "productos": [
+        {
+          "id": "pizzicas_country",
+          "nombre": "Country",
+          "categoria": "pizzicas",
+          "precio": 11.50,
+          "ingredientes": [
+            { "nombre": "Tomate", "emoji": "🍅" },
+            { "nombre": "Salsa BBQ", "emoji": "🔥" },
+            { "nombre": "Nata", "emoji": "🥛" },
+            { "nombre": "Pollo", "emoji": "🍗" },
+            { "nombre": "Mezcla de quesos", "emoji": "🧀" },
+            { "nombre": "Cebolla", "emoji": "🧅" },
+            { "nombre": "Bacon", "emoji": "🥓" }
+          ]
+        },
+        {
+          "id": "entrantes_huevos_salseros",
+          "nombre": "Huevos Salseros",
+          "categoria": "entrantes",
+          "precio": 3.50,
+          "ingredientes": [
+            { "nombre": "Huevos", "emoji": "🥚" },
+            { "nombre": "Salsa de ajo asado", "emoji": "🧄" },
+            { "nombre": "Trufa", "emoji": "🍄" },
+            { "nombre": "Mayonesa", "emoji": "🥫" }
+          ]
+        }
+      ]
+    }
+  ]
+}

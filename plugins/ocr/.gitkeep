@@ -1,0 +1,2 @@
+# Plugins de OCR externos
+# Providers principales están en services/providers/ (google, anthropic, local)

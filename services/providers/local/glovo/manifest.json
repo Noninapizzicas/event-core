@@ -1,0 +1,119 @@
+{
+  "$schema": "../../../schemas/provider-manifest.schema.json",
+  "name": "local.glovo",
+  "version": "1.1.0",
+  "description": "Integración con Glovo Partner API v2 — OAuth2, polling de pedidos, aceptar/rechazar, marcar listo",
+  "type": "provider",
+  "requires": {
+    "credentials": [
+      "GLOVO_CLIENT_ID",
+      "GLOVO_CLIENT_SECRET",
+      "GLOVO_CHAIN_ID"
+    ],
+    "npm": []
+  },
+  "functions": {
+    "poll_orders": {
+      "event": "local.glovo.poll_orders.request",
+      "description": "Obtener pedidos recientes del chain (polling/reconciliación)",
+      "input": {
+        "status": {
+          "type": "string",
+          "description": "Filtrar por estado: RECEIVED, ACCEPTED, READY_FOR_PICKUP, ALL",
+          "enum": ["RECEIVED", "ACCEPTED", "READY_FOR_PICKUP", "ALL"],
+          "default": "RECEIVED"
+        },
+        "minutes_back": {
+          "type": "number",
+          "description": "Minutos hacia atrás para buscar pedidos (default 30)",
+          "default": 30
+        }
+      },
+      "output": {
+        "orders": {
+          "type": "array",
+          "description": "Lista de pedidos normalizados"
+        },
+        "total": {
+          "type": "number",
+          "description": "Total de pedidos encontrados"
+        }
+      }
+    },
+    "get_order": {
+      "event": "local.glovo.get_order.request",
+      "description": "Obtener detalle de un pedido específico",
+      "input": {
+        "order_id": {
+          "type": "string",
+          "description": "ID del pedido en Glovo (UUID)",
+          "required": true
+        }
+      },
+      "output": {
+        "order": {
+          "type": "object",
+          "description": "Detalle completo del pedido normalizado"
+        }
+      }
+    },
+    "accept_order": {
+      "event": "local.glovo.accept_order.request",
+      "description": "Aceptar un pedido de Glovo (status → ACCEPTED)",
+      "input": {
+        "order_id": {
+          "type": "string",
+          "description": "ID del pedido en Glovo",
+          "required": true
+        },
+        "preparation_minutes": {
+          "type": "number",
+          "description": "Minutos estimados de preparación (default 20)",
+          "default": 20
+        }
+      },
+      "output": {
+        "accepted": {
+          "type": "boolean"
+        }
+      }
+    },
+    "reject_order": {
+      "event": "local.glovo.reject_order.request",
+      "description": "Rechazar un pedido de Glovo (cancelar desde partner)",
+      "input": {
+        "order_id": {
+          "type": "string",
+          "description": "ID del pedido en Glovo",
+          "required": true
+        },
+        "reason": {
+          "type": "string",
+          "description": "Motivo del rechazo",
+          "default": "STORE_CLOSED"
+        }
+      },
+      "output": {
+        "rejected": {
+          "type": "boolean"
+        }
+      }
+    },
+    "mark_ready": {
+      "event": "local.glovo.mark_ready.request",
+      "description": "Marcar pedido como listo para recogida por rider (status → READY_FOR_PICKUP)",
+      "input": {
+        "order_id": {
+          "type": "string",
+          "description": "ID del pedido en Glovo",
+          "required": true
+        }
+      },
+      "output": {
+        "ready": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,102 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "event_envelope": {
+      "type": "object",
+      "required": ["event_id", "event_type", "correlation_id", "occurred_at", "producer", "schema_version", "payload"],
+      "properties": {
+        "event_id": {"type": "string", "format": "uuid"},
+        "event_type": {"type": "string"},
+        "correlation_id": {"type": "string", "format": "uuid"},
+        "occurred_at": {"type": "string", "format": "date-time"},
+        "producer": {"type": "string"},
+        "schema_version": {"type": "string"},
+        "payload": {"type": "object"}
+      }
+    },
+
+    "cobro_iniciado": {
+      "allOf": [
+        {"$ref": "#/definitions/event_envelope"},
+        {
+          "properties": {
+            "event_type": {"const": "cobro.iniciado"},
+            "payload": {
+              "type": "object",
+              "required": ["cobro_id", "cuenta_id", "monto", "metodo_pago"],
+              "properties": {
+                "cobro_id": {"type": "string"},
+                "cuenta_id": {"type": "string"},
+                "monto": {"type": "number"},
+                "metodo_pago": {"type": "string"},
+                "propina": {"type": "number"}
+              }
+            }
+          }
+        }
+      ]
+    },
+
+    "cobro_completado": {
+      "allOf": [
+        {"$ref": "#/definitions/event_envelope"},
+        {
+          "properties": {
+            "event_type": {"const": "cobro.completado"},
+            "payload": {
+              "type": "object",
+              "required": ["cobro_id", "cuenta_id", "monto_total", "metodo_pago"],
+              "properties": {
+                "cobro_id": {"type": "string"},
+                "cuenta_id": {"type": "string"},
+                "monto_total": {"type": "number"},
+                "metodo_pago": {"type": "string"},
+                "referencia_pago": {"type": "string"},
+                "completado_at": {"type": "string"}
+              }
+            }
+          }
+        }
+      ]
+    },
+
+    "cobro_fallido": {
+      "allOf": [
+        {"$ref": "#/definitions/event_envelope"},
+        {
+          "properties": {
+            "event_type": {"const": "cobro.fallido"},
+            "payload": {
+              "type": "object",
+              "required": ["cobro_id", "motivo"],
+              "properties": {
+                "cobro_id": {"type": "string"},
+                "motivo": {"type": "string"}
+              }
+            }
+          }
+        }
+      ]
+    },
+
+    "cobro_reembolsado": {
+      "allOf": [
+        {"$ref": "#/definitions/event_envelope"},
+        {
+          "properties": {
+            "event_type": {"const": "cobro.reembolsado"},
+            "payload": {
+              "type": "object",
+              "required": ["cobro_id", "monto"],
+              "properties": {
+                "cobro_id": {"type": "string"},
+                "monto": {"type": "number"},
+                "motivo": {"type": "string"}
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

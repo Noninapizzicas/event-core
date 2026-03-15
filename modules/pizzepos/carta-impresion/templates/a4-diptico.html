@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>{{nombre_carta}} · Díptico</title>
+  <style>
+    /* =====================================================
+       PLANTILLA: A4 Díptico
+       Uso: Doblar por la mitad. Portada izquierda, carta derecha.
+       Imprimir: Ctrl+P → Horizontal → Sin márgenes → Doblar
+       ===================================================== */
+
+    @page {
+      size: A4 landscape;
+      margin: 0;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      font-size: 8.5pt;
+      color: #111;
+      background: #fff;
+      width: 29.7cm;
+      height: 21cm;
+      display: flex;
+    }
+
+    /* Línea de doblez */
+    body::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background: repeating-linear-gradient(
+        to bottom,
+        #ccc 0, #ccc 4px,
+        transparent 4px, transparent 8px
+      );
+      pointer-events: none;
+    }
+
+    /* PORTADA — lado izquierdo */
+    .portada {
+      width: 50%;
+      height: 21cm;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #111;
+      color: #fff;
+      padding: 1.5cm;
+      text-align: center;
+    }
+
+    .portada h1 {
+      font-size: 20pt;
+      font-weight: bold;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      line-height: 1.2;
+      margin-bottom: 0.5cm;
+    }
+
+    .portada .subtitulo {
+      font-size: 9pt;
+      color: #aaa;
+      letter-spacing: 0.05em;
+    }
+
+    .portada .ornamento {
+      font-size: 24pt;
+      margin: 0.4cm 0;
+      color: #888;
+    }
+
+    .portada .fecha {
+      font-size: 7.5pt;
+      color: #666;
+      margin-top: 0.6cm;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* CARTA — lado derecho */
+    .carta {
+      width: 50%;
+      height: 21cm;
+      overflow: hidden;
+      padding: 0.8cm 1cm;
+    }
+
+    .categoria {
+      margin-bottom: 0.35cm;
+      break-inside: avoid;
+    }
+
+    .categoria-nombre {
+      font-size: 9pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      border-bottom: 1px solid #333;
+      padding-bottom: 0.1cm;
+      margin-bottom: 0.15cm;
+    }
+
+    .producto {
+      display: flex;
+      flex-direction: column;
+      padding: 0.1cm 0;
+      border-bottom: 1px dotted #ddd;
+    }
+
+    .producto:last-child { border-bottom: none; }
+
+    .producto-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 0.2cm;
+    }
+
+    .producto-nombre {
+      font-size: 8.5pt;
+      font-weight: bold;
+      flex: 1;
+    }
+
+    .precio {
+      font-size: 8.5pt;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+
+    .producto-ingredientes {
+      font-size: 7pt;
+      color: #888;
+      font-style: italic;
+      margin-top: 0.03cm;
+    }
+
+    @media screen {
+      body {
+        width: auto;
+        height: auto;
+        max-width: 29.7cm;
+        margin: 1cm auto;
+        box-shadow: 0 0 12px rgba(0,0,0,0.2);
+        flex-direction: row;
+      }
+      .portada, .carta {
+        min-height: 21cm;
+        height: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- PORTADA: lado izquierdo del díptico -->
+  <div class="portada">
+    <div class="ornamento">✦</div>
+    <h1>{{nombre_carta}}</h1>
+    <div class="subtitulo">{{total_categorias}} secciones · {{total_productos}} platos</div>
+    <div class="ornamento">✦</div>
+    <div class="fecha">{{fecha}}</div>
+  </div>
+
+  <!-- CARTA: lado derecho del díptico -->
+  <div class="carta">
+    {{categorias_html}}
+  </div>
+
+</body>
+</html>

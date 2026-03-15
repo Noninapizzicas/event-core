@@ -1,0 +1,153 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://aichat.com/schemas/credential-manager/events.json",
+
+  "definitions": {
+    "event_envelope": {
+      "type": "object",
+      "required": ["event_id", "event_type", "correlation_id", "occurred_at", "producer", "schema_version", "payload"],
+      "properties": {
+        "event_id": { "type": "string", "format": "uuid" },
+        "event_type": { "type": "string" },
+        "correlation_id": { "type": "string", "format": "uuid" },
+        "occurred_at": { "type": "string", "format": "date-time" },
+        "producer": { "type": "string", "const": "credential-manager" },
+        "schema_version": { "type": "string" },
+        "payload": { "type": "object" }
+      },
+      "additionalProperties": false
+    },
+
+    "credential_saved": {
+      "allOf": [
+        { "$ref": "#/definitions/event_envelope" },
+        {
+          "properties": {
+            "event_type": { "const": "credential.saved" },
+            "payload": {
+              "type": "object",
+              "required": ["key", "provider", "level", "created"],
+              "properties": {
+                "key": { "type": "string" },
+                "provider": { "type": "string" },
+                "level": { "type": "string" },
+                "identifier": { "type": "string" },
+                "created": { "type": "boolean" },
+                "updated": { "type": "boolean" }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+
+    "credential_updated": {
+      "allOf": [
+        { "$ref": "#/definitions/event_envelope" },
+        {
+          "properties": {
+            "event_type": { "const": "credential.updated" },
+            "payload": {
+              "type": "object",
+              "required": ["key", "updated_at"],
+              "properties": {
+                "key": { "type": "string" },
+                "updated_at": { "type": "string", "format": "date-time" }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+
+    "credential_deleted": {
+      "allOf": [
+        { "$ref": "#/definitions/event_envelope" },
+        {
+          "properties": {
+            "event_type": { "const": "credential.deleted" },
+            "payload": {
+              "type": "object",
+              "required": ["key", "deleted_at"],
+              "properties": {
+                "key": { "type": "string" },
+                "deleted_at": { "type": "string", "format": "date-time" }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+
+    "credential_resolved": {
+      "allOf": [
+        { "$ref": "#/definitions/event_envelope" },
+        {
+          "properties": {
+            "event_type": { "const": "credential.resolved" },
+            "payload": {
+              "type": "object",
+              "required": ["provider", "resolved_from", "key"],
+              "properties": {
+                "provider": { "type": "string" },
+                "resolved_from": { "type": "string" },
+                "key": { "type": "string" }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+
+    "credential_resolve_failed": {
+      "allOf": [
+        { "$ref": "#/definitions/event_envelope" },
+        {
+          "properties": {
+            "event_type": { "const": "credential.resolve.failed" },
+            "payload": {
+              "type": "object",
+              "required": ["provider", "attempts"],
+              "properties": {
+                "provider": { "type": "string" },
+                "attempts": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+
+    "credential_resolve_response": {
+      "allOf": [
+        { "$ref": "#/definitions/event_envelope" },
+        {
+          "properties": {
+            "event_type": { "const": "credential.resolve.response" },
+            "payload": {
+              "type": "object",
+              "required": ["request_id", "success"],
+              "properties": {
+                "request_id": { "type": "string" },
+                "success": { "type": "boolean" },
+                "provider": { "type": "string" },
+                "api_key": { "type": "string" },
+                "resolved_from": { "type": "string" },
+                "error": { "type": "string" }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    }
+  }
+}

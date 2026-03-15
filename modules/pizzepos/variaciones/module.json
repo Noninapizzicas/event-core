@@ -1,0 +1,93 @@
+{
+  "name": "variaciones",
+  "version": "3.0.0",
+  "description": "Gestión de variaciones de productos (quitar/añadir ingredientes)",
+  "author": "Pizzepos Team",
+
+  "provides": {
+    "events": ["variacion.validada", "variacion.rechazada"],
+    "queries": ["variacion.validar", "variacion.calcular_precio"]
+  },
+
+  "events": {
+    "publishes": [
+      {
+        "event": "variacion.validada",
+        "description": "Variación validada correctamente",
+        "schema": {
+          "$ref": "./schemas/events.json#/definitions/variacion_validada"
+        }
+      },
+      {
+        "event": "variacion.rechazada",
+        "description": "Variación rechazada (no permitida)",
+        "schema": {
+          "$ref": "./schemas/events.json#/definitions/variacion_rechazada"
+        }
+      }
+    ],
+    "subscribes": [
+      {
+        "event": "producto.creado",
+        "description": "Producto creado - registrar variaciones permitidas",
+        "handler": "onProductoCreado"
+      },
+      {
+        "event": "comandero.item_agregado",
+        "description": "Item agregado al buffer del comandero - validar variaciones",
+        "handler": "onComanderoItemAgregado"
+      }
+    ]
+  },
+
+  "apis": [
+    {
+      "method": "GET",
+      "path": "/productos/:producto_id/variaciones",
+      "handler": "handleGetVariacionesProducto",
+      "description": "Obtener variaciones permitidas para un producto"
+    },
+    {
+      "method": "POST",
+      "path": "/validar",
+      "handler": "handleValidarVariacion",
+      "description": "Validar si una variación es permitida"
+    },
+    {
+      "method": "POST",
+      "path": "/calcular-precio",
+      "handler": "handleCalcularPrecio",
+      "description": "Calcular precio final con variaciones"
+    },
+    {
+      "method": "GET",
+      "path": "/health",
+      "handler": "handleHealthCheck",
+      "description": "Health check"
+    },
+    {
+      "method": "GET",
+      "path": "/metrics",
+      "handler": "handleGetMetrics",
+      "description": "Métricas del módulo"
+    }
+  ],
+
+  "observability": {
+    "logging": {
+      "level": "info",
+      "structured": true,
+      "correlation_id": true
+    },
+    "metrics": {
+      "enabled": true,
+      "counters": [
+        "variacion.validada.total",
+        "variacion.rechazada.total"
+      ],
+      "gauges": [
+        "variacion.productos_configurados.count"
+      ]
+    }
+  }
+}

@@ -1,0 +1,380 @@
+{
+  "name": "comandero",
+  "version": "2.0.0",
+  "description": "Gestión de pedidos - Añadir productos a cuentas",
+  "author": "Pizzepos Team",
+
+  "provides": {
+    "events": [
+      "comandero.item_agregado",
+      "comandero.item_eliminado",
+      "comandero.enviar_cocina"
+    ]
+  },
+
+  "events": {
+    "publishes": [
+      {
+        "event": "comandero.item_agregado",
+        "description": "Item añadido al buffer del comandero"
+      },
+      {
+        "event": "comandero.item_eliminado",
+        "description": "Item eliminado del buffer del comandero"
+      },
+      {
+        "event": "comandero.enviar_cocina",
+        "description": "Comandero solicita enviar pedido a cocina — Pedidos recoge y crea pedido formal"
+      }
+    ],
+    "subscribes": [
+      {
+        "event": "cuenta.actualizada",
+        "handler": "onCuentaActualizada"
+      },
+      {
+        "event": "caja.cerrada",
+        "handler": "onCajaCerrada"
+      },
+      {
+        "event": "dia.iniciado",
+        "handler": "onDiaIniciado"
+      },
+      {
+        "event": "catalogo.actualizado",
+        "handler": "onCatalogoActualizado"
+      },
+      {
+        "event": "producto.creado",
+        "handler": "onProductoActualizado"
+      },
+      {
+        "event": "producto.actualizado",
+        "handler": "onProductoActualizado"
+      }
+    ]
+  },
+
+  "apis": [
+    {
+      "method": "GET",
+      "path": "/pedido/:cuenta_id",
+      "handler": "handleGetPedido",
+      "description": "Obtener pedido de una cuenta"
+    },
+    {
+      "method": "POST",
+      "path": "/pedido/:cuenta_id/items",
+      "handler": "handleAddItem",
+      "description": "Añadir item al pedido"
+    },
+    {
+      "method": "DELETE",
+      "path": "/pedido/:cuenta_id/items/:item_id",
+      "handler": "handleRemoveItem",
+      "description": "Eliminar item del pedido"
+    },
+    {
+      "method": "PUT",
+      "path": "/pedido/:cuenta_id/items/:item_id",
+      "handler": "handleUpdateItem",
+      "description": "Actualizar cantidad o notas de un item"
+    },
+    {
+      "method": "POST",
+      "path": "/pedido/:cuenta_id/enviar",
+      "handler": "handleEnviarCocina",
+      "description": "Enviar pedido a cocina"
+    },
+    {
+      "method": "GET",
+      "path": "/health",
+      "handler": "handleHealthCheck"
+    }
+  ],
+
+  "ui": {
+    "enabled": true,
+    "title": "Comandero",
+    "icon": "📝",
+    "components": ["comandero-header", "producto-button", "pedido-item"],
+    "views": {
+      "main": {
+        "layout": "three-panel",
+        "title": "Comandero",
+
+        "header": {
+          "show": true,
+          "component": "comandero-header",
+          "config": {
+            "cuenta_id_param": "cuenta_id",
+            "endpoint": "/modules/cuentas/cuentas/{cuenta_id}"
+          }
+        },
+
+        "topbar": {
+          "type": "categories",
+          "position": "top",
+          "height": "56px",
+          "horizontal": true,
+          "compact": true,
+          "config": {
+            "endpoint": "/modules/productos/categorias",
+            "item_component": "categoria-button-compact"
+          }
+        },
+
+        "sidebar": {
+          "type": "action-bar",
+          "position": "right",
+          "width": "56px",
+          "sections": [
+            {
+              "title": "",
+              "buttons": [
+                {
+                  "component": "cuenta-type-button",
+                  "tipo": "local",
+                  "action": {
+                    "type": "create-and-navigate",
+                    "endpoint": "/modules/cuentas/cuentas",
+                    "navigate_to": "/modules/ui-renderer/ui/comandero/main?cuenta_id={new_id}"
+                  }
+                },
+                {
+                  "component": "cuenta-type-button",
+                  "tipo": "delivery",
+                  "action": {
+                    "type": "create-and-navigate",
+                    "endpoint": "/modules/cuentas/cuentas",
+                    "navigate_to": "/modules/ui-renderer/ui/comandero/main?cuenta_id={new_id}"
+                  }
+                },
+                {
+                  "component": "cuenta-type-button",
+                  "tipo": "llevar",
+                  "action": {
+                    "type": "create-and-navigate",
+                    "endpoint": "/modules/cuentas/cuentas",
+                    "navigate_to": "/modules/ui-renderer/ui/comandero/main?cuenta_id={new_id}"
+                  }
+                }
+              ]
+            },
+            {
+              "title": "",
+              "buttons": [
+                {
+                  "component": "button",
+                  "icon": "👨‍🍳",
+                  "label": "Enviar Cocina",
+                  "action": {
+                    "type": "api-call",
+                    "endpoint": "/modules/comandero/pedido/{cuenta_id}/enviar",
+                    "method": "POST",
+                    "on_success": "refresh"
+                  }
+                },
+                {
+                  "component": "button",
+                  "icon": "💰",
+                  "label": "Cobrar",
+                  "action": {
+                    "type": "scroll-to",
+                    "target": "#panel-cobros"
+                  }
+                },
+                {
+                  "component": "button",
+                  "icon": "↩️",
+                  "label": "Volver",
+                  "action": {
+                    "type": "navigate",
+                    "url": "/modules/ui-renderer/ui/cuentas/main"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+
+        "content": {
+          "type": "grid",
+          "component": "grid-productos",
+          "config": {
+            "endpoint": "/modules/productos/productos",
+            "filter_by": "categoria",
+            "group_by": "familia",
+            "columns": {
+              "mobile": 2,
+              "tablet": 2,
+              "desktop": 2
+            },
+            "gap": "12px",
+            "item_component": "producto-button",
+            "on_click": {
+              "type": "add-to-pedido",
+              "endpoint": "/modules/comandero/pedido/{cuenta_id}/items"
+            },
+            "empty_state": {
+              "icon": "🍕",
+              "title": "Selecciona una categoría",
+              "description": "Elige una categoría para ver los productos"
+            }
+          }
+        },
+
+        "panel_bottom": {
+          "id": "panel-cobros",
+          "type": "edicion-cobro",
+          "height": "auto",
+          "sections": [
+            {
+              "id": "pedido-items-editable",
+              "title": "Pedido",
+              "component": "pedido-list-editable",
+              "config": {
+                "endpoint": "/modules/comandero/pedido/{cuenta_id}",
+                "mqtt_topics": ["comandero.item_agregado", "comandero.item_eliminado", "pedido.item_actualizado"],
+                "item_component": "pedido-item-editable",
+                "actions_per_item": [
+                  {
+                    "icon": "➕",
+                    "action": "increment-quantity",
+                    "endpoint": "/modules/comandero/pedido/{cuenta_id}/items/{item_id}/quantity",
+                    "method": "PUT",
+                    "body": { "delta": 1 }
+                  },
+                  {
+                    "icon": "➖",
+                    "action": "decrement-quantity",
+                    "endpoint": "/modules/comandero/pedido/{cuenta_id}/items/{item_id}/quantity",
+                    "method": "PUT",
+                    "body": { "delta": -1 }
+                  },
+                  {
+                    "icon": "🗑️",
+                    "action": "delete-item",
+                    "endpoint": "/modules/comandero/pedido/{cuenta_id}/items/{item_id}",
+                    "method": "DELETE",
+                    "confirm": true
+                  },
+                  {
+                    "icon": "📝",
+                    "action": "add-note",
+                    "type": "open-modal",
+                    "modal": "nota-item"
+                  }
+                ],
+                "empty_state": {
+                  "icon": "🛒",
+                  "title": "Pedido vacío",
+                  "description": "Añade productos desde arriba"
+                }
+              }
+            },
+            {
+              "id": "pedido-notas",
+              "title": "Notas",
+              "component": "textarea",
+              "config": {
+                "placeholder": "Notas del pedido...",
+                "field": "notas",
+                "endpoint": "/modules/comandero/pedido/{cuenta_id}",
+                "method": "PUT",
+                "debounce": 500
+              }
+            },
+            {
+              "id": "pedido-totales",
+              "component": "pedido-totales",
+              "config": {
+                "show_subtotal": true,
+                "show_descuento": true,
+                "show_total": true,
+                "currency": "€"
+              }
+            },
+            {
+              "id": "metodos-pago",
+              "title": "Método de Pago",
+              "component": "payment-methods",
+              "config": {
+                "methods": [
+                  {
+                    "id": "efectivo",
+                    "icon": "💵",
+                    "label": "Efectivo"
+                  },
+                  {
+                    "id": "tarjeta",
+                    "icon": "💳",
+                    "label": "Tarjeta"
+                  },
+                  {
+                    "id": "bizum",
+                    "icon": "📱",
+                    "label": "Bizum"
+                  }
+                ],
+                "allow_split": true
+              }
+            },
+            {
+              "id": "acciones-cobro",
+              "buttons": [
+                {
+                  "component": "button",
+                  "icon": "✅",
+                  "label": "Cerrar y Cobrar",
+                  "style": "primary-large",
+                  "action": {
+                    "type": "api-call",
+                    "endpoint": "/modules/cobros/cobros",
+                    "method": "POST",
+                    "body": {
+                      "cuenta_id": "{cuenta_id}",
+                      "metodo_pago": "{selected_payment_method}",
+                      "monto": "{total}"
+                    },
+                    "on_success": "navigate",
+                    "navigate_to": "/modules/ui-renderer/ui/cuentas/main"
+                  }
+                },
+                {
+                  "component": "button",
+                  "icon": "🖨️",
+                  "label": "Imprimir Ticket",
+                  "style": "secondary",
+                  "action": {
+                    "type": "api-call",
+                    "endpoint": "/modules/impresion/ticket",
+                    "method": "POST",
+                    "body": {
+                      "cuenta_id": "{cuenta_id}"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+
+  "observability": {
+    "logging": {
+      "level": "info",
+      "structured": true
+    },
+    "metrics": {
+      "enabled": true,
+      "counters": [
+        "comandero.item_agregado.total",
+        "comandero.item_eliminado.total",
+        "comandero.enviado.total"
+      ]
+    }
+  }
+}

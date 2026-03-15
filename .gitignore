@@ -1,0 +1,92 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Service registry (runtime data)
+.services.json
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids/
+.pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Persistent data (métricas, etc)
+*.json.tmp
+
+# Data directory - track project definitions, ignore runtime data
+data/*
+!data/projects/
+!data/scheduler/
+# Legacy structure
+data/projects/*/inbox/
+data/projects/*/datos/
+data/projects/*/exports/
+data/projects/*/archivados/
+data/projects/*/originales/
+data/projects/*/tmp/
+data/projects/*/db/
+data/projects/*/storage/
+# New structure: bot directories contain runtime data
+data/projects/*/*/recibidas/
+data/projects/*/*/procesadas/
+data/projects/*/*/errores/
+data/logs/
+
+# Module data (development/runtime)
+modules/*/data/
+modules/*/storage/
+modules/*/.cache/
+
+# Coverage
+coverage/
+.nyc_output/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build outputs
+dist/
+build/
+*.tgz
+carta-static-output/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Claude Code (optional - descomentar si no quieres subir configuración)
+# .claude/
+
+# Tesseract language files (download on first run)
+services/providers/local/tesseract/tessdata/*.traineddata
+
+# Generated project databases
+data/projects/_prompts/
+data/projects/system/
+
+# Business-specific projects (not part of installation)
+data/projects/pizzepos/
+data/projects/facturas-nonina/

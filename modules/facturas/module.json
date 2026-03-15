@@ -1,0 +1,122 @@
+{
+  "name": "facturas",
+  "version": "1.0.0",
+  "description": "Procesamiento de facturas: cualquier formato de entrada → datos estructurados",
+  "author": "Event-Core Team",
+  "main": "index.js",
+
+  "handlers": [
+    { "domain": "facturas", "action": "procesar", "method": "handleProcesar" },
+    { "domain": "facturas", "action": "subir", "method": "handleSubir" },
+    { "domain": "facturas", "action": "reprocesar", "method": "handleReprocesar" },
+    { "domain": "facturas", "action": "listar", "method": "handleListar" },
+    { "domain": "facturas", "action": "obtener", "method": "handleObtener" },
+    { "domain": "facturas", "action": "actualizar", "method": "handleActualizar" },
+    { "domain": "facturas", "action": "estadisticas", "method": "handleEstadisticas" },
+    { "domain": "facturas", "action": "exportar", "method": "handleExportar" }
+  ],
+
+  "tools": [
+    {
+      "name": "facturas.procesar",
+      "description": "Procesa un archivo de factura (PDF/imagen) y extrae datos estructurados via OCR + IA",
+      "handler": "handleToolProcesar",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "projectId": { "type": "string", "description": "ID del proyecto" },
+          "filePath": { "type": "string", "description": "Ruta al archivo (PDF, JPG, PNG, WebP, TIFF)" },
+          "source": { "type": "string", "enum": ["telegram", "gmail", "manual"], "default": "manual" }
+        },
+        "required": ["projectId", "filePath"]
+      }
+    },
+    {
+      "name": "facturas.listar",
+      "description": "Lista facturas de un proyecto con filtros opcionales",
+      "handler": "handleToolListar",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "projectId": { "type": "string", "description": "ID del proyecto" },
+          "estado": { "type": "string", "enum": ["pendiente", "procesando", "procesada", "error", "exportada"] },
+          "limit": { "type": "number", "default": 50 }
+        },
+        "required": ["projectId"]
+      }
+    },
+    {
+      "name": "facturas.estadisticas",
+      "description": "Obtiene estadísticas de facturas del proyecto",
+      "handler": "handleToolEstadisticas",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "projectId": { "type": "string", "description": "ID del proyecto" }
+        },
+        "required": ["projectId"]
+      }
+    }
+  ],
+
+  "events": {
+    "publishes": [
+      "factura.recibida",
+      "factura.procesada",
+      "factura.error",
+      "factura.exportada"
+    ],
+    "subscribes": [
+      { "event": "project.activated", "handler": "onProjectActivated" },
+      { "event": "factura.entrada", "handler": "onFacturaEntrada" }
+    ]
+  },
+
+  "config": {
+    "ocr": {
+      "provider": "local.google-vision",
+      "hint": "DOCUMENT_TEXT_DETECTION",
+      "languages": ["es", "en"]
+    },
+    "ai": {
+      "provider": "deepseek",
+      "temperature": 0.1,
+      "maxTokens": 2000
+    },
+    "processing": {
+      "dpi": 300,
+      "maxWidth": 2400,
+      "maxHeight": 3200,
+      "sharp": {
+        "grayscale": true,
+        "normalize": true,
+        "sharpen": true
+      }
+    },
+    "timeouts": {
+      "pdfConvert": 60000,
+      "sharp": 30000,
+      "ocr": 60000,
+      "ai": 60000,
+      "db": 30000
+    }
+  },
+
+  "observability": {
+    "logging": {
+      "level": "info",
+      "structured": true
+    },
+    "metrics": {
+      "enabled": true,
+      "counters": [
+        "facturas.procesadas.total",
+        "facturas.errores.total",
+        "facturas.subidas.total"
+      ],
+      "histograms": [
+        "facturas.procesamiento.duration"
+      ]
+    }
+  }
+}

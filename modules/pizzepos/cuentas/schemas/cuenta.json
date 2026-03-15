@@ -1,0 +1,173 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://pizzepos.com/schemas/cuenta.json",
+  "title": "Cuenta Schema",
+  "description": "Esquemas para el módulo de cuentas",
+
+  "definitions": {
+    "cuenta_id": {
+      "type": "string",
+      "pattern": "^cuenta_[a-z0-9]{8,16}$",
+      "description": "ID único de cuenta"
+    },
+
+    "tipo_cuenta": {
+      "type": "string",
+      "enum": ["local", "delivery", "llevar"],
+      "description": "Tipo de cuenta"
+    },
+
+    "estado_cuenta": {
+      "type": "string",
+      "enum": ["pendiente", "con_pedido", "en_preparacion", "listo", "para_cobrar", "cobrado"],
+      "description": "Estado de la cuenta"
+    },
+
+    "cuenta": {
+      "type": "object",
+      "required": ["id", "tipo", "nombre", "estado", "items", "total", "created_at", "updated_at"],
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/cuenta_id"
+        },
+        "tipo": {
+          "$ref": "#/definitions/tipo_cuenta"
+        },
+        "nombre": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 50,
+          "description": "Nombre de la cuenta (ej: Mesa 1, Delivery #5)"
+        },
+        "estado": {
+          "$ref": "#/definitions/estado_cuenta"
+        },
+        "items": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Cantidad de items en el pedido"
+        },
+        "total": {
+          "type": "number",
+          "minimum": 0,
+          "multipleOf": 0.01,
+          "description": "Total en euros"
+        },
+        "alerta": {
+          "type": "boolean",
+          "default": false,
+          "description": "Alerta visual para atención"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp de creación"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp de última actualización"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "create_request": {
+      "type": "object",
+      "required": ["tipo"],
+      "properties": {
+        "tipo": {
+          "$ref": "#/definitions/tipo_cuenta"
+        },
+        "nombre": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 50,
+          "description": "Nombre custom (opcional, se auto-genera si no se proporciona)"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "create_response": {
+      "type": "object",
+      "required": ["status", "data"],
+      "properties": {
+        "status": {
+          "type": "integer",
+          "enum": [201]
+        },
+        "data": {
+          "$ref": "#/definitions/cuenta"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "list_response": {
+      "type": "object",
+      "required": ["status", "data"],
+      "properties": {
+        "status": {
+          "type": "integer",
+          "enum": [200]
+        },
+        "data": {
+          "type": "object",
+          "required": ["cuentas", "total"],
+          "properties": {
+            "cuentas": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/cuenta"
+              }
+            },
+            "total": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "filtros": {
+              "type": "object",
+              "properties": {
+                "tipo": {
+                  "$ref": "#/definitions/tipo_cuenta"
+                },
+                "estado": {
+                  "$ref": "#/definitions/estado_cuenta"
+                }
+              }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "get_response": {
+      "type": "object",
+      "required": ["status", "data"],
+      "properties": {
+        "status": {
+          "type": "integer",
+          "enum": [200, 404]
+        },
+        "data": {
+          "oneOf": [
+            {
+              "$ref": "#/definitions/cuenta"
+            },
+            {
+              "type": "object",
+              "required": ["error"],
+              "properties": {
+                "error": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

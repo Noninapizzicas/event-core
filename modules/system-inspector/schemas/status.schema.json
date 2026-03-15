@@ -1,0 +1,127 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "system-inspector/status",
+  "title": "System Inspector Status",
+  "description": "Estado completo del sistema para consulta por IA",
+  "type": "object",
+  "properties": {
+    "_meta": {
+      "type": "object",
+      "properties": {
+        "generated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "core_id": {
+          "type": "string"
+        },
+        "uptime_seconds": {
+          "type": ["integer", "null"]
+        },
+        "buffer_size": {
+          "type": "integer"
+        },
+        "entries_count": {
+          "type": "integer"
+        }
+      },
+      "required": ["generated_at", "core_id"]
+    },
+    "summary": {
+      "type": "object",
+      "properties": {
+        "total": {
+          "type": "integer"
+        },
+        "errors": {
+          "type": "integer"
+        },
+        "warnings": {
+          "type": "integer"
+        },
+        "network_requests": {
+          "type": "integer"
+        },
+        "network_failures": {
+          "type": "integer"
+        },
+        "mqtt_messages": {
+          "type": "integer"
+        }
+      }
+    },
+    "recent_errors": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/consoleEntry"
+      }
+    },
+    "console": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/consoleEntry"
+      }
+    }
+  },
+  "required": ["_meta", "summary", "console"],
+  "definitions": {
+    "consoleEntry": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["error", "warn", "info", "debug", "network", "mqtt", "validation"]
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "source": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object"
+        },
+        "stack": {
+          "type": ["string", "null"]
+        },
+        "method": {
+          "type": "string",
+          "description": "HTTP method (for network type)"
+        },
+        "path": {
+          "type": "string",
+          "description": "Request path (for network type)"
+        },
+        "status": {
+          "type": "integer",
+          "description": "HTTP status code (for network type)"
+        },
+        "duration_ms": {
+          "type": "number",
+          "description": "Request duration in ms (for network type)"
+        },
+        "topic": {
+          "type": "string",
+          "description": "MQTT topic (for mqtt type)"
+        },
+        "direction": {
+          "type": "string",
+          "enum": ["in", "out"],
+          "description": "Message direction (for mqtt type)"
+        },
+        "errors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Validation errors (for validation type)"
+        }
+      },
+      "required": ["type", "ts", "source", "message"]
+    }
+  }
+}

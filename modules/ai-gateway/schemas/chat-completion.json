@@ -1,0 +1,84 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["messages"],
+  "additionalProperties": false,
+  "properties": {
+    "messages": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["role"],
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": ["system", "user", "assistant", "tool"]
+          },
+          "content": {
+            "oneOf": [
+              { "type": "string", "minLength": 1 },
+              {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["type"],
+                  "properties": {
+                    "type": { "type": "string" }
+                  }
+                }
+              }
+            ]
+          },
+          "image_base64": {
+            "type": "string",
+            "description": "Imagen en base64 para análisis con visión"
+          },
+          "image_type": {
+            "type": "string",
+            "enum": ["image/jpeg", "image/png", "image/webp", "image/gif"],
+            "default": "image/jpeg"
+          }
+        }
+      }
+    },
+    "provider": {
+      "type": "string",
+      "enum": ["deepseek", "anthropic", "openai", "ollama", "auto"],
+      "default": "auto",
+      "description": "Proveedor específico o 'auto' para fallback automático"
+    },
+    "model": {
+      "type": "string",
+      "description": "Modelo específico (usa default del proveedor si no se especifica)"
+    },
+    "temperature": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 2,
+      "default": 0.7
+    },
+    "max_tokens": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100000,
+      "description": "Máximo de tokens en la respuesta"
+    },
+    "top_p": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "default": 1
+    },
+    "stream": {
+      "type": "boolean",
+      "default": false,
+      "description": "Si true, devuelve SSE stream"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Metadata para tracking (prompt_id, user_id, etc.)"
+    }
+  }
+}

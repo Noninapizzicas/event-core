@@ -1,0 +1,27 @@
+# Event Core - Caddyfile para Docker Compose
+#
+# Diferencia con Caddyfile normal: usa nombres de servicio Docker
+# en vez de localhost (core:3000 en vez de localhost:3000)
+
+{$DOMAIN:localhost} {
+	# Frontend - archivos estáticos
+	root * /srv/frontend
+	file_server
+
+	# API REST → event-core container
+	handle /modules/* {
+		reverse_proxy core:3000
+	}
+
+	handle /health {
+		reverse_proxy core:3000
+	}
+
+	# MQTT WebSocket → broker en container
+	handle /mqtt {
+		reverse_proxy core:9001
+	}
+
+	# SPA fallback
+	try_files {path} /index.html
+}

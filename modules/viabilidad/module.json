@@ -1,0 +1,242 @@
+{
+  "name": "viabilidad",
+  "version": "1.0.0",
+  "description": "Estudio de viabilidad de negocio: punto de equilibrio, proyecciones, escenarios, análisis de rentabilidad.",
+  "author": "Event Core Team",
+  "main": "index.js",
+
+  "provides": {
+    "events": ["viabilidad.estudio.generado", "viabilidad.escenario.calculado"]
+  },
+
+  "events": {
+    "publishes": [
+      {
+        "event": "viabilidad.estudio.generado",
+        "description": "Estudio de viabilidad completo generado"
+      },
+      {
+        "event": "viabilidad.escenario.calculado",
+        "description": "Escenario de negocio calculado"
+      }
+    ],
+    "subscribes": [
+      { "event": "project.activated", "handler": "onProjectActivated" },
+      { "event": "project.deactivated", "handler": "onProjectDeactivated" },
+      { "event": "receta.creada", "handler": "onRecetaChanged" },
+      { "event": "receta.actualizada", "handler": "onRecetaChanged" },
+      { "event": "receta.eliminada", "handler": "onRecetaChanged" },
+      { "event": "escandallo.calculado", "handler": "onEscandalloCalculado" }
+    ]
+  },
+
+  "ui_handlers": [
+    { "domain": "viabilidad", "action": "estudio", "handler": "handleEstudio" },
+    { "domain": "viabilidad", "action": "escenario", "handler": "handleEscenario" },
+    { "domain": "viabilidad", "action": "config", "handler": "handleConfig" }
+  ],
+
+  "tools": [
+    {
+      "name": "viabilidad.estudio",
+      "description": "Genera un estudio de viabilidad completo del negocio basándose en las recetas, sus costes y los parámetros del negocio. Incluye punto de equilibrio, proyección de ingresos, gastos fijos/variables y rentabilidad estimada.",
+      "handler": "toolEstudio",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "nombre_negocio": {
+            "type": "string",
+            "description": "Nombre del negocio"
+          },
+          "tipo_negocio": {
+            "type": "string",
+            "description": "Tipo (restaurante, catering, food truck, obrador, etc.)"
+          },
+          "gastos_fijos_mensuales": {
+            "type": "number",
+            "description": "Gastos fijos mensuales en €: alquiler, personal, suministros, seguros, etc."
+          },
+          "dias_operacion_mes": {
+            "type": "number",
+            "description": "Días de operación al mes (default: 25)"
+          },
+          "comensales_dia_estimados": {
+            "type": "number",
+            "description": "Comensales/servicios estimados por día"
+          },
+          "ticket_medio": {
+            "type": "number",
+            "description": "Ticket medio por comensal (€). Si no se indica, se calcula de las recetas."
+          },
+          "precios_venta": {
+            "type": "object",
+            "description": "Objeto {receta_id: precio_venta} con precios de venta por receta"
+          }
+        },
+        "required": ["gastos_fijos_mensuales"]
+      }
+    },
+    {
+      "name": "viabilidad.punto_equilibrio",
+      "description": "Calcula el punto de equilibrio (break-even): cuántos servicios/comensales necesitas al día/mes para cubrir gastos fijos. Cuánto tienes que vender para no perder dinero.",
+      "handler": "toolPuntoEquilibrio",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "gastos_fijos_mensuales": {
+            "type": "number",
+            "description": "Gastos fijos mensuales (€)"
+          },
+          "ticket_medio": {
+            "type": "number",
+            "description": "Ticket medio por comensal (€)"
+          },
+          "food_cost_porcentaje": {
+            "type": "number",
+            "description": "Food cost medio en % (se calcula de las recetas si no se indica)"
+          },
+          "dias_operacion_mes": {
+            "type": "number",
+            "description": "Días operativos al mes (default: 25)"
+          }
+        },
+        "required": ["gastos_fijos_mensuales"]
+      }
+    },
+    {
+      "name": "viabilidad.escenario",
+      "description": "Compara escenarios de negocio: cambia variables (comensales, precios, gastos) y ve cómo afectan al resultado. Útil para decidir entre diferentes opciones de carta o modelo de negocio.",
+      "handler": "toolEscenario",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "description": "Nombre del escenario (ej: 'Conservador', 'Optimista', 'Menú reducido')"
+          },
+          "gastos_fijos_mensuales": {
+            "type": "number",
+            "description": "Gastos fijos mensuales (€)"
+          },
+          "comensales_dia": {
+            "type": "number",
+            "description": "Comensales estimados por día"
+          },
+          "ticket_medio": {
+            "type": "number",
+            "description": "Ticket medio (€)"
+          },
+          "food_cost_porcentaje": {
+            "type": "number",
+            "description": "Food cost objetivo (%)"
+          },
+          "dias_operacion_mes": {
+            "type": "number",
+            "description": "Días operativos al mes (default: 25)"
+          }
+        },
+        "required": ["nombre", "gastos_fijos_mensuales", "comensales_dia", "ticket_medio"]
+      }
+    },
+    {
+      "name": "viabilidad.comparar_escenarios",
+      "description": "Compara varios escenarios lado a lado: muestra ingresos, gastos, beneficio y punto de equilibrio de cada uno.",
+      "handler": "toolCompararEscenarios",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "escenarios": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "nombre": { "type": "string" },
+                "gastos_fijos_mensuales": { "type": "number" },
+                "comensales_dia": { "type": "number" },
+                "ticket_medio": { "type": "number" },
+                "food_cost_porcentaje": { "type": "number" },
+                "dias_operacion_mes": { "type": "number" }
+              },
+              "required": ["nombre", "gastos_fijos_mensuales", "comensales_dia", "ticket_medio"]
+            },
+            "description": "Array de escenarios a comparar"
+          }
+        },
+        "required": ["escenarios"]
+      }
+    },
+    {
+      "name": "viabilidad.proyeccion",
+      "description": "Proyección financiera a 3, 6 o 12 meses. Muestra evolución de ingresos, gastos y beneficio mes a mes, con crecimiento progresivo de comensales.",
+      "handler": "toolProyeccion",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "meses": {
+            "type": "number",
+            "description": "Número de meses a proyectar (3, 6 o 12. Default: 12)"
+          },
+          "gastos_fijos_mensuales": {
+            "type": "number",
+            "description": "Gastos fijos mensuales (€)"
+          },
+          "comensales_dia_inicial": {
+            "type": "number",
+            "description": "Comensales/día al inicio"
+          },
+          "comensales_dia_objetivo": {
+            "type": "number",
+            "description": "Comensales/día objetivo al final del periodo"
+          },
+          "ticket_medio": {
+            "type": "number",
+            "description": "Ticket medio (€)"
+          },
+          "food_cost_porcentaje": {
+            "type": "number",
+            "description": "Food cost medio (%)"
+          },
+          "dias_operacion_mes": {
+            "type": "number",
+            "description": "Días operativos al mes (default: 25)"
+          },
+          "inversion_inicial": {
+            "type": "number",
+            "description": "Inversión inicial (€) — para calcular ROI"
+          }
+        },
+        "required": ["gastos_fijos_mensuales", "comensales_dia_inicial", "ticket_medio"]
+      }
+    },
+    {
+      "name": "viabilidad.guardar_config",
+      "description": "Guarda la configuración del negocio (gastos fijos, tipo, nombre, etc.) para no tener que repetirla en cada cálculo.",
+      "handler": "toolGuardarConfig",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "nombre_negocio": { "type": "string" },
+          "tipo_negocio": { "type": "string" },
+          "gastos_fijos_mensuales": { "type": "number" },
+          "dias_operacion_mes": { "type": "number" },
+          "comensales_dia_estimados": { "type": "number" },
+          "ticket_medio": { "type": "number" },
+          "food_cost_objetivo": { "type": "number" },
+          "inversion_inicial": { "type": "number" },
+          "notas": { "type": "string" }
+        }
+      }
+    }
+  ],
+
+  "observability": {
+    "metrics": {
+      "counters": [
+        "viabilidad.estudio.generated",
+        "viabilidad.punto_equilibrio.calculated",
+        "viabilidad.escenario.calculated",
+        "viabilidad.proyeccion.generated"
+      ]
+    }
+  }
+}

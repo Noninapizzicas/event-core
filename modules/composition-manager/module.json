@@ -1,0 +1,75 @@
+{
+  "name": "composition-manager",
+  "version": "1.0.0",
+  "description": "Generic entity composition: systems, links, and dependencies. Reusable by any module via events.",
+  "author": "Aichat Team",
+  "main": "index.js",
+
+  "provides": {
+    "events": [
+      "composition.response",
+      "system.created",
+      "system.updated",
+      "system.deleted",
+      "entity.joined_system",
+      "entity.left_system",
+      "entity.linked",
+      "entity.unlinked",
+      "entity.dependency.added",
+      "entity.dependency.removed"
+    ]
+  },
+
+  "events": {
+    "publishes": [
+      { "event": "composition.response", "description": "Response to composition.request (request/response pattern)" },
+      { "event": "system.created", "description": "System (logical container) created" },
+      { "event": "system.updated", "description": "System updated" },
+      { "event": "system.deleted", "description": "System deleted" },
+      { "event": "entity.joined_system", "description": "Entity assigned to a system" },
+      { "event": "entity.left_system", "description": "Entity removed from a system" },
+      { "event": "entity.linked", "description": "Two entities linked" },
+      { "event": "entity.unlinked", "description": "Entity link removed" },
+      { "event": "entity.dependency.added", "description": "Dependency added between entities" },
+      { "event": "entity.dependency.removed", "description": "Dependency removed" }
+    ],
+    "subscribes": [
+      { "event": "composition.request", "description": "Request/response entry point for other modules", "handler": "onCompositionRequest" },
+      { "event": "db.query.response", "description": "Database query responses", "handler": "onDbQueryResponse" }
+    ]
+  },
+
+  "ui_handlers": [
+    { "domain": "system", "action": "create", "handler": "handleUISystemCreate" },
+    { "domain": "system", "action": "list", "handler": "handleUISystemList" },
+    { "domain": "system", "action": "get", "handler": "handleUISystemGet" },
+    { "domain": "system", "action": "update", "handler": "handleUISystemUpdate" },
+    { "domain": "system", "action": "delete", "handler": "handleUISystemDelete" },
+    { "domain": "system", "action": "addProject", "handler": "handleUISystemAddEntity" },
+    { "domain": "system", "action": "removeProject", "handler": "handleUISystemRemoveEntity" },
+    { "domain": "project", "action": "link", "handler": "handleUILink" },
+    { "domain": "project", "action": "unlink", "handler": "handleUIUnlink" },
+    { "domain": "project", "action": "getLinks", "handler": "handleUIGetLinks" },
+    { "domain": "project", "action": "getRelated", "handler": "handleUIGetRelated" },
+    { "domain": "project", "action": "addDependency", "handler": "handleUIAddDependency" },
+    { "domain": "project", "action": "removeDependency", "handler": "handleUIRemoveDependency" },
+    { "domain": "project", "action": "getDependencies", "handler": "handleUIGetDependencies" },
+    { "domain": "project", "action": "getDependents", "handler": "handleUIGetDependents" }
+  ],
+
+  "observability": {
+    "logging": { "level": "info", "structured": true, "correlation_id": true },
+    "metrics": {
+      "enabled": true,
+      "counters": [
+        "composition.system.created.total",
+        "composition.link.created.total",
+        "composition.dependency.created.total"
+      ]
+    }
+  },
+
+  "config": {
+    "dbTimeout": 10000
+  }
+}

@@ -1,0 +1,246 @@
+{
+  "name": "filesystem",
+  "version": "1.0.0",
+  "description": "Core filesystem operations for the entire system",
+  "author": "Aichat Team",
+  "main": "index.js",
+
+  "handlers": [
+    { "domain": "fs", "action": "list", "method": "handleList" },
+    { "domain": "fs", "action": "read", "method": "handleRead" },
+    { "domain": "fs", "action": "write", "method": "handleWrite" },
+    { "domain": "fs", "action": "delete", "method": "handleDelete" },
+    { "domain": "fs", "action": "mkdir", "method": "handleMkdir" },
+    { "domain": "fs", "action": "move", "method": "handleMove" },
+    { "domain": "fs", "action": "copy", "method": "handleCopy" },
+    { "domain": "fs", "action": "search", "method": "handleSearch" },
+    { "domain": "fs", "action": "info", "method": "handleInfo" },
+    { "domain": "fs", "action": "cleanup", "method": "handleCleanup" },
+    { "domain": "fs", "action": "stats", "method": "handleStats" },
+    { "domain": "fs", "action": "setWorkDir", "method": "handleSetWorkDir" },
+    { "domain": "fs", "action": "getWorkDir", "method": "handleGetWorkDir" }
+  ],
+
+  "tools": [
+    {
+      "name": "fs.list",
+      "description": "Lista archivos y carpetas de un directorio",
+      "handler": "handleList",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string", "description": "Ruta del directorio", "default": "/" }
+        }
+      }
+    },
+    {
+      "name": "fs.read",
+      "description": "Lee el contenido de un archivo",
+      "handler": "handleRead",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string", "description": "Ruta del archivo" }
+        },
+        "required": ["path"]
+      }
+    },
+    {
+      "name": "fs.write",
+      "description": "Escribe contenido a un archivo (crea si no existe)",
+      "handler": "handleWrite",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string", "description": "Ruta del archivo" },
+          "content": { "type": "string", "description": "Contenido a escribir" }
+        },
+        "required": ["path", "content"]
+      }
+    },
+    {
+      "name": "fs.delete",
+      "description": "Elimina un archivo o carpeta",
+      "handler": "handleDelete",
+      "confirmation": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string", "description": "Ruta a eliminar" }
+        },
+        "required": ["path"]
+      }
+    },
+    {
+      "name": "fs.mkdir",
+      "description": "Crea un directorio",
+      "handler": "handleMkdir",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string", "description": "Ruta del directorio a crear" }
+        },
+        "required": ["path"]
+      }
+    },
+    {
+      "name": "fs.move",
+      "description": "Mueve un archivo o carpeta",
+      "handler": "handleMove",
+      "confirmation": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "from": { "type": "string", "description": "Ruta origen" },
+          "to": { "type": "string", "description": "Ruta destino" }
+        },
+        "required": ["from", "to"]
+      }
+    },
+    {
+      "name": "fs.copy",
+      "description": "Copia un archivo",
+      "handler": "handleCopy",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "from": { "type": "string", "description": "Ruta origen" },
+          "to": { "type": "string", "description": "Ruta destino" }
+        },
+        "required": ["from", "to"]
+      }
+    },
+    {
+      "name": "fs.search",
+      "description": "Busca archivos por nombre o contenido",
+      "handler": "handleSearch",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": { "type": "string", "description": "Texto a buscar" },
+          "path": { "type": "string", "description": "Directorio base", "default": "/" },
+          "content": { "type": "boolean", "description": "Buscar en contenido", "default": false }
+        },
+        "required": ["query"]
+      }
+    },
+    {
+      "name": "fs.info",
+      "description": "Obtiene informacion de un archivo o carpeta",
+      "handler": "handleInfo",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string", "description": "Ruta del archivo o carpeta" }
+        },
+        "required": ["path"]
+      }
+    },
+    {
+      "name": "fs.cleanup",
+      "description": "Limpia archivos temporales del directorio temp que tengan más de N horas",
+      "handler": "handleCleanup",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string", "description": "Ruta del directorio a limpiar", "default": "/temp" },
+          "max_age_hours": { "type": "number", "description": "Edad máxima en horas (archivos más viejos se eliminan)", "default": 24 },
+          "dry_run": { "type": "boolean", "description": "Si es true, solo muestra qué se eliminaría sin eliminar", "default": false }
+        }
+      }
+    },
+    {
+      "name": "fs.stats",
+      "description": "Obtiene estadísticas de uso del storage (tamaño total, conteo de archivos)",
+      "handler": "handleStats",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string", "description": "Ruta base para las estadísticas", "default": "/" }
+        }
+      }
+    },
+    {
+      "name": "fs.setWorkDir",
+      "description": "Cambia el directorio de trabajo actual. Las rutas relativas se resolverán desde este directorio.",
+      "handler": "handleSetWorkDir",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string", "description": "Nueva ruta de trabajo (absoluta o relativa)" }
+        },
+        "required": ["path"]
+      }
+    },
+    {
+      "name": "fs.getWorkDir",
+      "description": "Obtiene información del directorio de trabajo actual y contexto del proyecto activo",
+      "handler": "handleGetWorkDir",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  ],
+
+  "events": {
+    "publishes": [
+      "fs.file.created",
+      "fs.file.updated",
+      "fs.file.deleted",
+      "fs.directory.created",
+      "fs.workdir.changed",
+      "fs.read.response",
+      "fs.write.response",
+      "fs.copy.response",
+      "fs.delete.response",
+      "fs.list.response",
+      "fs.mkdir.response",
+      "fs.move.response",
+      "fs.rename.response",
+      "fs.exists.response",
+      "fs.info.response",
+      "fs.append.response",
+      "fs.search.response",
+      "fs.stats.response"
+    ],
+    "subscribes": [
+      { "event": "project.activated", "handler": "onProjectActivated" },
+      { "event": "project.deactivated", "handler": "onProjectDeactivated" },
+      { "event": "fs.read.request", "handler": "onReadRequest" },
+      { "event": "fs.write.request", "handler": "onWriteRequest" },
+      { "event": "fs.copy.request", "handler": "onCopyRequest" },
+      { "event": "fs.delete.request", "handler": "onDeleteRequest" },
+      { "event": "fs.list.request", "handler": "onListRequest" },
+      { "event": "fs.mkdir.request", "handler": "onMkdirRequest" },
+      { "event": "fs.move.request", "handler": "onMoveRequest" },
+      { "event": "fs.rename.request", "handler": "onMoveRequest" },
+      { "event": "fs.exists.request", "handler": "onExistsRequest" },
+      { "event": "fs.info.request", "handler": "onInfoRequest" },
+      { "event": "fs.append.request", "handler": "onAppendRequest" },
+      { "event": "fs.search.request", "handler": "onSearchRequest" },
+      { "event": "fs.stats.request", "handler": "onStatsRequest" }
+    ]
+  },
+
+  "ui": {
+    "zone": "work-bar",
+    "icon": "📁"
+  },
+
+  "observability": {
+    "logging": {
+      "level": "info",
+      "structured": true
+    },
+    "metrics": {
+      "enabled": true,
+      "counters": [
+        "fs.read.total",
+        "fs.write.total",
+        "fs.delete.total",
+        "fs.error.total"
+      ]
+    }
+  }
+}

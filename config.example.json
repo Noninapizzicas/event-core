@@ -1,0 +1,20 @@
+{
+  "environment": "development",
+  "coreId": "core-001",
+  "httpPort": 3000,
+  "brokerPort": 1883,
+  "mqttBrokerUrl": "mqtt://localhost:1883",
+  "modulesPath": "./modules",
+  "logLevel": "info",
+  "cors": true,
+  "hotReload": true,
+  "autoloadModules": true,
+  "metrics": {
+    "enabled": true,
+    "publishInterval": 60000
+  },
+  "observability": {
+    "logsToMQTT": false,
+    "metricsToMQTT": false
+  }
+}

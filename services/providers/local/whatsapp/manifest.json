@@ -1,0 +1,70 @@
+{
+  "$schema": "provider-manifest-v1",
+  "name": "local.whatsapp",
+  "version": "1.0.0",
+  "description": "Integración WhatsApp Business API — mensajes, media, templates",
+  "type": "local",
+  "requires": {
+    "npm": [],
+    "credentials": ["WHATSAPP_TOKEN", "WHATSAPP_PHONE_ID", "WHATSAPP_BUSINESS_ID"]
+  },
+  "functions": {
+    "send": {
+      "event": "local.whatsapp.send.request",
+      "description": "Envía un mensaje de texto por WhatsApp",
+      "input": {
+        "to": { "type": "string", "required": true, "description": "Número de teléfono destino" },
+        "text": { "type": "string", "required": true, "description": "Texto del mensaje" },
+        "preview_url": { "type": "boolean", "required": false, "description": "Mostrar vista previa de URLs" }
+      },
+      "output": {
+        "message_id": { "type": "string", "description": "ID del mensaje enviado" }
+      }
+    },
+    "send-media": {
+      "event": "local.whatsapp.send-media.request",
+      "description": "Envía un archivo multimedia por WhatsApp",
+      "input": {
+        "to": { "type": "string", "required": true, "description": "Número de teléfono destino" },
+        "type": { "type": "string", "required": true, "description": "Tipo de media: image, video, audio, document" },
+        "url": { "type": "string", "required": true, "description": "URL del archivo multimedia" },
+        "caption": { "type": "string", "required": false, "description": "Texto descriptivo del media" },
+        "filename": { "type": "string", "required": false, "description": "Nombre del archivo (para documentos)" }
+      },
+      "output": {
+        "message_id": { "type": "string", "description": "ID del mensaje enviado" }
+      }
+    },
+    "template": {
+      "event": "local.whatsapp.template.request",
+      "description": "Envía un mensaje usando un template aprobado",
+      "input": {
+        "to": { "type": "string", "required": true, "description": "Número de teléfono destino" },
+        "name": { "type": "string", "required": true, "description": "Nombre del template" },
+        "language": { "type": "string", "required": true, "description": "Código de idioma del template" },
+        "components": { "type": "array", "required": false, "description": "Componentes del template (header, body, buttons)" }
+      },
+      "output": {
+        "message_id": { "type": "string", "description": "ID del mensaje enviado" }
+      }
+    },
+    "read": {
+      "event": "local.whatsapp.read.request",
+      "description": "Marca un mensaje como leído",
+      "input": {
+        "message_id": { "type": "string", "required": true, "description": "ID del mensaje a marcar como leído" }
+      },
+      "output": {
+        "marked": { "type": "boolean", "description": "Si el mensaje fue marcado como leído" }
+      }
+    },
+    "list-templates": {
+      "event": "local.whatsapp.list-templates.request",
+      "description": "Lista los templates disponibles en la cuenta",
+      "input": {},
+      "output": {
+        "templates": { "type": "array", "description": "Lista de templates disponibles" }
+      }
+    }
+  }
+}

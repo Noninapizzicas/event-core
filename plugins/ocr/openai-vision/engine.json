@@ -1,0 +1,64 @@
+{
+  "name": "openai-vision",
+  "type": "ocr-engine",
+  "version": "1.0.0",
+  "description": "OpenAI GPT-4 Vision OCR",
+
+  "local": false,
+
+  "provider": "OPENAI",
+  "credentialKey": "OPENAI_API_KEY",
+
+  "capabilities": ["image", "handwriting", "document", "context"],
+  "supportedFormats": ["jpg", "png", "gif", "webp"],
+  "maxFileSize": 20971520,
+
+  "priority": 4,
+
+  "request": {
+    "method": "POST",
+    "url": "https://api.openai.com/v1/chat/completions",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{credential}}"
+    },
+    "body": {
+      "model": "gpt-4o-mini",
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "Extract all text from this image. Return ONLY the extracted text exactly as it appears, preserving formatting and structure. Do not add any explanations or commentary."
+            },
+            {
+              "type": "image_url",
+              "image_url": {
+                "url": "data:image/jpeg;base64,{{input_base64}}"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+
+  "response": {
+    "textPath": "choices[0].message.content",
+    "confidencePath": null
+  },
+
+  "config": {
+    "timeout": 60000,
+    "retries": 1,
+    "model": "gpt-4o-mini"
+  },
+
+  "pricing": {
+    "currency": "USD",
+    "inputPer1M": 0.15,
+    "outputPer1M": 0.60
+  }
+}

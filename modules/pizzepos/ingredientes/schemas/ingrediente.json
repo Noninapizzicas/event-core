@@ -1,0 +1,65 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://pizzepos.com/schemas/ingrediente.json",
+  "title": "Ingrediente Schema",
+  "description": "Esquemas de datos para ingredientes",
+
+  "definitions": {
+    "ingrediente": {
+      "type": "object",
+      "required": ["id", "nombre", "tipo"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^ing_[a-z0-9_]+$"
+        },
+        "nombre": {
+          "type": "string",
+          "minLength": 1
+        },
+        "emoji": {
+          "type": "string"
+        },
+        "tipo": {
+          "type": "string",
+          "enum": ["base", "proteina", "vegetal", "condimento", "salsa", "topping", "otro"]
+        },
+        "es_alergeno": {
+          "type": "boolean"
+        },
+        "alergenos": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["gluten", "lactosa", "huevo", "pescado", "marisco", "frutos_secos", "soja", "apio", "mostaza", "sesamo", "sulfitos", "altramuces"]
+          }
+        },
+        "disponible": {
+          "type": "boolean"
+        },
+        "precio_extra": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Precio cuando se añade como extra"
+        },
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "vegano": {"type": "boolean"},
+            "vegetariano": {"type": "boolean"},
+            "sin_gluten": {"type": "boolean"}
+          }
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

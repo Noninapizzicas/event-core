@@ -1,0 +1,131 @@
+{
+  "name": "cocina",
+  "version": "2.1.0",
+  "description": "Display de cocina en tiempo real - Sistema de preparación de pedidos",
+  "author": "Pizzepos Team",
+  "routes": ["/cocina"],
+
+  "provides": {
+    "events": [
+      "cocina.item_preparando",
+      "cocina.item_preparado",
+      "cocina.pedido_listo"
+    ],
+    "queries": ["cocina.activos", "cocina.historial"]
+  },
+
+  "events": {
+    "publishes": [
+      {
+        "event": "cocina.item_preparando",
+        "description": "Cocinero empieza a preparar un item (primer tap)",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "pedido_id": { "type": "string" },
+            "cuenta_id": { "type": "string" },
+            "item_id": { "type": "string" },
+            "nombre": { "type": "string" },
+            "preparando_at": { "type": "string" }
+          }
+        }
+      },
+      {
+        "event": "cocina.item_preparado",
+        "description": "Item marcado como preparado",
+        "schema": {
+          "$ref": "./schemas/events.json#/definitions/cocina_item_preparado"
+        }
+      },
+      {
+        "event": "cocina.pedido_listo",
+        "description": "Pedido completamente preparado y listo para servir",
+        "schema": {
+          "$ref": "./schemas/events.json#/definitions/cocina_pedido_listo"
+        }
+      }
+    ],
+    "subscribes": [
+      {
+        "event": "pedido.enviado_cocina",
+        "description": "Pedido formal enviado a cocina (desde módulo Pedidos)",
+        "handler": "onPedidoEnviadoCocina"
+      },
+      {
+        "event": "pedido.cancelado",
+        "description": "Pedido cancelado - remover de cocina",
+        "handler": "onPedidoCancelado"
+      }
+    ]
+  },
+
+  "apis": [
+    {
+      "method": "GET",
+      "path": "/cocina/activos",
+      "handler": "handleGetActivos",
+      "description": "Listar pedidos activos en cocina"
+    },
+    {
+      "method": "GET",
+      "path": "/cocina/historial",
+      "handler": "handleGetHistorial",
+      "description": "Historial de pedidos completados"
+    },
+    {
+      "method": "GET",
+      "path": "/cocina/pedidos/:pedido_id",
+      "handler": "handleGetPedido",
+      "description": "Obtener detalle de pedido en cocina"
+    },
+    {
+      "method": "POST",
+      "path": "/cocina/items/:item_id/preparar",
+      "handler": "handlePrepararItem",
+      "description": "Marcar item como preparado"
+    },
+    {
+      "method": "POST",
+      "path": "/cocina/pedidos/:pedido_id/listo",
+      "handler": "handleMarcarListo",
+      "description": "Marcar pedido completo como listo"
+    },
+    {
+      "method": "GET",
+      "path": "/health",
+      "handler": "handleHealthCheck",
+      "description": "Health check"
+    },
+    {
+      "method": "GET",
+      "path": "/metrics",
+      "handler": "handleGetMetrics",
+      "description": "Métricas del módulo"
+    }
+  ],
+
+  "observability": {
+    "logging": {
+      "level": "info",
+      "structured": true,
+      "correlation_id": true
+    },
+    "metrics": {
+      "enabled": true,
+      "counters": [
+        "cocina.pedido_recibido.total",
+        "cocina.item_preparado.total",
+        "cocina.pedido_listo.total",
+        "cocina.pedido_cancelado.total"
+      ],
+      "gauges": [
+        "cocina.pedidos_activos.count",
+        "cocina.items_pendientes.count"
+      ],
+      "timings": [
+        "cocina.preparacion_item.duration",
+        "cocina.preparacion_pedido.duration"
+      ]
+    }
+  }
+}

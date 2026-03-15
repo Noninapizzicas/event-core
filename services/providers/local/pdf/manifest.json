@@ -1,0 +1,81 @@
+{
+  "$schema": "../../../schemas/provider-manifest.schema.json",
+  "name": "local.pdf",
+  "version": "1.0.0",
+  "description": "Servicio local para crear PDFs",
+  "type": "provider",
+  "requires": {
+    "credentials": [],
+    "npm": [
+      "pdfkit"
+    ]
+  },
+  "functions": {
+    "create": {
+      "event": "local.pdf.create.request",
+      "description": "Crear PDF desde datos o template",
+      "input": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "from_text",
+            "from_html",
+            "from_template"
+          ],
+          "required": true
+        },
+        "content": {
+          "type": "string|object",
+          "description": "Contenido del PDF",
+          "required": true
+        },
+        "template": {
+          "type": "string",
+          "description": "Nombre del template (si type=from_template)"
+        },
+        "filename": {
+          "type": "string",
+          "description": "Nombre del archivo de salida",
+          "required": true
+        },
+        "options": {
+          "type": "object",
+          "properties": {
+            "orientation": {
+              "enum": [
+                "portrait",
+                "landscape"
+              ],
+              "default": "portrait"
+            },
+            "format": {
+              "enum": [
+                "A4",
+                "letter",
+                "legal"
+              ],
+              "default": "A4"
+            },
+            "margin": {
+              "type": "number",
+              "default": 50
+            }
+          }
+        }
+      },
+      "output": {
+        "success": {
+          "type": "boolean"
+        },
+        "path": {
+          "type": "string",
+          "description": "Ruta del PDF generado"
+        },
+        "size": {
+          "type": "number",
+          "description": "Tamano en bytes"
+        }
+      }
+    }
+  }
+}
