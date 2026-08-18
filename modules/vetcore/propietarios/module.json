@@ -1,0 +1,42 @@
+{
+  "name": "propietarios",
+  "version": "1.0.0",
+  "description": "Gestión de dueños — ficha, contacto y mascotas asociadas",
+  "author": "VetCore Team",
+
+  "provides": {
+    "events": ["propietario.registrado", "propietario.actualizado"],
+    "queries": ["propietario.obtener", "propietario.listar"]
+  },
+
+  "events": {
+    "publishes": [
+      { "event": "propietario.registrado", "description": "Nuevo propietario registrado" },
+      { "event": "propietario.actualizado", "description": "Datos del propietario actualizados" }
+    ],
+    "subscribes": []
+  },
+
+  "apis": [
+    { "method": "GET",   "path": "/propietarios",       "handler": "handleListPropietarios",  "description": "Listar propietarios" },
+    { "method": "POST",  "path": "/propietarios",       "handler": "handleCreatePropietario", "description": "Crear propietario" },
+    { "method": "GET",   "path": "/propietarios/:id",   "handler": "handleGetPropietario",    "description": "Obtener propietario + sus mascotas" },
+    { "method": "PATCH", "path": "/propietarios/:id",   "handler": "handleUpdatePropietario", "description": "Actualizar propietario" },
+    { "method": "GET",   "path": "/propietarios/search","handler": "handleSearchPropietarios","description": "Buscar por nombre, email o teléfono" }
+  ],
+
+  "ui": {
+    "enabled": true,
+    "title": "Propietarios",
+    "icon": "👤",
+    "description": "Clientes de la clínica y sus mascotas",
+    "access_level": "recepcionista"
+  },
+
+  "observability": {
+    "metrics": {
+      "counters": ["propietario.registrado.total"],
+      "gauges": ["propietario.activos.count"]
+    }
+  }
+}

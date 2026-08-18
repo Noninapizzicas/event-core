@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://vetcore.dev/schemas/paciente.json",
+  "title": "Paciente (Mascota)",
+
+  "definitions": {
+    "paciente": {
+      "type": "object",
+      "required": ["nombre", "especie", "propietario_id"],
+      "properties": {
+        "id":              { "type": "string", "format": "uuid" },
+        "nombre":          { "type": "string", "minLength": 1, "maxLength": 100 },
+        "especie":         { "type": "string", "enum": ["perro", "gato", "conejo", "ave", "reptil", "exotico", "otro"] },
+        "raza":            { "type": "string", "maxLength": 100 },
+        "sexo":            { "type": "string", "enum": ["macho", "hembra", "desconocido"] },
+        "fecha_nacimiento":{ "type": "string", "format": "date" },
+        "color":           { "type": "string" },
+        "peso_kg":         { "type": "number", "minimum": 0 },
+        "microchip":       { "type": "string", "maxLength": 20 },
+        "esterilizado":    { "type": "boolean", "default": false },
+        "propietario_id":  { "type": "string", "format": "uuid" },
+        "foto_url":        { "type": "string", "format": "uri" },
+        "notas":           { "type": "string" },
+        "activo":          { "type": "boolean", "default": true },
+        "creado_en":       { "type": "string", "format": "date-time" },
+        "actualizado_en":  { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

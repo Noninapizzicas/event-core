@@ -1,0 +1,91 @@
+{
+  "name": "pacientes",
+  "version": "1.0.0",
+  "description": "Fichas de mascotas — Registro, historial y seguimiento",
+  "author": "VetCore Team",
+
+  "provides": {
+    "events": ["paciente.registrado", "paciente.actualizado", "paciente.archivado"],
+    "queries": ["paciente.obtener", "paciente.listar", "paciente.buscar"]
+  },
+
+  "events": {
+    "publishes": [
+      {
+        "event": "paciente.registrado",
+        "description": "Nueva mascota registrada en el sistema"
+      },
+      {
+        "event": "paciente.actualizado",
+        "description": "Datos de la mascota actualizados"
+      },
+      {
+        "event": "paciente.archivado",
+        "description": "Mascota archivada (fallecida o dada de baja)"
+      }
+    ],
+    "subscribes": [
+      {
+        "event": "propietario.registrado",
+        "description": "Nuevo dueño — preparar ficha de mascotas",
+        "handler": "onPropietarioRegistrado"
+      },
+      {
+        "event": "historia-clinica.consulta_registrada",
+        "description": "Actualizar último chequeo del paciente",
+        "handler": "onConsultaRegistrada"
+      }
+    ]
+  },
+
+  "apis": [
+    { "method": "GET",    "path": "/pacientes",              "handler": "handleListPacientes",   "description": "Listar pacientes (filtros: especie, propietario, activo)" },
+    { "method": "POST",   "path": "/pacientes",              "handler": "handleCreatePaciente",  "description": "Crear paciente nuevo" },
+    { "method": "GET",    "path": "/pacientes/:id",          "handler": "handleGetPaciente",     "description": "Obtener paciente por ID" },
+    { "method": "PATCH",  "path": "/pacientes/:id",          "handler": "handleUpdatePaciente",  "description": "Actualizar datos del paciente" },
+    { "method": "DELETE", "path": "/pacientes/:id",          "handler": "handleArchivarPaciente","description": "Archivar paciente" },
+    { "method": "GET",    "path": "/pacientes/search",       "handler": "handleSearchPacientes", "description": "Buscar por nombre, chip, propietario" },
+    { "method": "GET",    "path": "/pacientes/:id/historia", "handler": "handleGetHistoria",     "description": "Historia clínica resumida del paciente" },
+    { "method": "GET",    "path": "/pacientes/:id/proximas-vacunas", "handler": "handleProximasVacunas", "description": "Vacunas pendientes del paciente" }
+  ],
+
+  "ui": {
+    "enabled": true,
+    "title": "Pacientes",
+    "icon": "🐾",
+    "description": "Fichas de mascotas y seguimiento clínico",
+    "access_level": "enfermero",
+    "views": {
+      "main": {
+        "type": "dashboard",
+        "layout": "fullwidth",
+        "header": {
+          "title": "🐾 Pacientes",
+          "subtitle": "Registro y seguimiento de mascotas",
+          "actions": [
+            { "type": "button", "label": "Nueva Mascota", "icon": "➕", "action": "open_form", "variant": "primary" },
+            { "type": "search", "placeholder": "Buscar por nombre, chip o dueño…" }
+          ]
+        },
+        "content": {
+          "type": "grid",
+          "config": {
+            "endpoint": "/modules/pacientes/pacientes",
+            "mqtt_topics": ["paciente.registrado", "paciente.actualizado", "paciente.archivado"],
+            "refresh_on_event": true
+          }
+        }
+      }
+    },
+    "features": {
+      "search": true, "filters": true, "real_time": true, "export": true
+    }
+  },
+
+  "observability": {
+    "metrics": {
+      "counters": ["paciente.registrado.total", "paciente.actualizado.total", "paciente.archivado.total"],
+      "gauges": ["paciente.activos.count", "paciente.por_especie.count"]
+    }
+  }
+}
